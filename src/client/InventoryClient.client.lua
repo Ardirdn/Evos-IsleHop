@@ -645,9 +645,17 @@ local function createTitleItem(titleName)
 	btn.MouseButton1Click:Connect(function()
 		if isEquipped then
 			unequipTitleEvent:FireServer()
+			-- ✅ Update local state immediately for responsive UI
+			titleData.EquippedTitle = nil
 		else
 			equipTitleEvent:FireServer(titleName)
+			-- ✅ Update local state immediately for responsive UI
+			titleData.EquippedTitle = titleName
 		end
+		-- ✅ Refresh UI after short delay to let server process
+		task.delay(0.1, function()
+			updateTitlesTab()
+		end)
 	end)
 
 	return frame

@@ -737,6 +737,19 @@ else
 		return false
 	end
 
+	-- ✅ Helper: Get display name for zone
+	local function getZoneDisplayName(zoneFolderName)
+		local displayNames = {
+			["AdminZones"] = "Admin",
+			["VVIPZones"] = "VVIP",
+			["VIPZones"] = "VIP",
+			["EVOSZones"] = "EVOS",
+			["TrimatraZones"] = "Trimatra",
+			["BoatAccess"] = "Boat",
+		}
+		return displayNames[zoneFolderName] or zoneFolderName
+	end
+
 	local function updateCanCollideForPlayer(player, part, zoneFolderName)
 		local character = player.Character
 		if not character then return end
@@ -745,36 +758,36 @@ else
 		if not humanoidRootPart then return end
 
 		local access = hasAccess(player, zoneFolderName)
+		local constraintName = "ZonePass_" .. zoneFolderName .. "_" .. part.Name
 
 		if access then
 			for _, playerPart in ipairs(character:GetDescendants()) do
 				if playerPart:IsA("BasePart") then
-					local constraint = Instance.new("NoCollisionConstraint")
-					constraint.Part0 = playerPart
-					constraint.Part1 = part
-					constraint.Name = "ZonePass_" .. zoneFolderName
-					constraint.Parent = playerPart
-
-					task.delay(2, function()
-						if constraint and constraint.Parent then
-							constraint:Destroy()
-						end
-					end)
+					-- ✅ Check if constraint already exists to avoid duplicates
+					local existingConstraint = playerPart:FindFirstChild(constraintName)
+					if not existingConstraint then
+						local constraint = Instance.new("NoCollisionConstraint")
+						constraint.Part0 = playerPart
+						constraint.Part1 = part
+						constraint.Name = constraintName
+						constraint.Parent = playerPart
+						-- ✅ NO task.delay destroy - constraint stays persistent
+					end
 				end
 			end
 		else
 			if not player:GetAttribute("ZoneWarning_" .. zoneFolderName) then
 				player:SetAttribute("ZoneWarning_" .. zoneFolderName, true)
 
-				local allowedTitles = TitleConfig.AccessRules[zoneFolderName]
-				local titleList = table.concat(allowedTitles, ", ")
+				-- ✅ Simplified notification message with zone display name
+				local zoneDisplayName = getZoneDisplayName(zoneFolderName)
 
 				pcall(function()
 					NotificationService:Send(player, {
-						Message = string.format("🔒 Akses Ditolak! Butuh title: %s", titleList),
+						Message = string.format("Kamu Tidak Bisa Masuk Ke Area \"%s\"", zoneDisplayName),
 						Type = "error",
 						Duration = 3,
-						Icon = "❌"
+						Icon = "🔒"
 					})
 				end)
 
@@ -788,15 +801,10 @@ else
 	local function setupZonePart(part, zoneFolderName)
 		if not part:IsA("BasePart") then return end
 
-		part.Transparency = 0.7
+		-- ✅ Fully transparent (invisible) - no color change
+		part.Transparency = 1
 		part.CanCollide = true
 		part.Anchored = true
-		part.Material = Enum.Material.Neon
-
-		local zoneColor = TitleConfig.ZoneColors[zoneFolderName]
-		if zoneColor then
-			part.Color = zoneColor
-		end
 
 		print(string.format("🔒 [ACCESS] Setup zone part: %s/%s", zoneFolderName, part.Name))
 
