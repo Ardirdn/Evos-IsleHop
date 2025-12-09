@@ -125,28 +125,8 @@ skipCheckpoint.Parent = remoteFolder
 
 print("[REMOTES] Remote events created in ReplicatedStorage")
 
--- Reference ke leaderboard parts
-local summitLeaderboardPart = workspace:FindFirstChild("SummitLeaderboard")
-local speedrunLeaderboardPart = workspace:FindFirstChild("SpeedrunLeaderboard")
-local playtimeLeaderboardPart = workspace:FindFirstChild("PlaytimeLeaderboard")
-
-if summitLeaderboardPart then
-	print("[LEADERBOARD] Summit leaderboard part found")
-else
-	warn("[WARNING] Summit leaderboard part NOT found in Workspace")
-end
-
-if speedrunLeaderboardPart then
-	print("[LEADERBOARD] Speedrun leaderboard part found")
-else
-	warn("[WARNING] Speedrun leaderboard part NOT found in Workspace")
-end
-
-if playtimeLeaderboardPart then
-	print("[LEADERBOARD] Playtime leaderboard part found")
-else
-	warn("[WARNING] Playtime leaderboard part NOT found in Workspace")
-end
+-- NOTE: Leaderboard display updates are now handled by LeaderboardServer.server.lua
+-- Leaderboards are in workspace.Leaderboards folder and support multiple copies
 
 -- Function untuk format playtime
 local function formatPlaytime(seconds)
@@ -325,264 +305,25 @@ local function formatTime(seconds)
 	return string.format("%02d:%02d:%02d.%03d", hours, minutes, secs, ms)
 end
 
--- Update Summit Leaderboard Display
+-- NOTE: Leaderboard display updates are now handled by LeaderboardServer.server.lua
+-- These stub functions maintain compatibility with existing calls
 local function updateSummitLeaderboard()
-	if not summitLeaderboardPart then 
-		print("[LEADERBOARD] Summit part not found, skipping update")
-		return 
-	end
-
-	local surfaceGui = summitLeaderboardPart:FindFirstChild("SurfaceGui")
-	if not surfaceGui then 
-		warn("[LEADERBOARD] SurfaceGui not found in Summit part")
-		return 
-	end
-
-	local scrollingFrame = surfaceGui:FindFirstChild("ScrollingFrame")
-	if not scrollingFrame then 
-		warn("[LEADERBOARD] ScrollingFrame not found in SurfaceGui")
-		return 
-	end
-
-	local sample = scrollingFrame:FindFirstChild("Sample")
-	if not sample then 
-		warn("[LEADERBOARD] Sample frame not found")
-		return 
-	end
-
-	sample.Visible = false
-
-	print("[LEADERBOARD] Updating Summit leaderboard...")
-
-	for _, child in pairs(scrollingFrame:GetChildren()) do
-		if child:IsA("Frame") and child.Name ~= "Sample" then
-			child:Destroy()
-		end
-	end
-
-	local success, data = pcall(function()
-		return SummitLeaderboard:GetSortedAsync(false, 10)
-	end)
-
-	if not success then 
-		warn("[LEADERBOARD] Failed to get summit data")
-		return 
-	end
-
-	local page = data:GetCurrentPage()
-	local entryCount = 0
-
-	for rank, entry in ipairs(page) do
-		local userId = tonumber(entry.key)
-		local summits = entry.value
-
-		local nameSuccess, username = pcall(function()
-			return Players:GetNameFromUserIdAsync(userId)
-		end)
-
-		local displayName = nameSuccess and username or "Player"
-
-		local newFrame = sample:Clone()
-		newFrame.Name = "Entry" .. rank
-		newFrame.Visible = true
-
-		local rankLabel = newFrame:FindFirstChild("Rank")
-		if rankLabel then
-			rankLabel.Text = "#" .. rank
-		end
-
-		local nameLabel = newFrame:FindFirstChild("PlayerName")
-		if nameLabel then
-			nameLabel.Text = displayName
-		end
-
-		local valueLabel = newFrame:FindFirstChild("Summits")
-		if valueLabel then
-			valueLabel.Text = tostring(summits)
-		end
-
-		newFrame.Parent = scrollingFrame
-		entryCount = entryCount + 1
-	end
-
-	print("[LEADERBOARD] Summit leaderboard updated with", entryCount, "entries")
+	-- Handled by LeaderboardServer
 end
 
--- Update Speedrun Leaderboard Display
 local function updateSpeedrunLeaderboard()
-	if not speedrunLeaderboardPart then 
-		print("[LEADERBOARD] Speedrun part not found, skipping update")
-		return 
-	end
-
-	local surfaceGui = speedrunLeaderboardPart:FindFirstChild("SurfaceGui")
-	if not surfaceGui then 
-		warn("[LEADERBOARD] SurfaceGui not found in Speedrun part")
-		return 
-	end
-
-	local scrollingFrame = surfaceGui:FindFirstChild("ScrollingFrame")
-	if not scrollingFrame then 
-		warn("[LEADERBOARD] ScrollingFrame not found in SurfaceGui")
-		return 
-	end
-
-	local sample = scrollingFrame:FindFirstChild("Sample")
-	if not sample then 
-		warn("[LEADERBOARD] Sample frame not found")
-		return 
-	end
-
-	sample.Visible = false
-
-	print("[LEADERBOARD] Updating Speedrun leaderboard...")
-
-	for _, child in pairs(scrollingFrame:GetChildren()) do
-		if child:IsA("Frame") and child.Name ~= "Sample" then
-			child:Destroy()
-		end
-	end
-
-	local success, data = pcall(function()
-		return SpeedrunLeaderboard:GetSortedAsync(false, 10)
-	end)
-
-	if not success then 
-		warn("[LEADERBOARD] Failed to get speedrun data")
-		return 
-	end
-
-	local page = data:GetCurrentPage()
-	local entryCount = 0
-
-	for rank, entry in ipairs(page) do
-		local userId = tonumber(entry.key)
-		local timeMs = math.abs(entry.value)
-		local timeSeconds = timeMs / 1000
-
-		local nameSuccess, username = pcall(function()
-			return Players:GetNameFromUserIdAsync(userId)
-		end)
-
-		local displayName = nameSuccess and username or "Player"
-
-		local newFrame = sample:Clone()
-		newFrame.Name = "Entry" .. rank
-		newFrame.Visible = true
-
-		local rankLabel = newFrame:FindFirstChild("Rank")
-		if rankLabel then
-			rankLabel.Text = "#" .. rank
-		end
-
-		local nameLabel = newFrame:FindFirstChild("PlayerName")
-		if nameLabel then
-			nameLabel.Text = displayName
-		end
-
-		local valueLabel = newFrame:FindFirstChild("Time")
-		if valueLabel then
-			valueLabel.Text = formatTime(timeSeconds)
-		end
-
-		newFrame.Parent = scrollingFrame
-		entryCount = entryCount + 1
-	end
-
-	print("[LEADERBOARD] Speedrun leaderboard updated with", entryCount, "entries")
+	-- Handled by LeaderboardServer
 end
 
--- Update Playtime Leaderboard Display
 local function updatePlaytimeLeaderboard()
-	if not playtimeLeaderboardPart then 
-		print("[LEADERBOARD] Playtime part not found, skipping update")
-		return 
-	end
-
-	local surfaceGui = playtimeLeaderboardPart:FindFirstChild("SurfaceGui")
-	if not surfaceGui then 
-		warn("[LEADERBOARD] SurfaceGui not found in Playtime part")
-		return 
-	end
-
-	local scrollingFrame = surfaceGui:FindFirstChild("ScrollingFrame")
-	if not scrollingFrame then 
-		warn("[LEADERBOARD] ScrollingFrame not found in SurfaceGui")
-		return 
-	end
-
-	local sample = scrollingFrame:FindFirstChild("Sample")
-	if not sample then 
-		warn("[LEADERBOARD] Sample frame not found")
-		return 
-	end
-
-	sample.Visible = false
-
-	print("[LEADERBOARD] Updating Playtime leaderboard...")
-
-	for _, child in pairs(scrollingFrame:GetChildren()) do
-		if child:IsA("Frame") and child.Name ~= "Sample" then
-			child:Destroy()
-		end
-	end
-
-	local success, data = pcall(function()
-		return PlaytimeLeaderboard:GetSortedAsync(false, 10)
-	end)
-
-	if not success then 
-		warn("[LEADERBOARD] Failed to get playtime data")
-		return 
-	end
-
-	local page = data:GetCurrentPage()
-	local entryCount = 0
-
-	for rank, entry in ipairs(page) do
-		local userId = tonumber(entry.key)
-		local playtime = entry.value
-
-		local nameSuccess, username = pcall(function()
-			return Players:GetNameFromUserIdAsync(userId)
-		end)
-
-		local displayName = nameSuccess and username or "Player"
-
-		local newFrame = sample:Clone()
-		newFrame.Name = "Entry" .. rank
-		newFrame.Visible = true
-
-		local rankLabel = newFrame:FindFirstChild("Rank")
-		if rankLabel then
-			rankLabel.Text = "#" .. rank
-		end
-
-		local nameLabel = newFrame:FindFirstChild("PlayerName")
-		if nameLabel then
-			nameLabel.Text = displayName
-		end
-
-		local valueLabel = newFrame:FindFirstChild("Playtime")
-		if valueLabel then
-			valueLabel.Text = formatPlaytime(playtime)
-		end
-
-		newFrame.Parent = scrollingFrame
-		entryCount = entryCount + 1
-	end
-
-	print("[LEADERBOARD] Playtime leaderboard updated with", entryCount, "entries")
+	-- Handled by LeaderboardServer
 end
 
--- Update all leaderboards
 local function updateLeaderboards()
-	print("[LEADERBOARD] Starting leaderboard update...")
-	updateSummitLeaderboard()
-	updateSpeedrunLeaderboard()
-	updatePlaytimeLeaderboard()
-	print("[LEADERBOARD] Leaderboard update complete")
+	-- All leaderboard display updates are now handled by LeaderboardServer.server.lua
+	-- This function is kept for backward compatibility
 end
+
 
 -- Player joined
 Players.PlayerAdded:Connect(function(player)

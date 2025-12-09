@@ -40,72 +40,10 @@ local function sendDataUpdate(player)
 	end
 end
 
--- Helper: Update donation leaderboard
+-- NOTE: Donation Leaderboard display updates are now handled by LeaderboardServer.server.lua
+-- Leaderboards are in workspace.Leaderboards folder and support multiple copies
 local function updateDonationLeaderboard()
-	local DataStoreService = game:GetService("DataStoreService")
-	local DonationLeaderboard = DataStoreService:GetOrderedDataStore("DonationLeaderboard")
-
-	local leaderboardPart = workspace:FindFirstChild("DonationLeaderboard")
-	if not leaderboardPart then return end
-
-	local surfaceGui = leaderboardPart:FindFirstChild("SurfaceGui")
-	if not surfaceGui then return end
-
-	local scrollingFrame = surfaceGui:FindFirstChild("ScrollingFrame")
-	if not scrollingFrame then return end
-
-	local sample = scrollingFrame:FindFirstChild("Sample")
-	if not sample then return end
-
-	sample.Visible = false
-
-	for _, child in pairs(scrollingFrame:GetChildren()) do
-		if child:IsA("Frame") and child.Name ~= "Sample" then
-			child:Destroy()
-		end
-	end
-
-	local success, data = pcall(function()
-		return DonationLeaderboard:GetSortedAsync(false, 10)
-	end)
-
-	if not success then return end
-
-	local page = data:GetCurrentPage()
-
-	for rank, entry in ipairs(page) do
-		local userId = tonumber(entry.key)
-		local totalDonated = entry.value
-
-		local nameSuccess, username = pcall(function()
-			return Players:GetNameFromUserIdAsync(userId)
-		end)
-
-		local displayName = nameSuccess and username or "Player"
-
-		local newFrame = sample:Clone()
-		newFrame.Name = "Entry" .. rank
-		newFrame.Visible = true
-
-		local rankLabel = newFrame:FindFirstChild("Rank")
-		if rankLabel then
-			rankLabel.Text = "#" .. rank
-		end
-
-		local nameLabel = newFrame:FindFirstChild("PlayerName")
-		if nameLabel then
-			nameLabel.Text = displayName
-		end
-
-		local valueLabel = newFrame:FindFirstChild("Amount")
-		if valueLabel then
-			valueLabel.Text = "R$" .. tostring(totalDonated)
-		end
-
-		newFrame.Parent = scrollingFrame
-	end
-
-	print("[MARKETPLACE] Donation leaderboard updated")
+	-- Handled by LeaderboardServer
 end
 
 -- Unified ProcessReceipt
