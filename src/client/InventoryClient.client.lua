@@ -9,9 +9,13 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local StarterGui = game:GetService("StarterGui")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
+
+-- Hide default Roblox backpack/hotbar (we use custom inventory)
+StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, false)
 
 local Icon = require(ReplicatedStorage:WaitForChild("Icon"))
 local InventoryConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("InventoryConfig"))
@@ -443,9 +447,17 @@ local function createAuraItem(auraId, parentFrame)
 	btn.MouseButton1Click:Connect(function()
 		if isEquipped then
 			unequipAuraEvent:FireServer()
+			-- Update local state immediately for responsive UI
+			inventoryData.EquippedAura = nil
 		else
 			equipAuraEvent:FireServer(auraId)
+			-- Update local state immediately for responsive UI
+			inventoryData.EquippedAura = auraId
 		end
+		-- Refresh UI after short delay to let server process
+		task.delay(0.1, function()
+			updateInventory()
+		end)
 	end)
 
 	return frame
@@ -525,9 +537,17 @@ local function createToolItem(toolId, parentFrame)
 	btn.MouseButton1Click:Connect(function()
 		if isEquipped then
 			unequipToolEvent:FireServer()
+			-- Update local state immediately for responsive UI
+			inventoryData.EquippedTool = nil
 		else
 			equipToolEvent:FireServer(toolId)
+			-- Update local state immediately for responsive UI
+			inventoryData.EquippedTool = toolId
 		end
+		-- Refresh UI after short delay to let server process
+		task.delay(0.1, function()
+			updateInventory()
+		end)
 	end)
 
 	return frame

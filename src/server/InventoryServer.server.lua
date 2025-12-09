@@ -184,28 +184,13 @@ equipToolEvent.OnServerEvent:Connect(function(player, toolId)
 	end
 
 	if player.Character then
-		-- ✅ TAMBAHKAN INI: Unequip tool lama dulu
-		local backpack = player:FindFirstChild("Backpack")
-
-		-- Remove from character
-		for _, existingTool in ipairs(player.Character:GetChildren()) do
-			if existingTool:IsA("Tool") then
-				existingTool.Parent = backpack -- Move to backpack first
-				task.wait(0.05) -- Trigger Unequipped event
-				existingTool:Destroy()
-			end
+		local humanoid = player.Character:FindFirstChild("Humanoid")
+		if humanoid then
+			-- Unequip any current tool first
+			humanoid:UnequipTools()
 		end
 
-		-- Remove from backpack
-		if backpack then
-			for _, existingTool in ipairs(backpack:GetChildren()) do
-				if existingTool:IsA("Tool") then
-					existingTool:Destroy()
-				end
-			end
-		end
-
-		-- ✅ BARU EQUIP TOOL BARU
+		-- Equip new tool
 		local toolClone = toolTemplate:Clone()
 		toolClone.Parent = player.Character
 	end
@@ -224,36 +209,16 @@ equipToolEvent.OnServerEvent:Connect(function(player, toolId)
 end)
 
 
--- ✅ FIXED: Unequip Tool (trigger Unequipped event)
+-- ✅ SIMPLE: Unequip Tool (just unequip, no destroy)
 unequipToolEvent.OnServerEvent:Connect(function(player)
 	if not player or not player.Parent then return end
 
-	-- ✅ Properly unequip tool BEFORE destroying
 	if player.Character then
 		local humanoid = player.Character:FindFirstChild("Humanoid")
-
-		-- Loop through character untuk find tool yang equipped
-		for _, tool in ipairs(player.Character:GetChildren()) do
-			if tool:IsA("Tool") then
-				-- ✅ IMPORTANT: Unequip tool ke backpack dulu (trigger Unequipped event)
-				tool.Parent = player:FindFirstChild("Backpack")
-
-				-- Wait sebentar biar event Unequipped sempat execute
-				task.wait(0.1)
-
-				-- Baru destroy setelah event triggered
-				tool:Destroy()
-			end
-		end
-
-		-- Double check: hapus juga dari backpack
-		local backpack = player:FindFirstChild("Backpack")
-		if backpack then
-			for _, tool in ipairs(backpack:GetChildren()) do
-				if tool:IsA("Tool") then
-					tool:Destroy()
-				end
-			end
+		if humanoid then
+			-- Simply unequip - moves tool from hand to backpack
+			-- Since hotbar is hidden, player won't see it
+			humanoid:UnequipTools()
 		end
 	end
 
