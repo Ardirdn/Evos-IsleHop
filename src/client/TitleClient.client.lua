@@ -1,10 +1,13 @@
 --[[
-    TITLE CLIENT (Refactored)
+    TITLE CLIENT (Clean Minimal Design)
     Place in StarterPlayerScripts/TitleClient
     
-    - Receives title updates from server
-    - Displays titles above player heads
-    - Integrates with Data Handler
+    Features:
+    - Only main frame has background
+    - Inner elements are transparent
+    - Accent bar on LEFT side
+    - Name: left-aligned, Title: right-aligned
+    - Summit/Money: left-aligned
 ]]
 
 local Players = game:GetService("Players")
@@ -13,6 +16,7 @@ local RunService = game:GetService("RunService")
 local LocalizationService = game:GetService("LocalizationService")
 
 local player = Players.LocalPlayer
+local camera = workspace.CurrentCamera
 
 local TitleConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("TitleConfig"))
 
@@ -21,190 +25,195 @@ local updateTitleEvent = remoteFolder:WaitForChild("UpdateTitle")
 local updateOtherPlayerTitleEvent = remoteFolder:WaitForChild("UpdateOtherPlayerTitle")
 local getTitleFunc = remoteFolder:WaitForChild("GetTitle")
 
+-- Cache
 local playerTitles = {}
 local playerCountries = {}
+local billboardCache = {}
 
--- Colors
-local COLORS = {
-	Background = Color3.fromRGB(0, 0, 0),
-	BackgroundTransparency = 0.3,
-	TextStroke = 0.8,
+-- Config
+local CONFIG = {
+	MAX_DISTANCE = 50,
+	FADE_START = 40,
 }
 
--- Create Title Billboard
-local function createTitleBillboard(character)
-	local head = character:WaitForChild("Head", 5)
-	if not head then return end
+-- Design
+local DESIGN = {
+	BackgroundColor = Color3.fromRGB(18, 18, 22),
+	BackgroundTransparency = 0.15,
+	TextColor = Color3.fromRGB(255, 255, 255),
+	SubTextColor = Color3.fromRGB(160, 160, 165),
+	MoneyColor = Color3.fromRGB(67, 181, 129),
+	SummitColor = Color3.fromRGB(255, 193, 7),
+	DefaultAccent = Color3.fromRGB(80, 80, 90),
+}
 
-	-- Remove existing
-	local existing = head:FindFirstChild("TitleBillboard")
+-- Create billboard
+local function createUnifiedBillboard(character, targetPlayer)
+	local head = character:WaitForChild("Head", 5)
+	if not head then return nil end
+
+	local existing = head:FindFirstChild("PlayerInfoBillboard")
 	if existing then existing:Destroy() end
 
+	-- Billboard
 	local billboard = Instance.new("BillboardGui")
-	billboard.Name = "TitleBillboard"
-	billboard.Size = UDim2.new(0, 220, 0, 120)
-	billboard.StudsOffset = Vector3.new(0, 3.5, 0)
+	billboard.Name = "PlayerInfoBillboard"
+	billboard.Size = UDim2.new(0, 220, 0, 55)
+	billboard.StudsOffset = Vector3.new(0, 2.8, 0)
 	billboard.AlwaysOnTop = true
+	billboard.MaxDistance = CONFIG.MAX_DISTANCE
+	billboard.LightInfluence = 0
 	billboard.Parent = head
 
-	-- Container
-	local container = Instance.new("Frame")
-	container.Name = "Container"
-	container.Size = UDim2.new(1, 0, 1, 0)
-	container.BackgroundTransparency = 1
-	container.Parent = billboard
+	-- Main Frame (only this has background)
+	local mainFrame = Instance.new("Frame")
+	mainFrame.Name = "MainFrame"
+	mainFrame.Size = UDim2.new(1, 0, 1, 0)
+	mainFrame.BackgroundColor3 = DESIGN.BackgroundColor
+	mainFrame.BackgroundTransparency = DESIGN.BackgroundTransparency
+	mainFrame.BorderSizePixel = 0
+	mainFrame.Parent = billboard
 
-	-- Title Frame
-	local titleFrame = Instance.new("Frame")
-	titleFrame.Name = "TitleFrame"
-	titleFrame.Size = UDim2.new(0, 0, 0, 22)
-	titleFrame.Position = UDim2.new(0.5, 0, 0, 0)
-	titleFrame.AnchorPoint = Vector2.new(0.5, 0)
-	titleFrame.BackgroundColor3 = COLORS.Background
-	titleFrame.BackgroundTransparency = COLORS.BackgroundTransparency
-	titleFrame.BorderSizePixel = 0
-	titleFrame.Visible = false
-	titleFrame.Parent = container
+	local mainCorner = Instance.new("UICorner")
+	mainCorner.CornerRadius = UDim.new(0, 8)
+	mainCorner.Parent = mainFrame
 
-	local titleCorner = Instance.new("UICorner")
-	titleCorner.CornerRadius = UDim.new(0, 6)
-	titleCorner.Parent = titleFrame
+	-- Accent Bar (LEFT side)
+	local accentBar = Instance.new("Frame")
+	accentBar.Name = "AccentBar"
+	accentBar.Size = UDim2.new(0, 4, 1, -10)
+	accentBar.Position = UDim2.new(0, 5, 0, 5)
+	accentBar.BackgroundColor3 = DESIGN.DefaultAccent
+	accentBar.BorderSizePixel = 0
+	accentBar.Parent = mainFrame
 
-	local titleLabel = Instance.new("TextLabel")
-	titleLabel.Name = "TitleLabel"
-	titleLabel.Size = UDim2.new(1, -10, 1, 0)
-	titleLabel.Position = UDim2.new(0, 5, 0, 0)
-	titleLabel.BackgroundTransparency = 1
-	titleLabel.Font = Enum.Font.GothamBold
-	titleLabel.TextSize = 13
-	titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-	titleLabel.TextStrokeTransparency = COLORS.TextStroke
-	titleLabel.Text = ""
-	titleLabel.Parent = titleFrame
+	local accentCorner = Instance.new("UICorner")
+	accentCorner.CornerRadius = UDim.new(0, 2)
+	accentCorner.Parent = accentBar
 
-	-- Name Frame
-	local nameFrame = Instance.new("Frame")
-	nameFrame.Name = "NameFrame"
-	nameFrame.Size = UDim2.new(0, 0, 0, 26)
-	nameFrame.Position = UDim2.new(0.5, 0, 0, 26)
-	nameFrame.AnchorPoint = Vector2.new(0.5, 0)
-	nameFrame.BackgroundColor3 = COLORS.Background
-	nameFrame.BackgroundTransparency = COLORS.BackgroundTransparency
-	nameFrame.BorderSizePixel = 0
-	nameFrame.Parent = container
+	-- Content area (after accent bar)
+	local content = Instance.new("Frame")
+	content.Name = "Content"
+	content.Size = UDim2.new(1, -22, 1, -10)
+	content.Position = UDim2.new(0, 14, 0, 5)
+	content.BackgroundTransparency = 1
+	content.Parent = mainFrame
 
-	local nameCorner = Instance.new("UICorner")
-	nameCorner.CornerRadius = UDim.new(0, 6)
-	nameCorner.Parent = nameFrame
+	-- ========== ROW 1: Name (left) + Title (right) ==========
+	local row1 = Instance.new("Frame")
+	row1.Name = "Row1"
+	row1.Size = UDim2.new(1, 0, 0, 20)
+	row1.Position = UDim2.new(0, 0, 0, 0)
+	row1.BackgroundTransparency = 1
+	row1.Parent = content
 
+	-- Name Label (left-aligned, auto-scale)
 	local nameLabel = Instance.new("TextLabel")
 	nameLabel.Name = "NameLabel"
-	nameLabel.Size = UDim2.new(1, -10, 1, 0)
-	nameLabel.Position = UDim2.new(0, 5, 0, 0)
+	nameLabel.Size = UDim2.new(0.55, 0, 1, 0)
+	nameLabel.Position = UDim2.new(0, 0, 0, 0)
 	nameLabel.BackgroundTransparency = 1
 	nameLabel.Font = Enum.Font.GothamBold
-	nameLabel.TextSize = 16
-	nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-	nameLabel.TextStrokeTransparency = COLORS.TextStroke
+	nameLabel.TextScaled = true
+	nameLabel.TextWrapped = false
+	nameLabel.TextColor3 = DESIGN.TextColor
+	nameLabel.TextXAlignment = Enum.TextXAlignment.Left
 	nameLabel.Text = character.Name
-	nameLabel.Parent = nameFrame
+	nameLabel.Parent = row1
 
-	-- Info Frame (Money + Flag)
-	local infoFrame = Instance.new("Frame")
-	infoFrame.Name = "InfoFrame"
-	infoFrame.Size = UDim2.new(0, 0, 0, 22)
-	infoFrame.Position = UDim2.new(0.5, 0, 0, 56)
-	infoFrame.AnchorPoint = Vector2.new(0.5, 0)
-	infoFrame.BackgroundColor3 = COLORS.Background
-	infoFrame.BackgroundTransparency = COLORS.BackgroundTransparency
-	infoFrame.BorderSizePixel = 0
-	infoFrame.Parent = container
+	-- Text size constraint for name (min/max)
+	local nameSizeConstraint = Instance.new("UITextSizeConstraint")
+	nameSizeConstraint.MinTextSize = 10
+	nameSizeConstraint.MaxTextSize = 14
+	nameSizeConstraint.Parent = nameLabel
 
-	local infoCorner = Instance.new("UICorner")
-	infoCorner.CornerRadius = UDim.new(0, 6)
-	infoCorner.Parent = infoFrame
+	-- Title Label (right-aligned, auto-scale)
+	local titleLabel = Instance.new("TextLabel")
+	titleLabel.Name = "TitleLabel"
+	titleLabel.Size = UDim2.new(0.45, 0, 1, 0)
+	titleLabel.Position = UDim2.new(0.55, 0, 0, 0)
+	titleLabel.BackgroundTransparency = 1
+	titleLabel.Font = Enum.Font.GothamBold
+	titleLabel.TextScaled = true
+	titleLabel.TextWrapped = false
+	titleLabel.TextColor3 = DESIGN.SubTextColor
+	titleLabel.TextXAlignment = Enum.TextXAlignment.Right
+	titleLabel.Text = "—"
+	titleLabel.Parent = row1
 
-	local infoLayout = Instance.new("UIListLayout")
-	infoLayout.FillDirection = Enum.FillDirection.Horizontal
-	infoLayout.Padding = UDim.new(0, 6)
-	infoLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	infoLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-	infoLayout.Parent = infoFrame
+	-- Text size constraint for title (min/max)
+	local titleSizeConstraint = Instance.new("UITextSizeConstraint")
+	titleSizeConstraint.MinTextSize = 8
+	titleSizeConstraint.MaxTextSize = 12
+	titleSizeConstraint.Parent = titleLabel
 
-	local infoPadding = Instance.new("UIPadding")
-	infoPadding.PaddingLeft = UDim.new(0, 8)
-	infoPadding.PaddingRight = UDim.new(0, 8)
-	infoPadding.PaddingTop = UDim.new(0, 2)
-	infoPadding.PaddingBottom = UDim.new(0, 2)
-	infoPadding.Parent = infoFrame
 
-	-- Flag
-	local flagLabel = Instance.new("TextLabel")
-	flagLabel.Name = "FlagLabel"
-	flagLabel.Size = UDim2.new(0, 20, 0, 18)
-	flagLabel.BackgroundTransparency = 1
-	flagLabel.Font = Enum.Font.GothamBold
-	flagLabel.TextSize = 16
-	flagLabel.Text = "🌍"
-	flagLabel.LayoutOrder = 1
-	flagLabel.Parent = infoFrame
+	-- ========== ROW 2: Summit + Money + Flag ==========
+	local row2 = Instance.new("Frame")
+	row2.Name = "Row2"
+	row2.Size = UDim2.new(1, 0, 0, 18)
+	row2.Position = UDim2.new(0, 0, 0, 24)
+	row2.BackgroundTransparency = 1
+	row2.Parent = content
 
-	-- Money
+	-- Summit Label (left-aligned)
+	local summitsLabel = Instance.new("TextLabel")
+	summitsLabel.Name = "SummitsLabel"
+	summitsLabel.Size = UDim2.new(0.28, 0, 1, 0)
+	summitsLabel.Position = UDim2.new(0, 0, 0, 0)
+	summitsLabel.BackgroundTransparency = 1
+	summitsLabel.Font = Enum.Font.GothamBold
+	summitsLabel.TextSize = 11
+	summitsLabel.TextColor3 = DESIGN.SummitColor
+	summitsLabel.TextXAlignment = Enum.TextXAlignment.Left
+	summitsLabel.Text = "⛰️ 0"
+	summitsLabel.Parent = row2
+
+	-- Money Label (left-aligned)
 	local moneyLabel = Instance.new("TextLabel")
 	moneyLabel.Name = "MoneyLabel"
-	moneyLabel.Size = UDim2.new(0, 60, 0, 18)
+	moneyLabel.Size = UDim2.new(0.42, 0, 1, 0)
+	moneyLabel.Position = UDim2.new(0.28, 0, 0, 0)
 	moneyLabel.BackgroundTransparency = 1
 	moneyLabel.Font = Enum.Font.GothamBold
-	moneyLabel.TextSize = 13
-	moneyLabel.TextColor3 = Color3.fromRGB(67, 181, 129)
-	moneyLabel.TextStrokeTransparency = COLORS.TextStroke
+	moneyLabel.TextSize = 11
+	moneyLabel.TextColor3 = DESIGN.MoneyColor
 	moneyLabel.TextXAlignment = Enum.TextXAlignment.Left
-	moneyLabel.Text = "$0"
-	moneyLabel.LayoutOrder = 2
-	moneyLabel.Parent = infoFrame
+	moneyLabel.Text = "💵 $0"
+	moneyLabel.Parent = row2
 
-	-- Auto-resize frames
-	local function updateFrameSizes()
-		if titleFrame.Visible then
-			local titleWidth = game:GetService("TextService"):GetTextSize(
-				titleLabel.Text, titleLabel.TextSize, titleLabel.Font, Vector2.new(1000, 22)
-			).X + 20
-			titleFrame.Size = UDim2.new(0, titleWidth, 0, 22)
-		end
+	-- Flag Label (right)
+	local flagLabel = Instance.new("TextLabel")
+	flagLabel.Name = "FlagLabel"
+	flagLabel.Size = UDim2.new(0.3, 0, 1, 0)
+	flagLabel.Position = UDim2.new(0.7, 0, 0, 0)
+	flagLabel.BackgroundTransparency = 1
+	flagLabel.Font = Enum.Font.SourceSans
+	flagLabel.TextSize = 14
+	flagLabel.TextXAlignment = Enum.TextXAlignment.Right
+	flagLabel.Text = "🌍"
+	flagLabel.Parent = row2
 
-		local nameWidth = game:GetService("TextService"):GetTextSize(
-			nameLabel.Text, nameLabel.TextSize, nameLabel.Font, Vector2.new(1000, 26)
-		).X + 20
-		nameFrame.Size = UDim2.new(0, nameWidth, 0, 26)
-
-		task.wait(0.05)
-		local infoWidth = infoLayout.AbsoluteContentSize.X + 16
-		infoFrame.Size = UDim2.new(0, infoWidth, 0, 22)
-	end
-
-	task.spawn(updateFrameSizes)
-
+	billboardCache[targetPlayer] = billboard
 	return billboard
 end
 
--- Update title display
-local function updateTitleDisplay(character, titleName)
-	local head = character:FindFirstChild("Head")
-	if not head then return end
-
-	local billboard = head:FindFirstChild("TitleBillboard")
+-- Update title with accent color
+local function updateTitleDisplay(targetPlayer, titleName)
+	local billboard = billboardCache[targetPlayer]
 	if not billboard then return end
 
-	local container = billboard:FindFirstChild("Container")
-	if not container then return end
+	local mainFrame = billboard:FindFirstChild("MainFrame")
+	if not mainFrame then return end
 
-	local titleFrame = container:FindFirstChild("TitleFrame")
-	local titleLabel = titleFrame:FindFirstChild("TitleLabel")
+	local accentBar = mainFrame:FindFirstChild("AccentBar")
+	local content = mainFrame:FindFirstChild("Content")
+	local row1 = content:FindFirstChild("Row1")
+	local titleLabel = row1:FindFirstChild("TitleLabel")
 
-	-- ✅ NEW: Get title data from new structure
 	local titleData = nil
+	local titleColor = DESIGN.DefaultAccent
 
-	-- Check Summit Titles first
 	for _, data in ipairs(TitleConfig.SummitTitles) do
 		if data.Name == titleName then
 			titleData = data
@@ -212,7 +221,6 @@ local function updateTitleDisplay(character, titleName)
 		end
 	end
 
-	-- If not found, check Special Titles
 	if not titleData and TitleConfig.SpecialTitles[titleName] then
 		local specialData = TitleConfig.SpecialTitles[titleName]
 		titleData = {
@@ -224,65 +232,85 @@ local function updateTitleDisplay(character, titleName)
 	end
 
 	if titleData then
+		titleColor = titleData.Color
+		if accentBar then
+			accentBar.BackgroundColor3 = titleColor
+		end
+
 		if titleName == "Pengunjung" then
-			titleFrame.Visible = false
+			titleLabel.Text = "👤 Visitor"
+			titleLabel.TextColor3 = DESIGN.SubTextColor
 		else
 			titleLabel.Text = titleData.Icon .. " " .. titleData.DisplayName
-			titleLabel.TextColor3 = titleData.Color
-			titleFrame.Visible = true
-
-			task.spawn(function()
-				task.wait(0.05)
-				local titleWidth = game:GetService("TextService"):GetTextSize(
-					titleLabel.Text, titleLabel.TextSize, titleLabel.Font, Vector2.new(1000, 22)
-				).X + 20
-				titleFrame.Size = UDim2.new(0, titleWidth, 0, 22)
-			end)
+			titleLabel.TextColor3 = titleColor
 		end
 	else
-		-- Fallback if title not found
-		warn(string.format("[TITLE CLIENT] Unknown title: %s", titleName))
-		titleFrame.Visible = false
+		titleLabel.Text = "—"
+		titleLabel.TextColor3 = DESIGN.SubTextColor
+		if accentBar then
+			accentBar.BackgroundColor3 = DESIGN.DefaultAccent
+		end
 	end
-
-	print(string.format("✅ [TITLE CLIENT] Updated title display for %s: %s", character.Name, titleName))
 end
 
-
--- Update money display
-local function updateMoneyDisplay(character, money)
-	local head = character:FindFirstChild("Head")
-	if not head then return end
-
-	local billboard = head:FindFirstChild("TitleBillboard")
+-- Update summit
+local function updateSummitDisplay(targetPlayer, summits)
+	local billboard = billboardCache[targetPlayer]
 	if not billboard then return end
 
-	local container = billboard:FindFirstChild("Container")
-	if not container then return end
+	local mainFrame = billboard:FindFirstChild("MainFrame")
+	local content = mainFrame:FindFirstChild("Content")
+	local row2 = content:FindFirstChild("Row2")
+	local summitsLabel = row2:FindFirstChild("SummitsLabel")
 
-	local infoFrame = container:FindFirstChild("InfoFrame")
-	local moneyLabel = infoFrame:FindFirstChild("MoneyLabel")
-
-	local formattedMoney = "$" .. tostring(money)
-	if money >= 1000000 then
-		formattedMoney = "$" .. string.format("%.1fm", money / 1000000)
-	elseif money >= 1000 then
-		formattedMoney = "$" .. string.format("%.1fk", money / 1000)
-	end
-
-	moneyLabel.Text = formattedMoney
-
-	task.spawn(function()
-		task.wait(0.05)
-		local infoLayout = infoFrame:FindFirstChildOfClass("UIListLayout")
-		if infoLayout then
-			local infoWidth = infoLayout.AbsoluteContentSize.X + 16
-			infoFrame.Size = UDim2.new(0, infoWidth, 0, 22)
+	if summitsLabel then
+		local formatted = tostring(summits)
+		if summits >= 1000000 then
+			formatted = string.format("%.1fM", summits / 1000000)
+		elseif summits >= 1000 then
+			formatted = string.format("%.1fK", summits / 1000)
 		end
-	end)
+		summitsLabel.Text = "⛰️ " .. formatted
+	end
 end
 
--- Get player country
+-- Update money
+local function updateMoneyDisplay(targetPlayer, money)
+	local billboard = billboardCache[targetPlayer]
+	if not billboard then return end
+
+	local mainFrame = billboard:FindFirstChild("MainFrame")
+	local content = mainFrame:FindFirstChild("Content")
+	local row2 = content:FindFirstChild("Row2")
+	local moneyLabel = row2:FindFirstChild("MoneyLabel")
+
+	if moneyLabel then
+		local formatted = tostring(money)
+		if money >= 1000000 then
+			formatted = string.format("%.1fM", money / 1000000)
+		elseif money >= 1000 then
+			formatted = string.format("%.1fK", money / 1000)
+		end
+		moneyLabel.Text = "💵 $" .. formatted
+	end
+end
+
+-- Update flag
+local function updateFlagDisplay(targetPlayer, flag)
+	local billboard = billboardCache[targetPlayer]
+	if not billboard then return end
+
+	local mainFrame = billboard:FindFirstChild("MainFrame")
+	local content = mainFrame:FindFirstChild("Content")
+	local row2 = content:FindFirstChild("Row2")
+	local flagLabel = row2:FindFirstChild("FlagLabel")
+
+	if flagLabel then
+		flagLabel.Text = flag
+	end
+end
+
+-- Get country
 local function getPlayerCountry(targetPlayer)
 	if playerCountries[targetPlayer] then
 		return playerCountries[targetPlayer]
@@ -298,24 +326,13 @@ local function getPlayerCountry(targetPlayer)
 				US = "🇺🇸", ID = "🇮🇩", GB = "🇬🇧", JP = "🇯🇵",
 				CN = "🇨🇳", KR = "🇰🇷", FR = "🇫🇷", DE = "🇩🇪",
 				BR = "🇧🇷", IN = "🇮🇳", AU = "🇦🇺", CA = "🇨🇦",
+				MY = "🇲🇾", SG = "🇸🇬", TH = "🇹🇭", VN = "🇻🇳",
+				PH = "🇵🇭", MX = "🇲🇽", ES = "🇪🇸", IT = "🇮🇹",
+				RU = "🇷🇺", NL = "🇳🇱", PL = "🇵🇱", SE = "🇸🇪",
 			}
 			local flag = flagEmojis[result] or "🌍"
 			playerCountries[targetPlayer] = flag
-
-			if targetPlayer.Character then
-				local head = targetPlayer.Character:FindFirstChild("Head")
-				if head then
-					local billboard = head:FindFirstChild("TitleBillboard")
-					if billboard then
-						local container = billboard:FindFirstChild("Container")
-						if container then
-							local infoFrame = container:FindFirstChild("InfoFrame")
-							local flagLabel = infoFrame:FindFirstChild("FlagLabel")
-							flagLabel.Text = flag
-						end
-					end
-				end
-			end
+			updateFlagDisplay(targetPlayer, flag)
 		else
 			playerCountries[targetPlayer] = "🌍"
 		end
@@ -324,41 +341,51 @@ local function getPlayerCountry(targetPlayer)
 	return "🌍"
 end
 
--- Setup player title
-local function setupPlayerTitle(targetPlayer)
+-- Setup player
+local function setupPlayerBillboard(targetPlayer)
 	local function onCharacterAdded(character)
-		local billboard = createTitleBillboard(character)
+		local billboard = createUnifiedBillboard(character, targetPlayer)
+		if not billboard then return end
 
-		-- Set flag
 		local flag = getPlayerCountry(targetPlayer)
-		local container = billboard:FindFirstChild("Container")
-		if container then
-			local infoFrame = container:FindFirstChild("InfoFrame")
-			local flagLabel = infoFrame:FindFirstChild("FlagLabel")
-			flagLabel.Text = flag
+		updateFlagDisplay(targetPlayer, flag)
+
+		local leaderstats = targetPlayer:WaitForChild("leaderstats", 5)
+		if leaderstats then
+			local summitValue = leaderstats:FindFirstChild("Summit")
+			if summitValue then
+				updateSummitDisplay(targetPlayer, summitValue.Value)
+				summitValue:GetPropertyChangedSignal("Value"):Connect(function()
+					updateSummitDisplay(targetPlayer, summitValue.Value)
+				end)
+			end
 		end
 
-		-- Update money
 		local moneyValue = targetPlayer:FindFirstChild("Money")
 		if moneyValue then
-			updateMoneyDisplay(character, moneyValue.Value)
+			updateMoneyDisplay(targetPlayer, moneyValue.Value)
 			moneyValue:GetPropertyChangedSignal("Value"):Connect(function()
-				updateMoneyDisplay(character, moneyValue.Value)
+				updateMoneyDisplay(targetPlayer, moneyValue.Value)
+			end)
+		else
+			targetPlayer.ChildAdded:Connect(function(child)
+				if child.Name == "Money" and child:IsA("IntValue") then
+					updateMoneyDisplay(targetPlayer, child.Value)
+					child:GetPropertyChangedSignal("Value"):Connect(function()
+						updateMoneyDisplay(targetPlayer, child.Value)
+					end)
+				end
 			end)
 		end
 
-		-- Request title from server
 		task.spawn(function()
-			task.wait(2)
-
+			task.wait(1.5)
 			local success, title = pcall(function()
 				return getTitleFunc:InvokeServer(targetPlayer)
 			end)
-
 			if success and title then
 				playerTitles[targetPlayer] = title
-				updateTitleDisplay(character, title)
-				print(string.format("📥 [TITLE CLIENT] Got title for %s: %s", targetPlayer.Name, title))
+				updateTitleDisplay(targetPlayer, title)
 			end
 		end)
 	end
@@ -369,33 +396,53 @@ local function setupPlayerTitle(targetPlayer)
 	end
 end
 
--- Listen for title updates (self)
+local function onPlayerRemoving(targetPlayer)
+	billboardCache[targetPlayer] = nil
+	playerTitles[targetPlayer] = nil
+	playerCountries[targetPlayer] = nil
+end
+
 updateTitleEvent.OnClientEvent:Connect(function(titleName)
-	print(string.format("📥 [TITLE CLIENT] Received title update for SELF: %s", titleName or "None"))
 	playerTitles[player] = titleName
-	if player.Character and titleName then -- ✅ Only update if titleName exists
-		updateTitleDisplay(player.Character, titleName)
+	if titleName then
+		updateTitleDisplay(player, titleName)
 	end
 end)
 
-
--- Listen for other players' title updates
 updateOtherPlayerTitleEvent.OnClientEvent:Connect(function(targetPlayer, titleName)
-	print(string.format("📥 [TITLE CLIENT] Received title update for %s: %s", targetPlayer.Name, titleName))
-
 	if targetPlayer and targetPlayer ~= player then
 		playerTitles[targetPlayer] = titleName
-		if targetPlayer.Character then
-			updateTitleDisplay(targetPlayer.Character, titleName)
+		updateTitleDisplay(targetPlayer, titleName)
+	end
+end)
+
+RunService.RenderStepped:Connect(function()
+	local cameraPos = camera.CFrame.Position
+	for targetPlayer, billboard in pairs(billboardCache) do
+		if billboard and billboard.Parent then
+			local head = billboard.Parent
+			if head and head:IsA("BasePart") then
+				local distance = (head.Position - cameraPos).Magnitude
+				local mainFrame = billboard:FindFirstChild("MainFrame")
+				if mainFrame then
+					if distance >= CONFIG.FADE_START then
+						local fadeRange = CONFIG.MAX_DISTANCE - CONFIG.FADE_START
+						local fadeProgress = math.clamp((distance - CONFIG.FADE_START) / fadeRange, 0, 1)
+						mainFrame.BackgroundTransparency = DESIGN.BackgroundTransparency + (fadeProgress * (1 - DESIGN.BackgroundTransparency))
+					else
+						mainFrame.BackgroundTransparency = DESIGN.BackgroundTransparency
+					end
+				end
+			end
 		end
 	end
 end)
 
--- Setup for all players
 for _, targetPlayer in ipairs(Players:GetPlayers()) do
-	setupPlayerTitle(targetPlayer)
+	setupPlayerBillboard(targetPlayer)
 end
 
-Players.PlayerAdded:Connect(setupPlayerTitle)
+Players.PlayerAdded:Connect(setupPlayerBillboard)
+Players.PlayerRemoving:Connect(onPlayerRemoving)
 
-print("✅ [TITLE CLIENT] System loaded")
+print("✅ [TITLE CLIENT] Minimal billboard loaded")
