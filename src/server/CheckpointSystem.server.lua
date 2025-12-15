@@ -287,9 +287,10 @@ local function updatePlaytime(player)
 
 	DataHandler:Set(player, "TotalPlaytime", data.TotalPlaytime)
 
-	-- Update leaderstats
-	if player:FindFirstChild("leaderstats") then
-		local playtimeValue = player.leaderstats:FindFirstChild("Playtime")
+	-- Update PlayerStats
+	local playerStats = player:FindFirstChild("PlayerStats")
+	if playerStats then
+		local playtimeValue = playerStats:FindFirstChild("Playtime")
 		if playtimeValue then
 			playtimeValue.Value = formatPlaytime(data.TotalPlaytime)
 		end
@@ -330,27 +331,29 @@ Players.PlayerAdded:Connect(function(player)
 	print("[PLAYER] Player joined:", player.Name, "UserID:", player.UserId)
 	local data = loadPlayerData(player)
 
-	-- Setup leaderstats
-	local leaderstats = Instance.new("Folder")
-	leaderstats.Name = "leaderstats"
-	leaderstats.Parent = player
+	-- Setup PlayerStats (renamed from leaderstats to hide from Tab playerlist)
+	-- Using "PlayerStats" instead of "leaderstats" so stats don't appear in Tab menu
+	-- This keeps the data available for billboards and leaderboards
+	local playerStats = Instance.new("Folder")
+	playerStats.Name = "PlayerStats"
+	playerStats.Parent = player
 
 	local summitsValue = Instance.new("IntValue")
 	summitsValue.Name = "Summit"
 	summitsValue.Value = data.TotalSummits
-	summitsValue.Parent = leaderstats
+	summitsValue.Parent = playerStats
 
 	local bestTimeValue = Instance.new("StringValue")
 	bestTimeValue.Name = "Best Time"
 	bestTimeValue.Value = data.BestSpeedrun and formatTime(data.BestSpeedrun / 1000) or "N/A"
-	bestTimeValue.Parent = leaderstats
+	bestTimeValue.Parent = playerStats
 
 	local playtimeValue = Instance.new("StringValue")
 	playtimeValue.Name = "Playtime"
 	playtimeValue.Value = formatPlaytime(data.TotalPlaytime)
-	playtimeValue.Parent = leaderstats
+	playtimeValue.Parent = playerStats
 
-	print("[PLAYER] Leaderstats created for:", player.Name)
+	print("[PLAYER] PlayerStats created for:", player.Name)
 
 	playerCooldowns[player.UserId] = {}
 
@@ -533,7 +536,10 @@ for checkpointNum, checkpoint in pairs(checkpoints) do
 				local speedrunMs = math.floor(speedrunTime * 1000)
 				if not data.BestSpeedrun or speedrunMs < data.BestSpeedrun then
 					data.BestSpeedrun = speedrunMs
-					player.leaderstats["Best Time"].Value = formatTime(speedrunTime)
+					local pStats = player:FindFirstChild("PlayerStats")
+					if pStats and pStats:FindFirstChild("Best Time") then
+						pStats["Best Time"].Value = formatTime(speedrunTime)
+					end
 					NotificationServer:Send(player, {
 						Message = "NEW RECORD! Waktu terbaik: " .. formatTime(speedrunTime),
 						Type = "success",
@@ -612,7 +618,10 @@ for checkpointNum, checkpoint in pairs(checkpoints) do
 			local finalSummitValue = baseSummitValue * totalMultiplier
 
 			data.TotalSummits = data.TotalSummits + finalSummitValue
-			player.leaderstats.Summit.Value = data.TotalSummits
+			local pStats = player:FindFirstChild("PlayerStats")
+			if pStats and pStats:FindFirstChild("Summit") then
+				pStats.Summit.Value = data.TotalSummits
+			end
 
 			DataHandler:Set(player, "TotalSummits", data.TotalSummits)
 

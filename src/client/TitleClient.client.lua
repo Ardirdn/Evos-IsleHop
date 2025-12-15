@@ -350,9 +350,9 @@ local function setupPlayerBillboard(targetPlayer)
 		local flag = getPlayerCountry(targetPlayer)
 		updateFlagDisplay(targetPlayer, flag)
 
-		local leaderstats = targetPlayer:WaitForChild("leaderstats", 5)
-		if leaderstats then
-			local summitValue = leaderstats:FindFirstChild("Summit")
+		local playerStats = targetPlayer:WaitForChild("PlayerStats", 5)
+		if playerStats then
+			local summitValue = playerStats:FindFirstChild("Summit")
 			if summitValue then
 				updateSummitDisplay(targetPlayer, summitValue.Value)
 				summitValue:GetPropertyChangedSignal("Value"):Connect(function()

@@ -218,6 +218,9 @@ function TitleServer:EquipTitle(player, titleName)
 	-- ✅ ADDED: Broadcast for chat titles
 	BroadcastTitle:FireAllClients(player.UserId, titleName)
 
+	-- ✅ Update player's team assignment
+	self:UpdatePlayerTeam(player, titleName)
+
 	-- Notification
 	local titleData = self:GetTitleData(titleName)
 	NotificationService:Send(player, {
@@ -257,6 +260,9 @@ function TitleServer:UnequipTitle(player)
 
 	-- ✅ ADDED: Broadcast for chat titles
 	BroadcastTitle:FireAllClients(player.UserId, nil)
+
+	-- ✅ Update player's team assignment to default
+	self:UpdatePlayerTeam(player, nil)
 
 	-- Notification
 	NotificationService:Send(player, {
@@ -357,6 +363,87 @@ function TitleServer:RemoveTool(player, toolName)
 	end
 
 	print(string.format("🗑️ [PRIVILEGES] Removed %s from %s", toolName, player.Name))
+end
+
+-- ==================== ✅ TEAM ASSIGNMENT FOR PLAYERLIST ====================
+
+-- Team configuration for playerlist categorization
+local TEAM_CONFIG = {
+	{Name = "Admin", Titles = {"Admin"}, Priority = 100},
+	{Name = "EVOS", Titles = {"EVOS TEAM"}, Priority = 90},
+	{Name = "Trimatra", Titles = {"Trimatra"}, Priority = 85},
+	{Name = "VVIP", Titles = {"VVIP"}, Priority = 80},
+	{Name = "VIP", Titles = {"VIP"}, Priority = 70},
+	{Name = "Donatur", Titles = {"Donatur"}, Priority = 60},
+	{Name = "Online", Titles = {"Pengunjung", "Pendaki Pemula", "Pendaki Terampil", "Pendaki Ahli", "Master Pendaki", "Legenda Gunung"}, Priority = 0},
+}
+
+-- Use dark/black color for all teams (blends with panel, not noticeable)
+local NEUTRAL_COLOR = BrickColor.new("Really black")
+local teamInstances = {}
+
+local function getTeamForTitle(titleName)
+	if not titleName or titleName == "" then
+		return "Online", 0
+	end
+	
+	for _, teamConfig in ipairs(TEAM_CONFIG) do
+		for _, title in ipairs(teamConfig.Titles) do
+			if title == titleName then
+				return teamConfig.Name, teamConfig.Priority
+			end
+		end
+	end
+	
+	return "Online", 0
+end
+
+local function getOrCreateTeam(teamName, priority)
+	local Teams = game:GetService("Teams")
+	
+	if teamInstances[teamName] then
+		return teamInstances[teamName]
+	end
+	
+	local existingTeam = Teams:FindFirstChild(teamName)
+	if existingTeam then
+		teamInstances[teamName] = existingTeam
+		return existingTeam
+	end
+	
+	local team = Instance.new("Team")
+	team.Name = teamName
+	team.TeamColor = NEUTRAL_COLOR
+	team.AutoAssignable = false
+	team.Parent = Teams
+	team:SetAttribute("Priority", priority)
+	
+	teamInstances[teamName] = team
+	return team
+end
+
+local function cleanupEmptyTeams()
+	for teamName, team in pairs(teamInstances) do
+		if team and team.Parent then
+			local players = team:GetPlayers()
+			if #players == 0 then
+				team:Destroy()
+				teamInstances[teamName] = nil
+			end
+		end
+	end
+end
+
+function TitleServer:UpdatePlayerTeam(player, titleName)
+	local teamName, priority = getTeamForTitle(titleName)
+	local team = getOrCreateTeam(teamName, priority)
+	
+	player.Team = team
+	player.Neutral = false
+	
+	print(string.format("👥 [TEAM] %s assigned to team '%s'", player.Name, teamName))
+	
+	task.defer(cleanupEmptyTeams)
 end
 
 -- ==================== EXISTING FUNCTIONS (KEPT AS-IS) ====================
@@ -624,6 +711,9 @@ function TitleServer:InitializePlayer(player)
 		self:ApplyPrivileges(player, data.EquippedTitle)
 	end
 
+	-- ✅ Assign player to team based on equipped title
+	self:UpdatePlayerTeam(player, data.EquippedTitle or title)
+
 	task.wait(2)
 	self:BroadcastTitle(player, title)
 
@@ -638,8 +728,8 @@ function TitleServer:AdminSetSummits(player, newSummitCount)
 
 	DataHandler:Set(player, "TotalSummits", newSummitCount)
 
-	if player:FindFirstChild("leaderstats") then
-		local summitValue = player.leaderstats:FindFirstChild("Summit")
+	if player:FindFirstChild("PlayerStats") then
+		local summitValue = player.PlayerStats:FindFirstChild("Summit")
 		if summitValue then
 			summitValue.Value = newSummitCount
 		end

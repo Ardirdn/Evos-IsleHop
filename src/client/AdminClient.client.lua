@@ -1442,8 +1442,9 @@ local function showModifySummitPopup(targetPlayer)
 
 	-- Get current summit value
 	task.spawn(function()
-		if targetPlayer:FindFirstChild("leaderstats") then
-			local summitValue = targetPlayer.leaderstats:FindFirstChild("Summit")
+		local playerStats = targetPlayer:FindFirstChild("PlayerStats")
+		if playerStats then
+			local summitValue = playerStats:FindFirstChild("Summit")
 			if summitValue then
 				currentLabel.Text = "Current Summit: " .. tostring(summitValue.Value)
 			end

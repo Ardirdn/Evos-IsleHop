@@ -558,12 +558,12 @@ modifySummitDataEvent.OnServerEvent:Connect(function(admin, targetUserId, newSum
 	DataHandler:SavePlayer(targetPlayer)
 	print("[ADMIN] ✅ DataStore updated")
 
-	-- 2. Update leaderstats UI
-	if targetPlayer:FindFirstChild("leaderstats") then
-		local summitValue = targetPlayer.leaderstats:FindFirstChild("Summit")
+	-- 2. Update PlayerStats UI
+	if targetPlayer:FindFirstChild("PlayerStats") then
+		local summitValue = targetPlayer.PlayerStats:FindFirstChild("Summit")
 		if summitValue then
 			summitValue.Value = newSummitValue
-			print("[ADMIN] ✅ Leaderstats updated")
+			print("[ADMIN] ✅ PlayerStats updated")
 		end
 	end
 
@@ -790,19 +790,19 @@ deleteLeaderboardEvent.OnServerEvent:Connect(function(player, targetUserId, data
 					print("[ADMIN] ✅ Updated in-memory cache")
 				end
 
-				-- Update leaderstats
-				if targetPlayer:FindFirstChild("leaderstats") then
-					local leaderstats = targetPlayer.leaderstats
-					if dataType == "summit" or dataType == "all" and leaderstats:FindFirstChild("Summit") then
-						leaderstats.Summit.Value = 0
+				-- Update PlayerStats
+				if targetPlayer:FindFirstChild("PlayerStats") then
+					local playerStats = targetPlayer.PlayerStats
+					if dataType == "summit" or dataType == "all" and playerStats:FindFirstChild("Summit") then
+						playerStats.Summit.Value = 0
 					end
-					if dataType == "speedrun" or dataType == "all" and leaderstats:FindFirstChild("Best Speedrun") then
-						leaderstats["Best Speedrun"].Value = 0
+					if dataType == "speedrun" or dataType == "all" and playerStats:FindFirstChild("Best Speedrun") then
+						playerStats["Best Speedrun"].Value = 0
 					end
-					if dataType == "playtime" or dataType == "all" and leaderstats:FindFirstChild("Playtime") then
-						leaderstats.Playtime.Value = 0
+					if dataType == "playtime" or dataType == "all" and playerStats:FindFirstChild("Playtime") then
+						playerStats.Playtime.Value = 0
 					end
-					print("[ADMIN] ✅ Updated leaderstats")
+					print("[ADMIN] ✅ Updated PlayerStats")
 				end
 
 				-- Update CheckpointSystem cache

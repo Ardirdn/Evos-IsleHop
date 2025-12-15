@@ -347,13 +347,13 @@ redeemCodeEvent.OnServerEvent:Connect(function(player, codeString)
 		-- ✅ Give summit value
 		DataHandler:Increment(player, "TotalSummits", rewardValue)
 
-		-- ✅ UPDATE LEADERSTATS (like CheckpointSystem does)
-		local leaderstats = player:FindFirstChild("leaderstats")
-		if leaderstats then
-			local summitValue = leaderstats:FindFirstChild("Summit")
+		-- ✅ UPDATE PLAYERSTATS (like CheckpointSystem does)
+		local playerStats = player:FindFirstChild("PlayerStats")
+		if playerStats then
+			local summitValue = playerStats:FindFirstChild("Summit")
 			if summitValue then
 				summitValue.Value = summitValue.Value + rewardValue
-				print(string.format("[REDEEM] Updated leaderstats for %s: %d", player.Name, summitValue.Value))
+				print(string.format("[REDEEM] Updated PlayerStats for %s: %d", player.Name, summitValue.Value))
 			end
 		end
 
