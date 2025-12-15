@@ -20,14 +20,34 @@ local musicRemoteFolder = ReplicatedStorage:WaitForChild("MusicRemotes")
 local toggleFavoriteMusicEvent = musicRemoteFolder:WaitForChild("ToggleFavorite")
 local getFavoritesMusicFunc = musicRemoteFolder:WaitForChild("GetFavorites")
 
--- Helper function to apply TextScaled with size constraint
+-- Helper function to apply TextScaled with size constraint (✅ UPDATED - No MinTextSize)
 local function applyTextScaling(textObject, maxSize)
 	maxSize = maxSize or 16
 	textObject.TextScaled = true
 	local sizeConstraint = Instance.new("UITextSizeConstraint")
 	sizeConstraint.MaxTextSize = maxSize
-	sizeConstraint.MinTextSize = 8
+	sizeConstraint.MinTextSize = 1  -- ✅ No minimum size
 	sizeConstraint.Parent = textObject
+end
+
+-- ✅ Helper: Add UIAspectRatioConstraint to main frames
+local function addAspectRatio(frame, ratio)
+	local aspectRatio = Instance.new("UIAspectRatioConstraint")
+	aspectRatio.AspectRatio = ratio or 0.75
+	aspectRatio.DominantAxis = Enum.DominantAxis.Width
+	aspectRatio.Parent = frame
+end
+
+-- ✅ Helper: tweenSize for animations
+local function tweenSize(object, endSize, time, callback)
+	local tween = TweenService:Create(object, TweenInfo.new(time or 0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+		Size = endSize
+	})
+	tween:Play()
+	if callback then
+		tween.Completed:Connect(callback)
+	end
+	return tween
 end
 
 -- ==================== CREATE MAIN GUI ====================
@@ -41,7 +61,7 @@ screenGui.Parent = playerGui
 -- ==================== MUSIC PLAYER ====================
 local musicFrame = Instance.new("Frame")
 musicFrame.Name = "MusicPlayer"
-musicFrame.Size = UDim2.new(0.25, 0, 0.7, 0)  -- 450/1920, 480/1080
+musicFrame.Size = UDim2.new(0.7, 0, 0.8, 0)  -- 450/1920, 480/1080
 musicFrame.Position = UDim2.new(0.5, 0, -0.5, 0)
 musicFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 musicFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 23)
@@ -374,7 +394,7 @@ queueInfoLabel.Parent = musicFrame
 
 -- ==================== QUEUE PANEL ====================
 local queuePanel = Instance.new("Frame")
-queuePanel.Size = UDim2.new(0.2, 0, 0.7, 0)  -- 350/1920, 480/1080
+queuePanel.Size = UDim2.new(0.7, 0, 0.8, 0)  -- 350/1920, 480/1080
 queuePanel.Position = UDim2.new(0.622, 0, -0.5, 0)  -- 0.5 + (235/1920)
 queuePanel.AnchorPoint = Vector2.new(0, 0.5)
 queuePanel.BackgroundColor3 = Color3.fromRGB(20, 20, 23)
@@ -470,7 +490,7 @@ emptyQueueLabel.Parent = queueScroll
 
 -- ==================== LIBRARY FRAME ====================
 local libraryFrame = Instance.new("Frame")
-libraryFrame.Size = UDim2.new(0.260, 0, 0.7, 0)  -- 500/1920, 550/1080
+libraryFrame.Size = UDim2.new(0.7, 0, 0.8, 0)  -- 500/1920, 550/1080
 libraryFrame.Position = UDim2.new(0.5, 0, -0.5, 0)
 libraryFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 libraryFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 23)
@@ -1845,19 +1865,19 @@ local musicIcon = Icon.new()
 	:bindEvent("selected", function()
 		screenGui.Enabled = true
 		musicFrame.Visible = true
-		local openTween = TweenService:Create(musicFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-			Position = UDim2.new(0.5, 0, 0.5, 0)
-		})
-		openTween:Play()
+		musicFrame.Position = UDim2.new(0.5, 0, 0.5, 0)  -- ✅ Centered
+		musicFrame.Size = UDim2.new(0, 0, 0, 0)  -- ✅ Start small
+		
+		-- ✅ Use tweenSize for smooth animation
+		tweenSize(musicFrame, UDim2.new(0.7, 0, 0.8, 0), 0.3)
 	end)
 	:bindEvent("deselected", function()
-		local closeTween = TweenService:Create(musicFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-			Position = UDim2.new(0.5, 0, -0.5, 0)
-		})
-		closeTween:Play()
-		task.wait(0.2)
-		musicFrame.Visible = false
-		screenGui.Enabled = false
+		-- ✅ Use tweenSize for smooth animation
+		tweenSize(musicFrame, UDim2.new(0, 0, 0, 0), 0.2, function()
+			musicFrame.Visible = false
+			screenGui.Enabled = false
+			musicFrame.Size = UDim2.new(0.7, 0, 0.8, 0)  -- ✅ Reset size
+		end)
 	end)
 
 -- Music Close Button (needs musicIcon defined first)

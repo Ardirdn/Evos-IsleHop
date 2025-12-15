@@ -60,6 +60,35 @@ local function createCorner(radius)
 	return corner
 end
 
+-- ✅ Helper: Create adaptive text with TextScaled and UITextSizeConstraint
+local function makeTextAdaptive(textLabel, maxTextSize)
+	textLabel.TextScaled = true
+	local constraint = Instance.new("UITextSizeConstraint")
+	constraint.MaxTextSize = maxTextSize or 14
+	constraint.MinTextSize = 1
+	constraint.Parent = textLabel
+end
+
+-- ✅ Helper: Add UIAspectRatioConstraint to main frames
+local function addAspectRatio(frame, ratio)
+	local aspectRatio = Instance.new("UIAspectRatioConstraint")
+	aspectRatio.AspectRatio = ratio or 0.8
+	aspectRatio.DominantAxis = Enum.DominantAxis.Width
+	aspectRatio.Parent = frame
+end
+
+-- ✅ Helper: tweenSize for animations
+local function tweenSize(object, endSize, time, callback)
+	local tween = TweenService:Create(object, TweenInfo.new(time or 0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+		Size = endSize
+	})
+	tween:Play()
+	if callback then
+		tween.Completed:Connect(callback)
+	end
+	return tween
+end
+
 -- ==================== CREATE GUI (✅ SCALE-BASED) ====================
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "DanceSystemGUI"
@@ -67,17 +96,19 @@ screenGui.ResetOnSpawn = false
 screenGui.Enabled = false
 screenGui.Parent = playerGui
 
--- Main Panel (✅ Scale)
+-- Main Panel (✅ FULLY ADAPTIVE)
 local mainPanel = Instance.new("Frame")
-mainPanel.Size = UDim2.new(0.27, 0, 0.65, 0) -- ✅ Scale
-mainPanel.Position = UDim2.new(0.02, 0, 0.5, 0) -- ✅ Scale
-mainPanel.AnchorPoint = Vector2.new(0, 0.5)
+mainPanel.Size = UDim2.new(1, 0, 0.8, 0)  -- ✅ Full scale, controlled by AspectRatio
+mainPanel.Position = UDim2.new(0.5, 0, 0.5, 0)  -- ✅ Centered
+mainPanel.AnchorPoint = Vector2.new(0.5, 0.5)
 mainPanel.BackgroundColor3 = COLORS.Background
 mainPanel.BorderSizePixel = 0
 mainPanel.Visible = false
+mainPanel.ClipsDescendants = true
 mainPanel.Parent = screenGui
 
 createCorner(15).Parent = mainPanel
+addAspectRatio(mainPanel, 0.75)  -- ✅ UIAspectRatioConstraint dengan DominantAxis = Width
 
 -- Header (✅ Scale)
 local header = Instance.new("Frame")
@@ -95,24 +126,20 @@ headerTitle.BackgroundTransparency = 1
 headerTitle.Font = Enum.Font.GothamBold
 headerTitle.Text = "DANCE"
 headerTitle.TextColor3 = COLORS.Text
-headerTitle.TextSize = 16  -- ✅ FIXED SIZE
--- headerTitle.TextScaled = true  -- ❌ HAPUS INI
 headerTitle.TextXAlignment = Enum.TextXAlignment.Left
 headerTitle.Parent = header
-
+makeTextAdaptive(headerTitle, 18)  -- ✅ Adaptive text
 
 local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0.12, 0, 0.8, 0)
-closeBtn.Position = UDim2.new(0.85, 0, 0.1, 0)
+closeBtn.Size = UDim2.new(0.12, 0, 0.7, 0)
+closeBtn.Position = UDim2.new(0.85, 0, 0.15, 0)
 closeBtn.BackgroundColor3 = COLORS.Button
 closeBtn.BorderSizePixel = 0
 closeBtn.Text = "✕"
 closeBtn.Font = Enum.Font.GothamBold
-closeBtn.TextSize = 18  -- ✅ FIXED SIZE
--- closeBtn.TextScaled = true  -- ❌ HAPUS INI
 closeBtn.TextColor3 = COLORS.Text
 closeBtn.Parent = header
-
+makeTextAdaptive(closeBtn, 20)  -- ✅ Adaptive text
 
 createCorner(8).Parent = closeBtn
 
@@ -129,13 +156,12 @@ allTab.BackgroundColor3 = COLORS.Accent
 allTab.BorderSizePixel = 0
 allTab.Text = "All"
 allTab.Font = Enum.Font.GothamBold
-allTab.TextSize = 13  -- ✅ FIXED SIZE
--- allTab.TextScaled = true  -- ❌ HAPUS INI
 allTab.TextColor3 = COLORS.Text
 allTab.AutoButtonColor = false
 allTab.Parent = tabFrame
 
 createCorner(6).Parent = allTab
+makeTextAdaptive(allTab, 13)  -- ✅ Adaptive text
 
 local favTab = Instance.new("TextButton")
 favTab.Size = UDim2.new(0.48, 0, 1, 0)
@@ -144,14 +170,12 @@ favTab.BackgroundColor3 = COLORS.Button
 favTab.BorderSizePixel = 0
 favTab.Text = "Favorites"
 favTab.Font = Enum.Font.GothamBold
-favTab.TextSize = 13  -- ✅ FIXED SIZE (SAMA dengan All)
--- favTab.TextScaled = true  -- ❌ HAPUS INI
 favTab.TextColor3 = COLORS.Text
 favTab.AutoButtonColor = false
 favTab.Parent = tabFrame
 
-
 createCorner(6).Parent = favTab
+makeTextAdaptive(favTab, 13)  -- ✅ Adaptive text
 
 -- Search Frame (✅ Scale)
 local searchFrame = Instance.new("Frame")
@@ -169,10 +193,8 @@ searchIcon.BackgroundTransparency = 1
 searchIcon.Font = Enum.Font.GothamBold
 searchIcon.Text = "🔍"
 searchIcon.TextColor3 = COLORS.TextSecondary
-searchIcon.TextSize = 14  -- ✅ FIXED SIZE
--- searchIcon.TextScaled = true  -- ❌ HAPUS INI
 searchIcon.Parent = searchFrame
-
+makeTextAdaptive(searchIcon, 14)  -- ✅ Adaptive text
 
 local searchBox = Instance.new("TextBox")
 searchBox.Size = UDim2.new(0.8, 0, 1, 0)
@@ -182,12 +204,10 @@ searchBox.Font = Enum.Font.Gotham
 searchBox.PlaceholderText = "Search..."
 searchBox.Text = ""
 searchBox.TextColor3 = COLORS.Text
-searchBox.TextSize = 12  -- ✅ FIXED SIZE
--- searchBox.TextScaled = true  -- ❌ HAPUS INI
 searchBox.TextXAlignment = Enum.TextXAlignment.Left
 searchBox.ClearTextOnFocus = false
 searchBox.Parent = searchFrame
-
+makeTextAdaptive(searchBox, 12)  -- ✅ Adaptive text
 
 local clearSearchBtn = Instance.new("TextButton")
 clearSearchBtn.Size = UDim2.new(0.1, 0, 1, 0)
@@ -195,12 +215,10 @@ clearSearchBtn.Position = UDim2.new(0.9, 0, 0, 0)
 clearSearchBtn.BackgroundTransparency = 1
 clearSearchBtn.Text = "✕"
 clearSearchBtn.Font = Enum.Font.GothamBold
-clearSearchBtn.TextSize = 14  -- ✅ FIXED SIZE
--- clearSearchBtn.TextScaled = true  -- ❌ HAPUS INI
 clearSearchBtn.TextColor3 = COLORS.TextSecondary
 clearSearchBtn.Visible = false
 clearSearchBtn.Parent = searchFrame
-
+makeTextAdaptive(clearSearchBtn, 14)  -- ✅ Adaptive text
 
 -- Scroll Frame (✅ Scale)
 local scrollFrame = Instance.new("ScrollingFrame")
@@ -220,16 +238,14 @@ listLayout.SortOrder = Enum.SortOrder.LayoutOrder
 listLayout.Parent = scrollFrame
 
 local emptyLabel = Instance.new("TextLabel")
-emptyLabel.Size = UDim2.new(1, 0, 0, 60)
+emptyLabel.Size = UDim2.new(1, 0, 0.15, 0)  -- ✅ Scale-based
 emptyLabel.BackgroundTransparency = 1
 emptyLabel.Font = Enum.Font.Gotham
 emptyLabel.Text = "No animations found"
 emptyLabel.TextColor3 = COLORS.TextSecondary
-emptyLabel.TextSize = 12  -- ✅ FIXED SIZE
--- emptyLabel.TextScaled = true  -- ❌ HAPUS INI
 emptyLabel.Visible = false
 emptyLabel.Parent = scrollFrame
-
+makeTextAdaptive(emptyLabel, 12)  -- ✅ Adaptive text
 
 -- Speed Control (✅ Scale)
 local speedFrame = Instance.new("Frame")
@@ -242,17 +258,15 @@ speedFrame.Parent = mainPanel
 createCorner(8).Parent = speedFrame
 
 local speedLabel = Instance.new("TextLabel")
-speedLabel.Size = UDim2.new(1, -20, 0.35, 0)
-speedLabel.Position = UDim2.new(0, 10, 0.1, 0)
+speedLabel.Size = UDim2.new(0.9, 0, 0.35, 0)  -- ✅ Scale-based
+speedLabel.Position = UDim2.new(0.05, 0, 0.1, 0)  -- ✅ Scale-based
 speedLabel.BackgroundTransparency = 1
 speedLabel.Font = Enum.Font.GothamBold
 speedLabel.Text = "Speed: 1.0x"
 speedLabel.TextColor3 = COLORS.Text
-speedLabel.TextSize = 11  -- ✅ FIXED SIZE
--- speedLabel.TextScaled = true  -- ❌ HAPUS INI
 speedLabel.TextXAlignment = Enum.TextXAlignment.Left
 speedLabel.Parent = speedFrame
-
+makeTextAdaptive(speedLabel, 12)  -- ✅ Adaptive text
 
 local speedSliderBg = Instance.new("Frame")
 speedSliderBg.Size = UDim2.new(0.9, 0, 0.15, 0)
@@ -393,7 +407,7 @@ local function createAnimItem(animData)
 	local isPlaying = currentAnimation and currentAnimation.Title == animData.Title
 
 	local frame = Instance.new("Frame")
-	frame.Size = UDim2.new(1, 0, 0, 45)
+	frame.Size = UDim2.new(1, 0, 0.12, 0)  -- ✅ Scale-based
 	frame.BackgroundColor3 = isPlaying and COLORS.Accent or COLORS.Panel
 	frame.BorderSizePixel = 0
 	frame.Parent = scrollFrame
@@ -407,11 +421,9 @@ local function createAnimItem(animData)
 	titleLabel.Font = Enum.Font.GothamBold
 	titleLabel.Text = animData.Title
 	titleLabel.TextColor3 = COLORS.Text
-	titleLabel.TextSize = 13  -- ✅ FIXED SIZE
-	-- titleLabel.TextScaled = true  -- ❌ HAPUS INI
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 	titleLabel.Parent = frame
-
+	makeTextAdaptive(titleLabel, 13)  -- ✅ Adaptive text
 
 	local favBtn = Instance.new("TextButton")
 	favBtn.Size = UDim2.new(0.15, 0, 0.7, 0)
@@ -420,12 +432,10 @@ local function createAnimItem(animData)
 	favBtn.BorderSizePixel = 0
 	favBtn.Text = isFavorite(animData.Title) and "♥" or "♡"
 	favBtn.Font = Enum.Font.GothamBold
-	favBtn.TextSize = 16  -- ✅ FIXED SIZE
-	-- favBtn.TextScaled = true  -- ❌ HAPUS INI
 	favBtn.TextColor3 = isFavorite(animData.Title) and Color3.fromRGB(255, 100, 100) or COLORS.TextSecondary
 	favBtn.AutoButtonColor = false
 	favBtn.Parent = frame
-
+	makeTextAdaptive(favBtn, 16)  -- ✅ Adaptive text
 
 	createCorner(4).Parent = favBtn
 
@@ -616,6 +626,11 @@ local danceIcon = Icon.new()
 	:bindEvent("selected", function()
 		screenGui.Enabled = true
 		mainPanel.Visible = true
+		mainPanel.Position = UDim2.new(0.5, 0, 0.5, 0)  -- ✅ Centered
+		mainPanel.Size = UDim2.new(0, 0, 0, 0)  -- ✅ Start small
+		
+		-- ✅ Use tweenSize for smooth animation
+		tweenSize(mainPanel, UDim2.new(1, 0, 0.8, 0), 0.3)
 
 		-- ✅ LOAD FAVORITES
 		task.spawn(function()
@@ -638,8 +653,12 @@ local danceIcon = Icon.new()
 		updateAnimList()
 	end)
 	:bindEvent("deselected", function()
-		screenGui.Enabled = false
-		mainPanel.Visible = false
+		-- ✅ Use tweenSize for smooth animation
+		tweenSize(mainPanel, UDim2.new(0, 0, 0, 0), 0.3, function()
+			screenGui.Enabled = false
+			mainPanel.Visible = false
+			mainPanel.Size = UDim2.new(1, 0, 0.8, 0)  -- ✅ Reset size
+		end)
 	end)
 
 print("✅ [DANCE CLIENT] System loaded")
