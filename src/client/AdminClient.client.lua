@@ -134,11 +134,28 @@ end
 
 local function createPadding(padding)
 	local pad = Instance.new("UIPadding")
-	pad.PaddingTop = UDim.new(0, padding)
-	pad.PaddingBottom = UDim.new(0, padding)
-	pad.PaddingLeft = UDim.new(0, padding)
-	pad.PaddingRight = UDim.new(0, padding)
+	pad.PaddingTop = UDim.new(0.02, 0)
+	pad.PaddingBottom = UDim.new(0.02, 0)
+	pad.PaddingLeft = UDim.new(0.02, 0)
+	pad.PaddingRight = UDim.new(0.02, 0)
 	return pad
+end
+
+-- ✅ Helper: Create adaptive text with TextScaled and UITextSizeConstraint
+local function makeTextAdaptive(textLabel, maxTextSize)
+	textLabel.TextScaled = true
+	local constraint = Instance.new("UITextSizeConstraint")
+	constraint.MaxTextSize = maxTextSize or 14
+	constraint.MinTextSize = 1
+	constraint.Parent = textLabel
+end
+
+-- ✅ Helper: Add UIAspectRatioConstraint to main frames
+local function addAspectRatio(frame, ratio)
+	local aspectRatio = Instance.new("UIAspectRatioConstraint")
+	aspectRatio.AspectRatio = ratio or .8
+	aspectRatio.DominantAxis = Enum.DominantAxis.Width  -- ✅ Ubah ke Height agar panel lebih besar
+	aspectRatio.Parent = frame
 end
 
 local function createStroke(color, thickness)
@@ -219,17 +236,23 @@ local function makeDraggable(frame, dragHandle)
 end
 
 
--- Create Button
+-- Create Button (✅ ADAPTIVE)
 local function createButton(text, color, hoverColor)
 	local button = Instance.new("TextButton")
-	button.Size = UDim2.new(1, 0, 0.1, 0)  -- ✅ Lebih besar (42px di layar 1080p)
+	button.Size = UDim2.new(1, 0, 0.1, 0)
 	button.BackgroundColor3 = color or COLORS.Button
 	button.BorderSizePixel = 0
 	button.Font = Enum.Font.GothamMedium
 	button.Text = text
 	button.TextColor3 = COLORS.Text
-	button.TextSize = 14
 	button.AutoButtonColor = false
+	
+	-- ✅ TextScaled with constraint
+	button.TextScaled = true
+	local textConstraint = Instance.new("UITextSizeConstraint")
+	textConstraint.MaxTextSize = 14
+	textConstraint.MinTextSize = 1
+	textConstraint.Parent = button
 
 	createCorner(6).Parent = button
 
@@ -246,10 +269,10 @@ end
 
 local showConfirmation
 
--- Main Admin Panel
+-- Main Admin Panel (✅ FULLY ADAPTIVE)
 local mainPanel = Instance.new("Frame")
 mainPanel.Name = "MainPanel"
-mainPanel.Size = UDim2.new(0.167, 0, 0.417, 0)
+mainPanel.Size = UDim2.new(1, 0, 1, 0)  -- ✅ Ukuran lebih besar
 mainPanel.Position = UDim2.new(0.5, 0, 0.5, 0)
 mainPanel.AnchorPoint = Vector2.new(0.5, 0.5)
 mainPanel.BackgroundColor3 = COLORS.Background
@@ -260,11 +283,12 @@ mainPanel.Parent = screenGui
 
 createCorner(12).Parent = mainPanel
 createStroke(COLORS.Border, 2).Parent = mainPanel
+addAspectRatio(mainPanel, 0.8)  -- ✅ AspectRatio 0.8 dengan DominantAxis = Width
 
--- Panel Header
+-- Panel Header (✅ SCALE-BASED)
 local header = Instance.new("Frame")
 header.Name = "Header"
-header.Size = UDim2.new(1, 0, 0, 50)
+header.Size = UDim2.new(1, 0, 0.08, 0)
 header.BackgroundColor3 = COLORS.Header
 header.BorderSizePixel = 0
 header.Parent = mainPanel
@@ -272,77 +296,70 @@ header.Parent = mainPanel
 createCorner(12).Parent = header
 
 local headerTitle = Instance.new("TextLabel")
-headerTitle.Size = UDim2.new(1, -20, 1, 0)
-headerTitle.Position = UDim2.new(0, 20, 0, 0)
+headerTitle.Size = UDim2.new(0.8, 0, 1, 0)
+headerTitle.Position = UDim2.new(0.05, 0, 0, 0)
 headerTitle.BackgroundTransparency = 1
 headerTitle.Font = Enum.Font.GothamBold
 headerTitle.Text = "Admin Panel"
 headerTitle.TextColor3 = COLORS.Text
-headerTitle.TextSize = 18
 headerTitle.TextXAlignment = Enum.TextXAlignment.Left
 headerTitle.Parent = header
+makeTextAdaptive(headerTitle, 18)  -- ✅ Adaptive text
 
 local closeButton = Instance.new("TextButton")
-closeButton.Size = UDim2.new(0.094, 0, 0.6, 0)
-closeButton.Position = UDim2.new(1, 0, 0.5, 0)
+closeButton.Size = UDim2.new(0.1, 0, 0.7, 0)
+closeButton.Position = UDim2.new(0.95, 0, 0.5, 0)
 closeButton.AnchorPoint = Vector2.new(1, 0.5)
 closeButton.BackgroundColor3 = COLORS.Button
 closeButton.BorderSizePixel = 0
 closeButton.Font = Enum.Font.GothamBold
 closeButton.Text = "×"
 closeButton.TextColor3 = COLORS.Text
-closeButton.TextSize = 20
 closeButton.Parent = header
+makeTextAdaptive(closeButton, 20)  -- ✅ Adaptive text
 
 createCorner(6).Parent = closeButton
 
--- Tab System
+-- Tab System (✅ SCALE-BASED)
 local tabContainer = Instance.new("Frame")
-tabContainer.Size = UDim2.new(0.94, 0, 0.089, 0)
-tabContainer.Position = UDim2.new(0.03, 0, 0.133, 0)
+tabContainer.Size = UDim2.new(0.94, 0, 0.06, 0)
+tabContainer.Position = UDim2.new(0.03, 0, 0.1, 0)
 tabContainer.BackgroundTransparency = 1
 tabContainer.Parent = mainPanel
 
 local tabLayout = Instance.new("UIListLayout")
 tabLayout.FillDirection = Enum.FillDirection.Horizontal
-tabLayout.Padding = UDim.new(0, 8)
+tabLayout.Padding = UDim.new(0.015, 0)  -- ✅ Scale-based padding
 tabLayout.SortOrder = Enum.SortOrder.LayoutOrder
 tabLayout.Parent = tabContainer
 
--- Content Container
+-- Content Container (✅ SCALE-BASED)
 local contentContainer = Instance.new("Frame")
-contentContainer.Size = UDim2.new(0.94, 0, 0.733, 0)
-contentContainer.Position = UDim2.new(0.03, 0, 0.244, 0)
+contentContainer.Size = UDim2.new(0.94, 0, 0.78, 0)
+contentContainer.Position = UDim2.new(0.03, 0, 0.18, 0)
 contentContainer.BackgroundTransparency = 1
 contentContainer.Parent = mainPanel
 
--- Tab Creation Function (RESPONSIVE - EQUAL WIDTH) - FIXED
+-- Tab Creation Function (✅ FULLY ADAPTIVE)
 local currentTab = nil
-local totalTabs = 4  -- Total tabs: Notifications, Players, Events, Leaderboard
+local totalTabs = 4
 
 local function createTab(name, order)
 	local tab = Instance.new("TextButton")
-
-	-- ✅ SIMPLIFIED: Bagi lebar secara equal dengan UIListLayout spacing
-	tab.Size = UDim2.new(0.25, -6, 1, 0)  -- 25% width each, -6px for gap spacing
+	
+	-- ✅ Fully Scale-based (no offset)
+	tab.Size = UDim2.new(0.23, 0, 1, 0)
 	tab.BackgroundColor3 = COLORS.Button
 	tab.BorderSizePixel = 0
 	tab.Font = Enum.Font.GothamMedium
 	tab.Text = name
 	tab.TextColor3 = COLORS.TextSecondary
-	tab.TextSize = 13
-	tab.TextScaled = true  -- ✅ Auto-scale text
 	tab.AutoButtonColor = false
 	tab.LayoutOrder = order
 	tab.Parent = tabContainer
 
 	createCorner(6).Parent = tab
-
-	-- ✅ Text size constraint
-	local textSizeConstraint = Instance.new("UITextSizeConstraint")
-	textSizeConstraint.MaxTextSize = 13
-	textSizeConstraint.MinTextSize = 9
-	textSizeConstraint.Parent = tab
+	makeTextAdaptive(tab, 13)  -- ✅ Adaptive text without MinTextSize
 
 	local content = Instance.new("Frame")
 	content.Name = name .. "Content"
@@ -391,52 +408,52 @@ notifScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 notifScroll.Parent = notifTab
 
 local notifLayout = Instance.new("UIListLayout")
-notifLayout.Padding = UDim.new(0, 6)
+notifLayout.Padding = UDim.new(0.015, 0)  -- ✅ Scale-based padding
 notifLayout.SortOrder = Enum.SortOrder.LayoutOrder
 notifLayout.Parent = notifScroll
 
--- Notification Type Selection
+-- Notification Type Selection (✅ ADAPTIVE)
 local typeFrame = Instance.new("Frame")
-typeFrame.Size = UDim2.new(1, 0, 0, 40)
+typeFrame.Size = UDim2.new(1, 0, 0.1, 0)
 typeFrame.BackgroundTransparency = 1
 typeFrame.LayoutOrder = 1
 typeFrame.Parent = notifScroll
 
 local typeLabel = Instance.new("TextLabel")
-typeLabel.Size = UDim2.new(0, 100, 1, 0)
+typeLabel.Size = UDim2.new(0.25, 0, 1, 0)
 typeLabel.BackgroundTransparency = 1
 typeLabel.Font = Enum.Font.GothamMedium
 typeLabel.Text = "Type:"
 typeLabel.TextColor3 = COLORS.Text
-typeLabel.TextSize = 14
 typeLabel.TextXAlignment = Enum.TextXAlignment.Left
 typeLabel.Parent = typeFrame
+makeTextAdaptive(typeLabel, 14)
 
 local typeButtons = Instance.new("Frame")
-typeButtons.Size = UDim2.new(1, -110, 1, 0)
-typeButtons.Position = UDim2.new(0, 110, 0, 0)
+typeButtons.Size = UDim2.new(0.7, 0, 1, 0)
+typeButtons.Position = UDim2.new(0.28, 0, 0, 0)
 typeButtons.BackgroundTransparency = 1
 typeButtons.Parent = typeFrame
 
 local typeLayout = Instance.new("UIListLayout")
 typeLayout.FillDirection = Enum.FillDirection.Horizontal
-typeLayout.Padding = UDim.new(0, 8)
+typeLayout.Padding = UDim.new(0.02, 0)  -- ✅ Scale-based padding
 typeLayout.Parent = typeButtons
 
 local selectedType = "Server"
 
 local function createTypeButton(text)
 	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0, 90, 1, 0)
+	btn.Size = UDim2.new(0.35, 0, 0.9, 0)  -- ✅ Scale-based
 	btn.BackgroundColor3 = text == "Server" and COLORS.Accent or COLORS.Button
 	btn.BorderSizePixel = 0
 	btn.Font = Enum.Font.GothamMedium
 	btn.Text = text
 	btn.TextColor3 = COLORS.Text
-	btn.TextSize = 13
 	btn.AutoButtonColor = false
 	btn.Parent = typeButtons
-
+	
+	makeTextAdaptive(btn, 13)  -- ✅ Adaptive text
 	createCorner(6).Parent = btn
 
 	btn.MouseButton1Click:Connect(function()
@@ -455,63 +472,63 @@ end
 createTypeButton("Server")
 createTypeButton("Global")
 
--- Message Input
+-- Message Input (✅ ADAPTIVE)
 local messageFrame = Instance.new("Frame")
-messageFrame.Size = UDim2.new(1, 0, 0.4, 0)
+messageFrame.Size = UDim2.new(1, 0, 0.35, 0)
 messageFrame.BackgroundTransparency = 1
 messageFrame.LayoutOrder = 2
 messageFrame.Parent = notifScroll
 
 local messageLabel = Instance.new("TextLabel")
-messageLabel.Size = UDim2.new(1, 0, 0.25, 0)
+messageLabel.Size = UDim2.new(1, 0, 0.15, 0)
 messageLabel.BackgroundTransparency = 1
 messageLabel.Font = Enum.Font.GothamMedium
 messageLabel.Text = "Message:"
 messageLabel.TextColor3 = COLORS.Text
-messageLabel.TextSize = 14
 messageLabel.TextXAlignment = Enum.TextXAlignment.Left
 messageLabel.Parent = messageFrame
+makeTextAdaptive(messageLabel, 14)
 
 local messageBox = Instance.new("TextBox")
-messageBox.Size = UDim2.new(1, 0, 0.625, 0)
-messageBox.Position = UDim2.new(0, 0, 0.313, 0)
+messageBox.Size = UDim2.new(1, 0, 0.75, 0)
+messageBox.Position = UDim2.new(0, 0, 0.2, 0)
 messageBox.BackgroundColor3 = COLORS.Panel
 messageBox.BorderSizePixel = 0
 messageBox.Font = Enum.Font.Gotham
 messageBox.PlaceholderText = "Enter notification message..."
 messageBox.Text = ""
 messageBox.TextColor3 = COLORS.Text
-messageBox.TextSize = 13
 messageBox.TextWrapped = true
 messageBox.TextXAlignment = Enum.TextXAlignment.Left
 messageBox.TextYAlignment = Enum.TextYAlignment.Top
 messageBox.ClearTextOnFocus = false
 messageBox.MultiLine = true
 messageBox.Parent = messageFrame
+makeTextAdaptive(messageBox, 13)
 
 createCorner(6).Parent = messageBox
 createPadding(8).Parent = messageBox
 
--- Duration Slider
+-- Duration Slider (✅ ADAPTIVE)
 local durationFrame = Instance.new("Frame")
-durationFrame.Size = UDim2.new(1, 0, 0.15, 0)
+durationFrame.Size = UDim2.new(1, 0, 0.12, 0)
 durationFrame.BackgroundTransparency = 1
 durationFrame.LayoutOrder = 3
 durationFrame.Parent = notifScroll
 
 local durationLabel = Instance.new("TextLabel")
-durationLabel.Size = UDim2.new(1, 0, 0, 20)
+durationLabel.Size = UDim2.new(1, 0, 0.4, 0)
 durationLabel.BackgroundTransparency = 1
 durationLabel.Font = Enum.Font.GothamMedium
 durationLabel.Text = "Duration: 5s"
 durationLabel.TextColor3 = COLORS.Text
-durationLabel.TextSize = 14
 durationLabel.TextXAlignment = Enum.TextXAlignment.Left
 durationLabel.Parent = durationFrame
+makeTextAdaptive(durationLabel, 14)
 
 local sliderBg = Instance.new("Frame")
-sliderBg.Size = UDim2.new(1, 0, 0, 8)
-sliderBg.Position = UDim2.new(0, 0, 0, 35)
+sliderBg.Size = UDim2.new(1, 0, 0.2, 0)
+sliderBg.Position = UDim2.new(0, 0, 0.6, 0)
 sliderBg.BackgroundColor3 = COLORS.Panel
 sliderBg.BorderSizePixel = 0
 sliderBg.Parent = durationFrame
@@ -527,8 +544,9 @@ sliderFill.Parent = sliderBg
 createCorner(4).Parent = sliderFill
 
 local sliderHandle = Instance.new("Frame")
-sliderHandle.Size = UDim2.new(0, 16, 0, 16)
-sliderHandle.Position = UDim2.new(0.042, -8, 0.5, -8)
+sliderHandle.Size = UDim2.new(0.04, 0, 2.5, 0)  -- ✅ Scale-based
+sliderHandle.Position = UDim2.new(0.042, 0, 0.5, 0)
+sliderHandle.AnchorPoint = Vector2.new(0.5, 0.5)
 sliderHandle.BackgroundColor3 = COLORS.Text
 sliderHandle.BorderSizePixel = 0
 sliderHandle.Parent = sliderBg
@@ -561,43 +579,43 @@ UserInputService.InputChanged:Connect(function(input)
 		durationLabel.Text = "Duration: " .. selectedDuration .. "s"
 
 		sliderFill.Size = UDim2.new(relativePos, 0, 1, 0)
-		sliderHandle.Position = UDim2.new(relativePos, -8, 0.5, -8)
+		sliderHandle.Position = UDim2.new(relativePos, 0, 0.5, 0)
 	end
 end)
 
--- Text Color Picker
+-- Text Color Picker (✅ ADAPTIVE)
 local colorFrame = Instance.new("Frame")
-colorFrame.Size = UDim2.new(1, 0, 0.15, 0)
+colorFrame.Size = UDim2.new(1, 0, 0.12, 0)
 colorFrame.BackgroundTransparency = 1
 colorFrame.LayoutOrder = 4
 colorFrame.Parent = notifScroll
 
 local colorLabel = Instance.new("TextLabel")
-colorLabel.Size = UDim2.new(1, 0, 0, 20)
+colorLabel.Size = UDim2.new(1, 0, 0.35, 0)
 colorLabel.BackgroundTransparency = 1
 colorLabel.Font = Enum.Font.GothamMedium
 colorLabel.Text = "Text Color:"
 colorLabel.TextColor3 = COLORS.Text
-colorLabel.TextSize = 14
 colorLabel.TextXAlignment = Enum.TextXAlignment.Left
 colorLabel.Parent = colorFrame
+makeTextAdaptive(colorLabel, 14)
 
 local colorContainer = Instance.new("Frame")
-colorContainer.Size = UDim2.new(1, 0, 0, 30)
-colorContainer.Position = UDim2.new(0, 0, 0, 25)
+colorContainer.Size = UDim2.new(1, 0, 0.55, 0)
+colorContainer.Position = UDim2.new(0, 0, 0.4, 0)
 colorContainer.BackgroundTransparency = 1
 colorContainer.Parent = colorFrame
 
 local colorLayout = Instance.new("UIListLayout")
 colorLayout.FillDirection = Enum.FillDirection.Horizontal
-colorLayout.Padding = UDim.new(0, 8)
+colorLayout.Padding = UDim.new(0.02, 0)  -- ✅ Scale-based padding
 colorLayout.Parent = colorContainer
 
 local selectedColor = Color3.fromRGB(255, 255, 255)
 
 local function createColorButton(color)
 	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0, 30, 0, 30)
+	btn.Size = UDim2.new(0.1, 0, 1, 0)  -- ✅ Scale-based
 	btn.BackgroundColor3 = color
 	btn.BorderSizePixel = 0
 	btn.Text = ""
@@ -612,9 +630,9 @@ local function createColorButton(color)
 	checkmark.Font = Enum.Font.GothamBold
 	checkmark.Text = "✓"
 	checkmark.TextColor3 = Color3.fromRGB(0, 0, 0)
-	checkmark.TextSize = 18
 	checkmark.Visible = color == Color3.fromRGB(255, 255, 255)
 	checkmark.Parent = btn
+	makeTextAdaptive(checkmark, 18)  -- ✅ Adaptive text
 
 	btn.MouseButton1Click:Connect(function()
 		selectedColor = color
@@ -637,9 +655,9 @@ createColorButton(Color3.fromRGB(250, 166, 26))
 createColorButton(Color3.fromRGB(237, 66, 69))
 createColorButton(Color3.fromRGB(153, 170, 181))
 
--- Send Button
+-- Send Button (✅ ADAPTIVE)
 local sendFrame = Instance.new("Frame")
-sendFrame.Size = UDim2.new(1, 0, 0.113, 0)
+sendFrame.Size = UDim2.new(1, 0, 0.1, 0)
 sendFrame.BackgroundTransparency = 1
 sendFrame.LayoutOrder = 5
 sendFrame.Parent = notifScroll
@@ -648,7 +666,7 @@ local sendButton = createButton("Send Notification", COLORS.Accent, COLORS.Accen
 sendButton.Size = UDim2.new(1, 0, 1, 0)
 sendButton.Parent = sendFrame
 
--- Update send button (line ~719)
+-- Update send button
 sendButton.MouseButton1Click:Connect(function()
 	if messageBox.Text ~= "" then
 		local notifText = messageBox.Text
@@ -663,7 +681,7 @@ end)
 
 
 
--- Players Tab
+-- Players Tab (✅ ADAPTIVE)
 local playersTab, playersTabBtn = createTab("Players", 2)
 
 local playersScroll = Instance.new("ScrollingFrame")
@@ -677,14 +695,14 @@ playersScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 playersScroll.Parent = playersTab
 
 local playersLayout = Instance.new("UIListLayout")
-playersLayout.Padding = UDim.new(0, 8)
+playersLayout.Padding = UDim.new(0.015, 0)  -- ✅ Scale-based padding
 playersLayout.SortOrder = Enum.SortOrder.LayoutOrder
 playersLayout.Parent = playersScroll
 
--- Player Detail Panel
+-- Player Detail Panel (✅ FULLY ADAPTIVE)
 local playerDetailPanel = Instance.new("Frame")
 playerDetailPanel.Name = "PlayerDetail"
-playerDetailPanel.Size = UDim2.new(0.208, 0, 0.509, 0)
+playerDetailPanel.Size = UDim2.new(0.7, 0, 0.9, 0)  -- ✅ Ukuran lebih besar
 playerDetailPanel.Position = UDim2.new(0.5, 0, 0.5, 0)
 playerDetailPanel.AnchorPoint = Vector2.new(0.5, 0.5)
 playerDetailPanel.BackgroundColor3 = COLORS.Background
@@ -695,9 +713,10 @@ playerDetailPanel.Parent = screenGui
 
 createCorner(12).Parent = playerDetailPanel
 createStroke(COLORS.Border, 2).Parent = playerDetailPanel
+addAspectRatio(playerDetailPanel, 0.8)  -- ✅ AspectRatio 0.8 dengan DominantAxis = Width
 
 local detailHeader = Instance.new("Frame")
-detailHeader.Size = UDim2.new(1, 0, 0.091, 0)
+detailHeader.Size = UDim2.new(1, 0, 0.08, 0)
 detailHeader.BackgroundColor3 = COLORS.Header
 detailHeader.BorderSizePixel = 0
 detailHeader.Parent = playerDetailPanel
@@ -705,40 +724,40 @@ detailHeader.Parent = playerDetailPanel
 createCorner(12).Parent = detailHeader
 
 local detailTitle = Instance.new("TextLabel")
-detailTitle.Size = UDim2.new(1, -20, 1, 0)
-detailTitle.Position = UDim2.new(0, 20, 0, 0)
+detailTitle.Size = UDim2.new(0.8, 0, 1, 0)
+detailTitle.Position = UDim2.new(0.03, 0, 0, 0)
 detailTitle.BackgroundTransparency = 1
 detailTitle.Font = Enum.Font.GothamBold
 detailTitle.Text = "Player Details"
 detailTitle.TextColor3 = COLORS.Text
-detailTitle.TextSize = 18
 detailTitle.TextXAlignment = Enum.TextXAlignment.Left
 detailTitle.Parent = detailHeader
+makeTextAdaptive(detailTitle, 18)
 
 local detailCloseButton = Instance.new("TextButton")
-detailCloseButton.Size = UDim2.new(0, 30, 0, 30)
-detailCloseButton.Position = UDim2.new(1, -40, 0, 10)
+detailCloseButton.Size = UDim2.new(0.1, 0, 0.7, 0)
+detailCloseButton.Position = UDim2.new(0.95, 0, 0.5, 0)
+detailCloseButton.AnchorPoint = Vector2.new(1, 0.5)
 detailCloseButton.BackgroundColor3 = COLORS.Button
 detailCloseButton.BorderSizePixel = 0
 detailCloseButton.Font = Enum.Font.GothamBold
 detailCloseButton.Text = "×"
 detailCloseButton.TextColor3 = COLORS.Text
-detailCloseButton.TextSize = 20
 detailCloseButton.Parent = detailHeader
+makeTextAdaptive(detailCloseButton, 20)
 
 createCorner(6).Parent = detailCloseButton
 
 detailCloseButton.MouseButton1Click:Connect(function()
 	tweenSize(playerDetailPanel, UDim2.new(0, 0, 0, 0), 0.3, function()
 		playerDetailPanel.Visible = false
-		playerDetailPanel.Size = UDim2.new(0.25, 0, 0.509, 0)
-		
+		playerDetailPanel.Size = UDim2.new(0.7, 0, 0.9, 0)  -- ✅ Konsisten dengan ukuran baru
 	end)
 end)
 
 local detailScroll = Instance.new("ScrollingFrame")
-detailScroll.Size = UDim2.new(0.95, 0, 0.873, 0)
-detailScroll.Position = UDim2.new(0.025, 0, 0.109, 0)
+detailScroll.Size = UDim2.new(0.94, 0, 0.88, 0)
+detailScroll.Position = UDim2.new(0.03, 0, 0.1, 0)
 detailScroll.BackgroundTransparency = 1
 detailScroll.BorderSizePixel = 0
 detailScroll.ScrollBarThickness = 4
@@ -748,14 +767,14 @@ detailScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 detailScroll.Parent = playerDetailPanel
 
 local detailLayout = Instance.new("UIListLayout")
-detailLayout.Padding = UDim.new(0, 10)
+detailLayout.Padding = UDim.new(0.02, 0)  -- ✅ Scale-based padding
 detailLayout.SortOrder = Enum.SortOrder.LayoutOrder
 detailLayout.Parent = detailScroll
 
--- Confirmation Dialog (FIXED - Bigger & Proper Layout)
+-- Confirmation Dialog (✅ FULLY ADAPTIVE)
 local confirmDialog = Instance.new("Frame")
 confirmDialog.Name = "ConfirmDialog"
-confirmDialog.Size = UDim2.new(0, 380, 0, 200)  -- ✅ Lebih besar: 380x200px
+confirmDialog.Size = UDim2.new(0.4, 0, 0.4, 0)  -- ✅ Ukuran lebih besar
 confirmDialog.Position = UDim2.new(0.5, 0, 0.5, 0)
 confirmDialog.AnchorPoint = Vector2.new(0.5, 0.5)
 confirmDialog.BackgroundColor3 = COLORS.Background
@@ -766,10 +785,11 @@ confirmDialog.Parent = screenGui
 
 createCorner(12).Parent = confirmDialog
 createStroke(COLORS.Border, 2).Parent = confirmDialog
+addAspectRatio(confirmDialog, 1.9)  -- ✅ AspectRatio dengan DominantAxis = Width
 
--- Header
+-- Header (✅ ADAPTIVE)
 local confirmHeader = Instance.new("Frame")
-confirmHeader.Size = UDim2.new(1, 0, 0, 50)
+confirmHeader.Size = UDim2.new(1, 0, 0.25, 0)
 confirmHeader.BackgroundColor3 = COLORS.Header
 confirmHeader.BorderSizePixel = 0
 confirmHeader.Parent = confirmDialog
@@ -777,48 +797,48 @@ confirmHeader.Parent = confirmDialog
 createCorner(12).Parent = confirmHeader
 
 local confirmHeaderBottom = Instance.new("Frame")
-confirmHeaderBottom.Size = UDim2.new(1, 0, 0, 15)
-confirmHeaderBottom.Position = UDim2.new(0, 0, 1, -15)
+confirmHeaderBottom.Size = UDim2.new(1, 0, 0.3, 0)
+confirmHeaderBottom.Position = UDim2.new(0, 0, 0.7, 0)
 confirmHeaderBottom.BackgroundColor3 = COLORS.Header
 confirmHeaderBottom.BorderSizePixel = 0
 confirmHeaderBottom.Parent = confirmHeader
 
--- Title
+-- Title (✅ ADAPTIVE)
 local confirmTitle = Instance.new("TextLabel")
-confirmTitle.Size = UDim2.new(1, -30, 1, 0)
-confirmTitle.Position = UDim2.new(0, 15, 0, 0)
+confirmTitle.Size = UDim2.new(0.9, 0, 1, 0)
+confirmTitle.Position = UDim2.new(0.05, 0, 0, 0)
 confirmTitle.BackgroundTransparency = 1
 confirmTitle.Font = Enum.Font.GothamBold
 confirmTitle.Text = "Confirm Action"
 confirmTitle.TextColor3 = COLORS.Text
-confirmTitle.TextSize = 16
 confirmTitle.TextXAlignment = Enum.TextXAlignment.Left
 confirmTitle.Parent = confirmHeader
+makeTextAdaptive(confirmTitle, 16)
 
--- Message (dengan padding proper)
+-- Message (✅ ADAPTIVE)
 local confirmMessage = Instance.new("TextLabel")
-confirmMessage.Size = UDim2.new(1, -40, 0, 70)  -- ✅ Lebih tinggi untuk text wrapping
-confirmMessage.Position = UDim2.new(0, 20, 0, 65)
+confirmMessage.Size = UDim2.new(0.9, 0, 0.35, 0)
+confirmMessage.Position = UDim2.new(0.05, 0, 0.28, 0)
 confirmMessage.BackgroundTransparency = 1
 confirmMessage.Font = Enum.Font.Gotham
 confirmMessage.Text = ""
 confirmMessage.TextColor3 = COLORS.TextSecondary
-confirmMessage.TextSize = 14
 confirmMessage.TextWrapped = true
-confirmMessage.TextXAlignment = Enum.TextXAlignment.Center  -- ✅ Center text
+confirmMessage.TextXAlignment = Enum.TextXAlignment.Center
 confirmMessage.TextYAlignment = Enum.TextYAlignment.Top
 confirmMessage.Parent = confirmDialog
+makeTextAdaptive(confirmMessage, 14)
 
--- Buttons Container (untuk center alignment)
+-- Buttons Container (✅ ADAPTIVE)
 local confirmButtons = Instance.new("Frame")
-confirmButtons.Size = UDim2.new(1, -40, 0, 50)  -- ✅ Button lebih tinggi
-confirmButtons.Position = UDim2.new(0, 20, 1, -65)  -- ✅ 15px from bottom
+confirmButtons.Size = UDim2.new(0.9, 0, 0.25, 0)
+confirmButtons.Position = UDim2.new(0.05, 0, 0.7, 0)
 confirmButtons.BackgroundTransparency = 1
 confirmButtons.Parent = confirmDialog
 
 local confirmButtonLayout = Instance.new("UIListLayout")
 confirmButtonLayout.FillDirection = Enum.FillDirection.Horizontal
-confirmButtonLayout.Padding = UDim.new(0, 15)  -- ✅ 15px spacing
+confirmButtonLayout.Padding = UDim.new(0.03, 0)  -- ✅ Scale-based padding
 confirmButtonLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 confirmButtonLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 confirmButtonLayout.Parent = confirmButtons
@@ -832,13 +852,13 @@ showConfirmation = function(title, message, callback)
 	currentConfirmCallback = callback
 	confirmDialog.Size = UDim2.new(0, 0, 0, 0)
 	confirmDialog.Visible = true
-	tweenSize(confirmDialog, UDim2.new(0, 380, 0, 200), 0.3)
+	tweenSize(confirmDialog, UDim2.new(0.4, 0, 0.4, 0), 0.3)  -- ✅ Ukuran lebih besar
 end
 
 
--- Cancel Button
+-- Cancel Button (✅ ADAPTIVE)
 local cancelButton = createButton("Cancel", COLORS.Button, COLORS.ButtonHover)
-cancelButton.Size = UDim2.new(0, 150, 1, 0)  -- ✅ Fixed width 150px
+cancelButton.Size = UDim2.new(0.4, 0, 1, 0)
 cancelButton.LayoutOrder = 1
 cancelButton.Parent = confirmButtons
 
@@ -849,9 +869,9 @@ cancelButton.MouseButton1Click:Connect(function()
 	end)
 end)
 
--- Confirm Button
+-- Confirm Button (✅ ADAPTIVE)
 local confirmButton = createButton("Confirm", COLORS.Danger, COLORS.DangerHover)
-confirmButton.Size = UDim2.new(0, 150, 1, 0)  -- ✅ Fixed width 150px
+confirmButton.Size = UDim2.new(0.4, 0, 1, 0)
 confirmButton.LayoutOrder = 2
 confirmButton.Parent = confirmButtons
 
@@ -870,9 +890,10 @@ local currentSpectatePlayer = nil
 local originalCamera = nil
 local spectateConnection = nil
 
+-- ✅ ADAPTIVE Teleport Popup
 local function createTeleportPopup(targetPlayer)
 	local popup = Instance.new("Frame")
-	popup.Size = UDim2.new(0.156, 0, 0.185, 0)
+	popup.Size = UDim2.new(0.2, 0, 0.22, 0)
 	popup.Position = UDim2.new(0.5, 0, 0.5, 0)
 	popup.AnchorPoint = Vector2.new(0.5, 0.5)
 	popup.BackgroundColor3 = COLORS.Background
@@ -882,9 +903,10 @@ local function createTeleportPopup(targetPlayer)
 
 	createCorner(12).Parent = popup
 	createStroke(COLORS.Border, 2).Parent = popup
+	addAspectRatio(popup, 1.2)
 
 	local header = Instance.new("Frame")
-	header.Size = UDim2.new(1, 0, 0.046, 0)
+	header.Size = UDim2.new(1, 0, 0.22, 0)
 	header.BackgroundColor3 = COLORS.Header
 	header.BorderSizePixel = 0
 	header.Parent = popup
@@ -892,33 +914,34 @@ local function createTeleportPopup(targetPlayer)
 	createCorner(12).Parent = header
 
 	local headerBottom = Instance.new("Frame")
-	headerBottom.Size = UDim2.new(1, 0, 0, 15)
-	headerBottom.Position = UDim2.new(0, 0, 1, -15)
+	headerBottom.Size = UDim2.new(1, 0, 0.3, 0)
+	headerBottom.Position = UDim2.new(0, 0, 0.7, 0)
 	headerBottom.BackgroundColor3 = COLORS.Header
 	headerBottom.BorderSizePixel = 0
 	headerBottom.Parent = header
 
 	local title = Instance.new("TextLabel")
-	title.Size = UDim2.new(1, -50, 1, 0)
-	title.Position = UDim2.new(0, 15, 0, 0)
+	title.Size = UDim2.new(0.75, 0, 1, 0)
+	title.Position = UDim2.new(0.05, 0, 0, 0)
 	title.BackgroundTransparency = 1
 	title.Font = Enum.Font.GothamBold
 	title.Text = "Teleport " .. targetPlayer.Name
 	title.TextColor3 = COLORS.Text
-	title.TextSize = 14
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.Parent = header
+	makeTextAdaptive(title, 14)
 
 	local closeBtn = Instance.new("TextButton")
-	closeBtn.Size = UDim2.new(0, 30, 0, 30)
-	closeBtn.Position = UDim2.new(1, -35, 0, 5)
+	closeBtn.Size = UDim2.new(0.12, 0, 0.7, 0)
+	closeBtn.Position = UDim2.new(0.93, 0, 0.5, 0)
+	closeBtn.AnchorPoint = Vector2.new(1, 0.5)
 	closeBtn.BackgroundColor3 = COLORS.Button
 	closeBtn.BorderSizePixel = 0
 	closeBtn.Text = "✕"
 	closeBtn.Font = Enum.Font.GothamBold
-	closeBtn.TextSize = 16
 	closeBtn.TextColor3 = COLORS.Text
 	closeBtn.Parent = header
+	makeTextAdaptive(closeBtn, 16)
 
 	createCorner(6).Parent = closeBtn
 
@@ -926,18 +949,18 @@ local function createTeleportPopup(targetPlayer)
 		popup:Destroy()
 	end)
 
-	-- Teleport Here Button (INLINE CREATION)
+	-- Teleport Here Button (✅ ADAPTIVE)
 	local tpHereBtn = Instance.new("TextButton")
-	tpHereBtn.Size = UDim2.new(1, -30, 0, 50)
-	tpHereBtn.Position = UDim2.new(0, 15, 0, 60)
+	tpHereBtn.Size = UDim2.new(0.9, 0, 0.28, 0)
+	tpHereBtn.Position = UDim2.new(0.05, 0, 0.3, 0)
 	tpHereBtn.BackgroundColor3 = COLORS.Button
 	tpHereBtn.BorderSizePixel = 0
 	tpHereBtn.Font = Enum.Font.GothamBold
 	tpHereBtn.Text = "Teleport " .. targetPlayer.Name .. " Here"
 	tpHereBtn.TextColor3 = COLORS.Text
-	tpHereBtn.TextSize = 13
 	tpHereBtn.AutoButtonColor = false
 	tpHereBtn.Parent = popup
+	makeTextAdaptive(tpHereBtn, 13)
 
 	createCorner(8).Parent = tpHereBtn
 
@@ -954,18 +977,18 @@ local function createTeleportPopup(targetPlayer)
 		popup:Destroy()
 	end)
 
-	-- Teleport To Button (INLINE CREATION)
+	-- Teleport To Button (✅ ADAPTIVE)
 	local tpToBtn = Instance.new("TextButton")
-	tpToBtn.Size = UDim2.new(1, -30, 0, 50)
-	tpToBtn.Position = UDim2.new(0, 15, 0, 120)
+	tpToBtn.Size = UDim2.new(0.9, 0, 0.28, 0)
+	tpToBtn.Position = UDim2.new(0.05, 0, 0.65, 0)
 	tpToBtn.BackgroundColor3 = COLORS.Button
 	tpToBtn.BorderSizePixel = 0
 	tpToBtn.Font = Enum.Font.GothamBold
 	tpToBtn.Text = "Teleport To " .. targetPlayer.Name
 	tpToBtn.TextColor3 = COLORS.Text
-	tpToBtn.TextSize = 13
 	tpToBtn.AutoButtonColor = false
 	tpToBtn.Parent = popup
+	makeTextAdaptive(tpToBtn, 13)
 
 	createCorner(8).Parent = tpToBtn
 
@@ -985,9 +1008,10 @@ local function createTeleportPopup(targetPlayer)
 	return popup
 end
 
+-- ✅ ADAPTIVE Set Title Popup
 local function showSetTitlePopup(targetPlayer)
 	local popup = Instance.new("Frame")
-	popup.Size = UDim2.new(0.167, 0, 0.241, 0)
+	popup.Size = UDim2.new(0.2, 0, 0.35, 0)
 	popup.Position = UDim2.new(0.5, 0, 0.5, 0)
 	popup.AnchorPoint = Vector2.new(0.5, 0.5)
 	popup.BackgroundColor3 = COLORS.Background
@@ -999,10 +1023,11 @@ local function showSetTitlePopup(targetPlayer)
 
 	createCorner(12).Parent = popup
 	createStroke(COLORS.Border, 2).Parent = popup
+	addAspectRatio(popup, 0.75)
 
-	-- Header
+	-- Header (✅ ADAPTIVE)
 	local header = Instance.new("Frame")
-	header.Size = UDim2.new(1, 0, 0, 40)
+	header.Size = UDim2.new(1, 0, 0.12, 0)
 	header.BackgroundColor3 = COLORS.Header
 	header.BorderSizePixel = 0
 	header.Parent = popup
@@ -1010,33 +1035,34 @@ local function showSetTitlePopup(targetPlayer)
 	createCorner(12).Parent = header
 
 	local headerBottom = Instance.new("Frame")
-	headerBottom.Size = UDim2.new(1, 0, 0, 15)
-	headerBottom.Position = UDim2.new(0, 0, 1, -15)
+	headerBottom.Size = UDim2.new(1, 0, 0.3, 0)
+	headerBottom.Position = UDim2.new(0, 0, 0.7, 0)
 	headerBottom.BackgroundColor3 = COLORS.Header
 	headerBottom.BorderSizePixel = 0
 	headerBottom.Parent = header
 
 	local title = Instance.new("TextLabel")
-	title.Size = UDim2.new(1, -50, 1, 0)
-	title.Position = UDim2.new(0, 15, 0, 0)
+	title.Size = UDim2.new(0.8, 0, 1, 0)
+	title.Position = UDim2.new(0.05, 0, 0, 0)
 	title.BackgroundTransparency = 1
 	title.Font = Enum.Font.GothamBold
 	title.Text = "Set Title for " .. targetPlayer.Name
 	title.TextColor3 = COLORS.Text
-	title.TextSize = 14
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.Parent = header
+	makeTextAdaptive(title, 14)
 
 	local closeBtn = Instance.new("TextButton")
-	closeBtn.Size = UDim2.new(0, 30, 0, 30)
-	closeBtn.Position = UDim2.new(1, -35, 0, 5)
+	closeBtn.Size = UDim2.new(0.1, 0, 0.7, 0)
+	closeBtn.Position = UDim2.new(0.93, 0, 0.5, 0)
+	closeBtn.AnchorPoint = Vector2.new(1, 0.5)
 	closeBtn.BackgroundColor3 = COLORS.Button
 	closeBtn.BorderSizePixel = 0
 	closeBtn.Text = "✕"
 	closeBtn.Font = Enum.Font.GothamBold
-	closeBtn.TextSize = 16
 	closeBtn.TextColor3 = COLORS.Text
 	closeBtn.Parent = header
+	makeTextAdaptive(closeBtn, 16)
 
 	createCorner(6).Parent = closeBtn
 
@@ -1044,25 +1070,35 @@ local function showSetTitlePopup(targetPlayer)
 		popup:Destroy()
 	end)
 
-	-- Title Options (REMOVED Admin!)
+	-- Content Container with UIListLayout (✅ ADAPTIVE)
+	local contentContainer = Instance.new("Frame")
+	contentContainer.Size = UDim2.new(0.9, 0, 0.7, 0)
+	contentContainer.Position = UDim2.new(0.05, 0, 0.15, 0)
+	contentContainer.BackgroundTransparency = 1
+	contentContainer.Parent = popup
+
+	local contentLayout = Instance.new("UIListLayout")
+	contentLayout.Padding = UDim.new(0.02, 0)
+	contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	contentLayout.Parent = contentContainer
+
+	-- Title Options
 	local titleOptions = {"VVIP", "VIP", "Pengunjung"}
 	local selectedTitle = nil
 	local titleButtons = {}
 
-	local contentY = 60
-
 	for i, titleName in ipairs(titleOptions) do
 		local btn = Instance.new("TextButton")
-		btn.Size = UDim2.new(1, -30, 0, 50)
-		btn.Position = UDim2.new(0, 15, 0, contentY)
+		btn.Size = UDim2.new(1, 0, 0.22, 0)
 		btn.BackgroundColor3 = COLORS.Button
 		btn.BorderSizePixel = 0
 		btn.Font = Enum.Font.GothamBold
 		btn.Text = titleName
 		btn.TextColor3 = COLORS.Text
-		btn.TextSize = 13
 		btn.AutoButtonColor = false
-		btn.Parent = popup
+		btn.LayoutOrder = i
+		btn.Parent = contentContainer
+		makeTextAdaptive(btn, 13)
 
 		createCorner(8).Parent = btn
 
@@ -1075,24 +1111,20 @@ local function showSetTitlePopup(targetPlayer)
 				button.BackgroundColor3 = (name == titleName) and COLORS.Accent or COLORS.Button
 			end
 		end)
-
-		contentY = contentY + 55
 	end
 
-	-- Apply Button (proper position)
-	contentY = contentY + 5
-
+	-- Apply Button (✅ ADAPTIVE)
 	local applyBtn = Instance.new("TextButton")
-	applyBtn.Size = UDim2.new(1, -30, 0, 40)
-	applyBtn.Position = UDim2.new(0, 15, 0, contentY)
+	applyBtn.Size = UDim2.new(1, 0, 0.18, 0)
 	applyBtn.BackgroundColor3 = COLORS.Success
 	applyBtn.BorderSizePixel = 0
 	applyBtn.Font = Enum.Font.GothamBold
 	applyBtn.Text = "Apply"
 	applyBtn.TextColor3 = COLORS.Text
-	applyBtn.TextSize = 14
 	applyBtn.AutoButtonColor = false
-	applyBtn.Parent = popup
+	applyBtn.LayoutOrder = 10
+	applyBtn.Parent = contentContainer
+	makeTextAdaptive(applyBtn, 14)
 
 	createCorner(8).Parent = applyBtn
 
@@ -1125,24 +1157,26 @@ end
 
 
 
+-- ✅ ADAPTIVE Modify Player Popup
 local function createModifyPlayerPopup(targetPlayer)
 	local popup = Instance.new("Frame")
-	popup.Size = UDim2.new(0.182, 0, 0.296, 0)
+	popup.Size = UDim2.new(0.22, 0, 0.35, 0)
 	popup.Position = UDim2.new(0.5, 0, 0.5, 0)
 	popup.AnchorPoint = Vector2.new(0.5, 0.5)
 	popup.BackgroundColor3 = COLORS.Background
 	popup.BorderSizePixel = 0
 	popup.ZIndex = 100
-	popup.Active = true -- Make draggable
-	popup.Draggable = true -- Enable drag
+	popup.Active = true
+	popup.Draggable = true
 	popup.Parent = screenGui
 
 	createCorner(12).Parent = popup
 	createStroke(COLORS.Border, 2).Parent = popup
+	addAspectRatio(popup, 0.8)
 
-	-- Header
+	-- Header (✅ ADAPTIVE)
 	local header = Instance.new("Frame")
-	header.Size = UDim2.new(1, 0, 0, 40)
+	header.Size = UDim2.new(1, 0, 0.12, 0)
 	header.BackgroundColor3 = COLORS.Header
 	header.BorderSizePixel = 0
 	header.Parent = popup
@@ -1150,33 +1184,34 @@ local function createModifyPlayerPopup(targetPlayer)
 	createCorner(12).Parent = header
 
 	local headerBottom = Instance.new("Frame")
-	headerBottom.Size = UDim2.new(1, 0, 0, 15)
-	headerBottom.Position = UDim2.new(0, 0, 1, -15)
+	headerBottom.Size = UDim2.new(1, 0, 0.3, 0)
+	headerBottom.Position = UDim2.new(0, 0, 0.7, 0)
 	headerBottom.BackgroundColor3 = COLORS.Header
 	headerBottom.BorderSizePixel = 0
 	headerBottom.Parent = header
 
 	local title = Instance.new("TextLabel")
-	title.Size = UDim2.new(1, -50, 1, 0)
-	title.Position = UDim2.new(0, 15, 0, 0)
+	title.Size = UDim2.new(0.8, 0, 1, 0)
+	title.Position = UDim2.new(0.05, 0, 0, 0)
 	title.BackgroundTransparency = 1
 	title.Font = Enum.Font.GothamBold
 	title.Text = "Modify " .. targetPlayer.Name
 	title.TextColor3 = COLORS.Text
-	title.TextSize = 14
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.Parent = header
+	makeTextAdaptive(title, 14)
 
 	local closeBtn = Instance.new("TextButton")
-	closeBtn.Size = UDim2.new(0, 30, 0, 30)
-	closeBtn.Position = UDim2.new(1, -35, 0, 5)
+	closeBtn.Size = UDim2.new(0.1, 0, 0.7, 0)
+	closeBtn.Position = UDim2.new(0.93, 0, 0.5, 0)
+	closeBtn.AnchorPoint = Vector2.new(1, 0.5)
 	closeBtn.BackgroundColor3 = COLORS.Button
 	closeBtn.BorderSizePixel = 0
 	closeBtn.Text = "✕"
 	closeBtn.Font = Enum.Font.GothamBold
-	closeBtn.TextSize = 16
 	closeBtn.TextColor3 = COLORS.Text
 	closeBtn.Parent = header
+	makeTextAdaptive(closeBtn, 16)
 
 	createCorner(6).Parent = closeBtn
 
@@ -1184,21 +1219,26 @@ local function createModifyPlayerPopup(targetPlayer)
 		popup:Destroy()
 	end)
 
-	local contentY = 60
+	-- Content Container (✅ ADAPTIVE)
+	local contentContainer = Instance.new("Frame")
+	contentContainer.Size = UDim2.new(0.9, 0, 0.82, 0)
+	contentContainer.Position = UDim2.new(0.05, 0, 0.14, 0)
+	contentContainer.BackgroundTransparency = 1
+	contentContainer.Parent = popup
 
-	-- Freeze Button (WITH TOGGLE STATE)
+	-- Freeze Button (✅ ADAPTIVE)
 	local isFrozen = false
 	local freezeBtn = Instance.new("TextButton")
-	freezeBtn.Size = UDim2.new(1, -30, 0, 45)
-	freezeBtn.Position = UDim2.new(0, 15, 0, contentY)
+	freezeBtn.Size = UDim2.new(1, 0, 0.15, 0)
+	freezeBtn.Position = UDim2.new(0, 0, 0, 0)
 	freezeBtn.BackgroundColor3 = COLORS.Button
 	freezeBtn.BorderSizePixel = 0
 	freezeBtn.Font = Enum.Font.GothamBold
 	freezeBtn.Text = "Freeze Player"
 	freezeBtn.TextColor3 = COLORS.Text
-	freezeBtn.TextSize = 13
 	freezeBtn.AutoButtonColor = false
-	freezeBtn.Parent = popup
+	freezeBtn.Parent = contentContainer
+	makeTextAdaptive(freezeBtn, 13)
 
 	createCorner(8).Parent = freezeBtn
 
@@ -1206,41 +1246,35 @@ local function createModifyPlayerPopup(targetPlayer)
 		isFrozen = not isFrozen
 
 		if isFrozen then
-			-- Frozen state (green)
 			freezeBtn.BackgroundColor3 = COLORS.Success
 			freezeBtn.Text = "Unfreeze Player"
 			freezePlayerEvent:FireServer(targetPlayer.UserId, true)
 		else
-			-- Unfrozen state (gray)
 			freezeBtn.BackgroundColor3 = COLORS.Button
 			freezeBtn.Text = "Freeze Player"
 			freezePlayerEvent:FireServer(targetPlayer.UserId, false)
 		end
 	end)
 
-	contentY = contentY + 55
-
-	-- Speed Label
+	-- Speed Label (✅ ADAPTIVE)
 	local speedLabel = Instance.new("TextLabel")
-	speedLabel.Size = UDim2.new(1, -30, 0, 20)
-	speedLabel.Position = UDim2.new(0, 15, 0, contentY)
+	speedLabel.Size = UDim2.new(1, 0, 0.08, 0)
+	speedLabel.Position = UDim2.new(0, 0, 0.18, 0)
 	speedLabel.BackgroundTransparency = 1
 	speedLabel.Font = Enum.Font.GothamBold
 	speedLabel.Text = "Speed Multiplier: 1.0x"
 	speedLabel.TextColor3 = COLORS.Text
-	speedLabel.TextSize = 12
 	speedLabel.TextXAlignment = Enum.TextXAlignment.Left
-	speedLabel.Parent = popup
+	speedLabel.Parent = contentContainer
+	makeTextAdaptive(speedLabel, 12)
 
-	contentY = contentY + 25
-
-	-- Speed Slider
+	-- Speed Slider (✅ ADAPTIVE)
 	local speedSliderBg = Instance.new("Frame")
-	speedSliderBg.Size = UDim2.new(1, -30, 0, 8)
-	speedSliderBg.Position = UDim2.new(0, 15, 0, contentY)
+	speedSliderBg.Size = UDim2.new(1, 0, 0.04, 0)
+	speedSliderBg.Position = UDim2.new(0, 0, 0.28, 0)
 	speedSliderBg.BackgroundColor3 = COLORS.Panel
 	speedSliderBg.BorderSizePixel = 0
-	speedSliderBg.Parent = popup
+	speedSliderBg.Parent = contentContainer
 
 	createCorner(4).Parent = speedSliderBg
 
@@ -1253,8 +1287,9 @@ local function createModifyPlayerPopup(targetPlayer)
 	createCorner(4).Parent = speedFill
 
 	local speedHandle = Instance.new("Frame")
-	speedHandle.Size = UDim2.new(0, 16, 0, 16)
-	speedHandle.Position = UDim2.new(0.2, -8, 0.5, -8)
+	speedHandle.Size = UDim2.new(0.05, 0, 3, 0)
+	speedHandle.Position = UDim2.new(0.2, 0, 0.5, 0)
+	speedHandle.AnchorPoint = Vector2.new(0.5, 0.5)
 	speedHandle.BackgroundColor3 = COLORS.Text
 	speedHandle.BorderSizePixel = 0
 	speedHandle.Parent = speedSliderBg
@@ -1278,7 +1313,7 @@ local function createModifyPlayerPopup(targetPlayer)
 			local relative = math.clamp((mousePos - sliderPos) / sliderSize, 0, 1)
 
 			speedFill.Size = UDim2.new(relative, 0, 1, 0)
-			speedHandle.Position = UDim2.new(relative, -8, 0.5, -8)
+			speedHandle.Position = UDim2.new(relative, 0, 0.5, 0)
 
 			local speedValue = 0.1 + (relative * 3.9)
 			speedLabel.Text = string.format("Speed Multiplier: %.1fx", speedValue)
@@ -1292,43 +1327,45 @@ local function createModifyPlayerPopup(targetPlayer)
 		end
 	end)
 
-	contentY = contentY + 30
-
-	-- Gravity Label
+	-- Gravity Label (✅ ADAPTIVE)
 	local gravityLabel = Instance.new("TextLabel")
-	gravityLabel.Size = UDim2.new(1, -30, 0, 20)
-	gravityLabel.Position = UDim2.new(0, 15, 0, contentY)
+	gravityLabel.Size = UDim2.new(1, 0, 0.08, 0)
+	gravityLabel.Position = UDim2.new(0, 0, 0.36, 0)
 	gravityLabel.BackgroundTransparency = 1
 	gravityLabel.Font = Enum.Font.GothamBold
 	gravityLabel.Text = "Gravity: Normal"
 	gravityLabel.TextColor3 = COLORS.Text
-	gravityLabel.TextSize = 12
 	gravityLabel.TextXAlignment = Enum.TextXAlignment.Left
-	gravityLabel.Parent = popup
+	gravityLabel.Parent = contentContainer
+	makeTextAdaptive(gravityLabel, 12)
 
-	contentY = contentY + 25
+	-- Gravity Buttons Container (✅ ADAPTIVE)
+	local gravityContainer = Instance.new("Frame")
+	gravityContainer.Size = UDim2.new(1, 0, 0.12, 0)
+	gravityContainer.Position = UDim2.new(0, 0, 0.46, 0)
+	gravityContainer.BackgroundTransparency = 1
+	gravityContainer.Parent = contentContainer
 
-	-- Gravity Buttons (CENTERED with equal spacing)
+	local gravityLayout = Instance.new("UIListLayout")
+	gravityLayout.FillDirection = Enum.FillDirection.Horizontal
+	gravityLayout.Padding = UDim.new(0.02, 0)
+	gravityLayout.Parent = gravityContainer
+
 	local gravityTypes = {"Normal", "Low", "Zero", "High"}
 	local currentGravity = "Normal"
-	local buttonWidth = 0.23
-	local totalGap = 1 - (buttonWidth * 4)
-	local spacing = totalGap / 5 -- Equal spacing left, right, and between
 
 	for i, gType in ipairs(gravityTypes) do
-		local xPosition = spacing * i + buttonWidth * (i - 1)
-
 		local gBtn = Instance.new("TextButton")
-		gBtn.Size = UDim2.new(buttonWidth, 0, 0, 35)
-		gBtn.Position = UDim2.new(xPosition, 0, 0, contentY)
+		gBtn.Size = UDim2.new(0.23, 0, 1, 0)
 		gBtn.BackgroundColor3 = (i == 1) and COLORS.Accent or COLORS.Button
 		gBtn.BorderSizePixel = 0
 		gBtn.Font = Enum.Font.GothamBold
 		gBtn.Text = gType
 		gBtn.TextColor3 = COLORS.Text
-		gBtn.TextSize = 11
 		gBtn.AutoButtonColor = false
-		gBtn.Parent = popup
+		gBtn.LayoutOrder = i
+		gBtn.Parent = gravityContainer
+		makeTextAdaptive(gBtn, 11)
 
 		createCorner(6).Parent = gBtn
 
@@ -1344,22 +1381,21 @@ local function createModifyPlayerPopup(targetPlayer)
 			setGravityEvent:FireServer(targetPlayer.UserId, gravValue)
 
 			-- Update colors
-			for _, btn in ipairs(popup:GetChildren()) do
-				if btn:IsA("TextButton") and table.find(gravityTypes, btn.Text) then
+			for _, btn in ipairs(gravityContainer:GetChildren()) do
+				if btn:IsA("TextButton") then
 					btn.BackgroundColor3 = (btn.Text == gType) and COLORS.Accent or COLORS.Button
 				end
 			end
 		end)
 	end
 
-
 	return popup
 end
 
--- ✅ FUNCTION BARU: Show Modify Summit Popup (FIXED - Bigger & Draggable)
+-- ✅ ADAPTIVE Modify Summit Popup
 local function showModifySummitPopup(targetPlayer)
 	local popup = Instance.new("Frame")
-	popup.Size = UDim2.new(0, 360, 0, 280)  -- ✅ Lebih besar: 360x280px
+	popup.Size = UDim2.new(0.22, 0, 0.32, 0)
 	popup.Position = UDim2.new(0.5, 0, 0.5, 0)
 	popup.AnchorPoint = Vector2.new(0.5, 0.5)
 	popup.BackgroundColor3 = COLORS.Background
@@ -1369,51 +1405,50 @@ local function showModifySummitPopup(targetPlayer)
 
 	createCorner(12).Parent = popup
 	createStroke(COLORS.Border, 2).Parent = popup
+	addAspectRatio(popup, 1.3)
 
 	-- ✅ DRAGGABLE
 	makeDraggable(popup)
 
-	-- Header (Draggable handle)
+	-- Header (✅ ADAPTIVE)
 	local header = Instance.new("Frame")
 	header.Name = "Header"
-	header.Size = UDim2.new(1, 0, 0, 50)
+	header.Size = UDim2.new(1, 0, 0.18, 0)
 	header.BackgroundColor3 = COLORS.Header
 	header.BorderSizePixel = 0
 	header.Parent = popup
 
 	createCorner(12).Parent = header
 
-	-- Header bottom filler (rounded corner fix)
 	local headerBottom = Instance.new("Frame")
-	headerBottom.Size = UDim2.new(1, 0, 0, 15)
-	headerBottom.Position = UDim2.new(0, 0, 1, -15)
+	headerBottom.Size = UDim2.new(1, 0, 0.3, 0)
+	headerBottom.Position = UDim2.new(0, 0, 0.7, 0)
 	headerBottom.BackgroundColor3 = COLORS.Header
 	headerBottom.BorderSizePixel = 0
 	headerBottom.Parent = header
 
-	-- Title
 	local title = Instance.new("TextLabel")
-	title.Size = UDim2.new(1, -50, 1, 0)
-	title.Position = UDim2.new(0, 15, 0, 0)
+	title.Size = UDim2.new(0.8, 0, 1, 0)
+	title.Position = UDim2.new(0.05, 0, 0, 0)
 	title.BackgroundTransparency = 1
 	title.Font = Enum.Font.GothamBold
 	title.Text = "Modify " .. targetPlayer.Name .. " Summit Data"
 	title.TextColor3 = COLORS.Text
-	title.TextSize = 15
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.Parent = header
+	makeTextAdaptive(title, 15)
 
-	-- Close Button
 	local closeBtn = Instance.new("TextButton")
-	closeBtn.Size = UDim2.new(0, 30, 0, 30)
-	closeBtn.Position = UDim2.new(1, -40, 0, 10)
+	closeBtn.Size = UDim2.new(0.1, 0, 0.6, 0)
+	closeBtn.Position = UDim2.new(0.93, 0, 0.5, 0)
+	closeBtn.AnchorPoint = Vector2.new(1, 0.5)
 	closeBtn.BackgroundColor3 = COLORS.Button
 	closeBtn.BorderSizePixel = 0
 	closeBtn.Text = "✕"
 	closeBtn.Font = Enum.Font.GothamBold
-	closeBtn.TextSize = 18
 	closeBtn.TextColor3 = COLORS.Text
 	closeBtn.Parent = header
+	makeTextAdaptive(closeBtn, 18)
 
 	createCorner(6).Parent = closeBtn
 
@@ -1421,24 +1456,24 @@ local function showModifySummitPopup(targetPlayer)
 		popup:Destroy()
 	end)
 
-	-- ✅ CONTENT CONTAINER (untuk spacing proper)
+	-- Content Container (✅ ADAPTIVE)
 	local contentContainer = Instance.new("Frame")
-	contentContainer.Size = UDim2.new(1, -30, 1, -65)  -- Leave space for header & bottom
-	contentContainer.Position = UDim2.new(0, 15, 0, 60)
+	contentContainer.Size = UDim2.new(0.9, 0, 0.75, 0)
+	contentContainer.Position = UDim2.new(0.05, 0, 0.22, 0)
 	contentContainer.BackgroundTransparency = 1
 	contentContainer.Parent = popup
 
-	-- Current Summit Display
+	-- Current Summit Display (✅ ADAPTIVE)
 	local currentLabel = Instance.new("TextLabel")
-	currentLabel.Size = UDim2.new(1, 0, 0, 25)
+	currentLabel.Size = UDim2.new(1, 0, 0.12, 0)
 	currentLabel.Position = UDim2.new(0, 0, 0, 0)
 	currentLabel.BackgroundTransparency = 1
 	currentLabel.Font = Enum.Font.Gotham
 	currentLabel.Text = "Current Summit: Loading..."
 	currentLabel.TextColor3 = COLORS.TextSecondary
-	currentLabel.TextSize = 13
 	currentLabel.TextXAlignment = Enum.TextXAlignment.Left
 	currentLabel.Parent = contentContainer
+	makeTextAdaptive(currentLabel, 13)
 
 	-- Get current summit value
 	task.spawn(function()
@@ -1451,46 +1486,45 @@ local function showModifySummitPopup(targetPlayer)
 		end
 	end)
 
-	-- Input Label
+	-- Input Label (✅ ADAPTIVE)
 	local inputLabel = Instance.new("TextLabel")
-	inputLabel.Size = UDim2.new(1, 0, 0, 25)
-	inputLabel.Position = UDim2.new(0, 0, 0, 35)
+	inputLabel.Size = UDim2.new(1, 0, 0.12, 0)
+	inputLabel.Position = UDim2.new(0, 0, 0.15, 0)
 	inputLabel.BackgroundTransparency = 1
 	inputLabel.Font = Enum.Font.GothamBold
 	inputLabel.Text = "New Summit Value:"
 	inputLabel.TextColor3 = COLORS.Text
-	inputLabel.TextSize = 14
 	inputLabel.TextXAlignment = Enum.TextXAlignment.Left
 	inputLabel.Parent = contentContainer
+	makeTextAdaptive(inputLabel, 14)
 
-	-- Input Box
+	-- Input Box (✅ ADAPTIVE)
 	local inputBox = Instance.new("TextBox")
-	inputBox.Size = UDim2.new(1, 0, 0, 50)  -- ✅ Lebih tinggi
-	inputBox.Position = UDim2.new(0, 0, 0, 70)
+	inputBox.Size = UDim2.new(1, 0, 0.22, 0)
+	inputBox.Position = UDim2.new(0, 0, 0.3, 0)
 	inputBox.BackgroundColor3 = COLORS.Panel
 	inputBox.BorderSizePixel = 0
 	inputBox.Font = Enum.Font.Gotham
 	inputBox.PlaceholderText = "Enter summit value (e.g. 100)"
 	inputBox.Text = ""
 	inputBox.TextColor3 = COLORS.Text
-	inputBox.TextSize = 15
 	inputBox.ClearTextOnFocus = false
 	inputBox.Parent = contentContainer
+	makeTextAdaptive(inputBox, 15)
 
 	createCorner(8).Parent = inputBox
 	createPadding(12).Parent = inputBox
 
-	-- Set Button
+	-- Set Button (✅ ADAPTIVE)
 	local setBtn = createButton("Set Summit", COLORS.Success, Color3.fromRGB(77, 191, 139))
-	setBtn.Size = UDim2.new(1, 0, 0, 50)  -- ✅ Lebih tinggi
-	setBtn.Position = UDim2.new(0, 0, 0, 135)  -- ✅ Proper spacing
+	setBtn.Size = UDim2.new(1, 0, 0.22, 0)
+	setBtn.Position = UDim2.new(0, 0, 0.58, 0)
 	setBtn.Parent = contentContainer
 
 	setBtn.MouseButton1Click:Connect(function()
 		local newValue = tonumber(inputBox.Text)
 
 		if not newValue or newValue < 0 then
-			-- Show error notification
 			StarterGui:SetCore("SendNotification", {
 				Title = "❌ Invalid Input",
 				Text = "Please enter a valid number (0 or greater)",
@@ -1499,7 +1533,6 @@ local function showModifySummitPopup(targetPlayer)
 			return
 		end
 
-		-- Show confirmation dialog
 		showConfirmation(
 			"Modify Summit Data",
 			string.format("Set %s's summit to %d?", targetPlayer.Name, newValue),
@@ -1524,7 +1557,7 @@ local function createPlayerCard(targetPlayer)
 	local isLocalPlayer = (targetPlayer == player)
 
 	local card = Instance.new("TextButton")
-	card.Size = UDim2.new(1, 0, 0.17, 0)
+	card.Size = UDim2.new(1, 0, 0.15, 0)  -- ✅ Scale-based
 	card.BackgroundColor3 = isLocalPlayer and COLORS.Accent or COLORS.Panel
 	card.BorderSizePixel = 0
 	card.AutoButtonColor = false
@@ -1534,8 +1567,8 @@ local function createPlayerCard(targetPlayer)
 	createCorner(8).Parent = card
 
 	local avatar = Instance.new("ImageLabel")
-	avatar.Size = UDim2.new(0.125, 0, 0.667, 0)
-	avatar.Position = UDim2.new(0.031, 0, 0.167, 0)
+	avatar.Size = UDim2.new(0.12, 0, 0.7, 0)
+	avatar.Position = UDim2.new(0.03, 0, 0.15, 0)
 	avatar.BackgroundColor3 = COLORS.Button
 	avatar.BorderSizePixel = 0
 	avatar.Image = "rbxthumb://type=AvatarHeadShot&id=" .. targetPlayer.UserId .. "&w=150&h=150"
@@ -1544,27 +1577,27 @@ local function createPlayerCard(targetPlayer)
 	createCorner(20).Parent = avatar
 
 	local nameLabel = Instance.new("TextLabel")
-	nameLabel.Size = UDim2.new(0.563, 0, 0.333, 0)
-	nameLabel.Position = UDim2.new(0.188, 0, 0.167, 0)
+	nameLabel.Size = UDim2.new(0.55, 0, 0.35, 0)
+	nameLabel.Position = UDim2.new(0.18, 0, 0.15, 0)
 	nameLabel.BackgroundTransparency = 1
 	nameLabel.Font = Enum.Font.GothamBold
 	nameLabel.Text = targetPlayer.Name .. (isLocalPlayer and " (You)" or "")
 	nameLabel.TextColor3 = COLORS.Text
-	nameLabel.TextSize = 14
 	nameLabel.TextXAlignment = Enum.TextXAlignment.Left
 	nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	nameLabel.Parent = card
+	makeTextAdaptive(nameLabel, 14)
 
 	local displayLabel = Instance.new("TextLabel")
-	displayLabel.Size = UDim2.new(0.563, 0, 0.3, 0)
-	displayLabel.Position = UDim2.new(0.188, 0, 0.533, 0)
+	displayLabel.Size = UDim2.new(0.55, 0, 0.3, 0)
+	displayLabel.Position = UDim2.new(0.18, 0, 0.55, 0)
 	displayLabel.BackgroundTransparency = 1
 	displayLabel.Font = Enum.Font.Gotham
 	displayLabel.Text = "@" .. targetPlayer.DisplayName
 	displayLabel.TextColor3 = COLORS.TextSecondary
-	displayLabel.TextSize = 12
 	displayLabel.TextXAlignment = Enum.TextXAlignment.Left
 	displayLabel.Parent = card
+	makeTextAdaptive(displayLabel, 12)
 
 
 
@@ -1599,18 +1632,18 @@ local function createPlayerCard(targetPlayer)
 			end
 		end
 
-		-- Create/Update title label UI
+		-- Create/Update title label UI (✅ ADAPTIVE)
 		local titleLabel = card:FindFirstChild("TitleLabel")
 		if not titleLabel then
 			titleLabel = Instance.new("TextLabel")
 			titleLabel.Name = "TitleLabel"
-			titleLabel.Size = UDim2.new(0, 70, 0, 20)
-			titleLabel.Position = UDim2.new(1, -80, 0, 20)
+			titleLabel.Size = UDim2.new(0.2, 0, 0.35, 0)
+			titleLabel.Position = UDim2.new(0.78, 0, 0.3, 0)
 			titleLabel.BackgroundTransparency = 1
 			titleLabel.Font = Enum.Font.GothamBold
-			titleLabel.TextSize = 11
 			titleLabel.TextXAlignment = Enum.TextXAlignment.Right
 			titleLabel.Parent = card
+			makeTextAdaptive(titleLabel, 11)
 		end
 
 		-- Update text
@@ -1859,10 +1892,10 @@ local function createPlayerCard(targetPlayer)
 				-- Load ShopConfig
 				local ShopConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("ShopConfig"))
 
-				-- Create Give Items Popup
+				-- Create Give Items Popup (✅ ADAPTIVE)
 				local giveItemsPopup = Instance.new("Frame")
 				giveItemsPopup.Name = "GiveItemsPopup"
-				giveItemsPopup.Size = UDim2.new(0.234, 0, 0.463, 0)
+				giveItemsPopup.Size = UDim2.new(0.28, 0, 0.55, 0)
 				giveItemsPopup.Position = UDim2.new(0.5, 0, 0.5, 0)
 				giveItemsPopup.AnchorPoint = Vector2.new(0.5, 0.5)
 				giveItemsPopup.BackgroundColor3 = COLORS.Background
@@ -1872,28 +1905,29 @@ local function createPlayerCard(targetPlayer)
 
 				createCorner(12).Parent = giveItemsPopup
 				createStroke(COLORS.Border, 2).Parent = giveItemsPopup
+				addAspectRatio(giveItemsPopup, 0.65)
 
 				local popupTitle = Instance.new("TextLabel")
-				popupTitle.Size = UDim2.new(1, -40, 0, 50)
-				popupTitle.Position = UDim2.new(0, 20, 0, 20)
+				popupTitle.Size = UDim2.new(0.85, 0, 0.08, 0)
+				popupTitle.Position = UDim2.new(0.05, 0, 0.03, 0)
 				popupTitle.BackgroundTransparency = 1
 				popupTitle.Font = Enum.Font.GothamBold
 				popupTitle.Text = "Give Items to " .. targetPlayer.Name
 				popupTitle.TextColor3 = COLORS.Text
-				popupTitle.TextSize = 16
 				popupTitle.TextXAlignment = Enum.TextXAlignment.Left
 				popupTitle.Parent = giveItemsPopup
+				makeTextAdaptive(popupTitle, 16)
 
 				local closePopupBtn = Instance.new("TextButton")
-				closePopupBtn.Size = UDim2.new(0, 30, 0, 30)
-				closePopupBtn.Position = UDim2.new(1, -35, 0, 20)
+				closePopupBtn.Size = UDim2.new(0.08, 0, 0.06, 0)
+				closePopupBtn.Position = UDim2.new(0.9, 0, 0.03, 0)
 				closePopupBtn.BackgroundColor3 = COLORS.Button
 				closePopupBtn.BorderSizePixel = 0
 				closePopupBtn.Font = Enum.Font.GothamBold
 				closePopupBtn.Text = "×"
 				closePopupBtn.TextColor3 = COLORS.Text
-				closePopupBtn.TextSize = 20
 				closePopupBtn.Parent = giveItemsPopup
+				makeTextAdaptive(closePopupBtn, 20)
 
 				createCorner(6).Parent = closePopupBtn
 
@@ -1901,61 +1935,61 @@ local function createPlayerCard(targetPlayer)
 					giveItemsPopup:Destroy()
 				end)
 
-				-- Tab Frame (UPDATE INI)
+				-- Tab Frame (✅ ADAPTIVE)
 				local tabFrame = Instance.new("Frame")
-				tabFrame.Size = UDim2.new(1, -40, 0, 35)
-				tabFrame.Position = UDim2.new(0, 20, 0, 80)
+				tabFrame.Size = UDim2.new(0.9, 0, 0.07, 0)
+				tabFrame.Position = UDim2.new(0.05, 0, 0.12, 0)
 				tabFrame.BackgroundTransparency = 1
 				tabFrame.Parent = giveItemsPopup
 
 				local tabLayout = Instance.new("UIListLayout")
 				tabLayout.FillDirection = Enum.FillDirection.Horizontal
-				tabLayout.Padding = UDim.new(0, 8)
+				tabLayout.Padding = UDim.new(0.02, 0)
 				tabLayout.Parent = tabFrame
 
 				local auraTab = Instance.new("TextButton")
-				auraTab.Size = UDim2.new(0, 100, 1, 0)
+				auraTab.Size = UDim2.new(0.3, 0, 1, 0)
 				auraTab.BackgroundColor3 = COLORS.Accent
 				auraTab.BorderSizePixel = 0
 				auraTab.Font = Enum.Font.GothamBold
 				auraTab.Text = "Auras"
 				auraTab.TextColor3 = COLORS.Text
-				auraTab.TextSize = 13
 				auraTab.AutoButtonColor = false
 				auraTab.Parent = tabFrame
+				makeTextAdaptive(auraTab, 13)
 
 				createCorner(6).Parent = auraTab
 
 				local toolTab = Instance.new("TextButton")
-				toolTab.Size = UDim2.new(0, 100, 1, 0)
+				toolTab.Size = UDim2.new(0.3, 0, 1, 0)
 				toolTab.BackgroundColor3 = COLORS.Button
 				toolTab.BorderSizePixel = 0
 				toolTab.Font = Enum.Font.GothamBold
 				toolTab.Text = "Tools"
 				toolTab.TextColor3 = COLORS.Text
-				toolTab.TextSize = 13
 				toolTab.AutoButtonColor = false
 				toolTab.Parent = tabFrame
+				makeTextAdaptive(toolTab, 13)
 				
 				local moneyTab = Instance.new("TextButton")
-				moneyTab.Size = UDim2.new(0, 100, 1, 0)
+				moneyTab.Size = UDim2.new(0.3, 0, 1, 0)
 				moneyTab.BackgroundColor3 = COLORS.Button
 				moneyTab.BorderSizePixel = 0
 				moneyTab.Font = Enum.Font.GothamBold
 				moneyTab.Text = "Money"
 				moneyTab.TextColor3 = COLORS.Text
-				moneyTab.TextSize = 13
 				moneyTab.AutoButtonColor = false
 				moneyTab.Parent = tabFrame
+				makeTextAdaptive(moneyTab, 13)
 
 				createCorner(6).Parent = moneyTab
 
 				createCorner(6).Parent = toolTab
 
-				-- Content Frame
+				-- Content Frame (✅ ADAPTIVE)
 				local contentFrame = Instance.new("Frame")
-				contentFrame.Size = UDim2.new(1, -40, 1, -220)
-				contentFrame.Position = UDim2.new(0, 20, 0, 125)
+				contentFrame.Size = UDim2.new(0.9, 0, 0.6, 0)
+				contentFrame.Position = UDim2.new(0.05, 0, 0.22, 0)
 				contentFrame.BackgroundTransparency = 1
 				contentFrame.Parent = giveItemsPopup
 
@@ -1972,7 +2006,7 @@ local function createPlayerCard(targetPlayer)
 				auraContent.Parent = contentFrame
 
 				local auraLayout = Instance.new("UIListLayout")
-				auraLayout.Padding = UDim.new(0, 6)
+				auraLayout.Padding = UDim.new(0.015, 0)
 				auraLayout.SortOrder = Enum.SortOrder.LayoutOrder
 				auraLayout.Parent = auraContent
 
@@ -1989,7 +2023,7 @@ local function createPlayerCard(targetPlayer)
 				toolContent.Parent = contentFrame
 
 				local toolLayout = Instance.new("UIListLayout")
-				toolLayout.Padding = UDim.new(0, 6)
+				toolLayout.Padding = UDim.new(0.015, 0)  -- ✅ Scale-based
 				toolLayout.SortOrder = Enum.SortOrder.LayoutOrder
 				toolLayout.Parent = toolContent
 				
@@ -2006,7 +2040,7 @@ local function createPlayerCard(targetPlayer)
 				moneyContent.Parent = contentFrame
 
 				local moneyLayout = Instance.new("UIListLayout")
-				moneyLayout.Padding = UDim.new(0, 6)
+				moneyLayout.Padding = UDim.new(0.015, 0)  -- ✅ Scale-based
 				moneyLayout.SortOrder = Enum.SortOrder.LayoutOrder
 				moneyLayout.Parent = moneyContent
 
@@ -2014,10 +2048,10 @@ local function createPlayerCard(targetPlayer)
 				local selectedAuras = {}
 				local selectedTools = {}
 
-				-- Create Aura Checkboxes
+				-- Create Aura Checkboxes (✅ ADAPTIVE)
 				for _, aura in ipairs(ShopConfig.Auras) do
 					local frame = Instance.new("Frame")
-					frame.Size = UDim2.new(1, 0, 0, 40)
+					frame.Size = UDim2.new(1, 0, 0.12, 0)  -- ✅ Scale-based
 					frame.BackgroundColor3 = COLORS.Panel
 					frame.BorderSizePixel = 0
 					frame.Parent = auraContent
@@ -2025,8 +2059,8 @@ local function createPlayerCard(targetPlayer)
 					createCorner(6).Parent = frame
 
 					local checkbox = Instance.new("TextButton")
-					checkbox.Size = UDim2.new(0, 30, 0, 30)
-					checkbox.Position = UDim2.new(0, 5, 0, 5)
+					checkbox.Size = UDim2.new(0.1, 0, 0.75, 0)
+					checkbox.Position = UDim2.new(0.02, 0, 0.125, 0)
 					checkbox.BackgroundColor3 = COLORS.Button
 					checkbox.BorderSizePixel = 0
 					checkbox.Text = ""
@@ -2041,20 +2075,20 @@ local function createPlayerCard(targetPlayer)
 					checkmark.Font = Enum.Font.GothamBold
 					checkmark.Text = "✓"
 					checkmark.TextColor3 = COLORS.Success
-					checkmark.TextSize = 18
 					checkmark.Visible = false
 					checkmark.Parent = checkbox
+					makeTextAdaptive(checkmark, 18)
 
 					local label = Instance.new("TextLabel")
-					label.Size = UDim2.new(1, -45, 1, 0)
-					label.Position = UDim2.new(0, 40, 0, 0)
+					label.Size = UDim2.new(0.8, 0, 1, 0)
+					label.Position = UDim2.new(0.15, 0, 0, 0)
 					label.BackgroundTransparency = 1
 					label.Font = Enum.Font.GothamMedium
 					label.Text = aura.Title
 					label.TextColor3 = COLORS.Text
-					label.TextSize = 13
 					label.TextXAlignment = Enum.TextXAlignment.Left
 					label.Parent = frame
+					makeTextAdaptive(label, 13)
 
 					checkbox.MouseButton1Click:Connect(function()
 						local isSelected = table.find(selectedAuras, aura.AuraId)
@@ -2070,10 +2104,10 @@ local function createPlayerCard(targetPlayer)
 					end)
 				end
 
-				-- Create Tool Checkboxes
+				-- Create Tool Checkboxes (✅ ADAPTIVE)
 				for _, tool in ipairs(ShopConfig.Tools) do
 					local frame = Instance.new("Frame")
-					frame.Size = UDim2.new(1, 0, 0, 40)
+					frame.Size = UDim2.new(1, 0, 0.12, 0)  -- ✅ Scale-based
 					frame.BackgroundColor3 = COLORS.Panel
 					frame.BorderSizePixel = 0
 					frame.Parent = toolContent
@@ -2081,8 +2115,8 @@ local function createPlayerCard(targetPlayer)
 					createCorner(6).Parent = frame
 
 					local checkbox = Instance.new("TextButton")
-					checkbox.Size = UDim2.new(0, 30, 0, 30)
-					checkbox.Position = UDim2.new(0, 5, 0, 5)
+					checkbox.Size = UDim2.new(0.1, 0, 0.75, 0)
+					checkbox.Position = UDim2.new(0.02, 0, 0.125, 0)
 					checkbox.BackgroundColor3 = COLORS.Button
 					checkbox.BorderSizePixel = 0
 					checkbox.Text = ""
@@ -2097,20 +2131,20 @@ local function createPlayerCard(targetPlayer)
 					checkmark.Font = Enum.Font.GothamBold
 					checkmark.Text = "✓"
 					checkmark.TextColor3 = COLORS.Success
-					checkmark.TextSize = 18
 					checkmark.Visible = false
 					checkmark.Parent = checkbox
+					makeTextAdaptive(checkmark, 18)
 
 					local label = Instance.new("TextLabel")
-					label.Size = UDim2.new(1, -45, 1, 0)
-					label.Position = UDim2.new(0, 40, 0, 0)
+					label.Size = UDim2.new(0.8, 0, 1, 0)
+					label.Position = UDim2.new(0.15, 0, 0, 0)
 					label.BackgroundTransparency = 1
 					label.Font = Enum.Font.GothamMedium
 					label.Text = tool.Title
 					label.TextColor3 = COLORS.Text
-					label.TextSize = 13
 					label.TextXAlignment = Enum.TextXAlignment.Left
 					label.Parent = frame
+					makeTextAdaptive(label, 13)
 
 					checkbox.MouseButton1Click:Connect(function()
 						local isSelected = table.find(selectedTools, tool.ToolId)
@@ -2126,10 +2160,10 @@ local function createPlayerCard(targetPlayer)
 					end)
 				end
 				
-				-- ✅ TAMBAHKAN: Create Money Options
+				-- ✅ TAMBAHKAN: Create Money Options (✅ ADAPTIVE)
 				for _, pack in ipairs(ShopConfig.MoneyPacks) do
 					local frame = Instance.new("Frame")
-					frame.Size = UDim2.new(1, 0, 0, 50)
+					frame.Size = UDim2.new(1, 0, 0.15, 0)  -- ✅ Scale-based
 					frame.BackgroundColor3 = COLORS.Panel
 					frame.BorderSizePixel = 0
 					frame.Parent = moneyContent
@@ -2137,38 +2171,39 @@ local function createPlayerCard(targetPlayer)
 					createCorner(6).Parent = frame
 
 					local titleLabel = Instance.new("TextLabel")
-					titleLabel.Size = UDim2.new(0.5, -10, 0, 20)
-					titleLabel.Position = UDim2.new(0, 10, 0, 8)
+					titleLabel.Size = UDim2.new(0.5, 0, 0.45, 0)
+					titleLabel.Position = UDim2.new(0.03, 0, 0.1, 0)
 					titleLabel.BackgroundTransparency = 1
 					titleLabel.Font = Enum.Font.GothamBold
 					titleLabel.Text = pack.Title
 					titleLabel.TextColor3 = COLORS.Text
-					titleLabel.TextSize = 13
 					titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 					titleLabel.Parent = frame
+					makeTextAdaptive(titleLabel, 13)
 
 					local amountLabel = Instance.new("TextLabel")
-					amountLabel.Size = UDim2.new(0.5, -10, 0, 18)
-					amountLabel.Position = UDim2.new(0, 10, 0, 28)
+					amountLabel.Size = UDim2.new(0.5, 0, 0.4, 0)
+					amountLabel.Position = UDim2.new(0.03, 0, 0.5, 0)
 					amountLabel.BackgroundTransparency = 1
 					amountLabel.Font = Enum.Font.Gotham
 					amountLabel.Text = "$" .. tostring(pack.MoneyReward)
 					amountLabel.TextColor3 = COLORS.Success
-					amountLabel.TextSize = 12
 					amountLabel.TextXAlignment = Enum.TextXAlignment.Left
 					amountLabel.Parent = frame
+					makeTextAdaptive(amountLabel, 12)
 
 					local selectBtn = Instance.new("TextButton")
-					selectBtn.Size = UDim2.new(0, 80, 0, 35)
-					selectBtn.Position = UDim2.new(1, -90, 0.5, -17)
+					selectBtn.Size = UDim2.new(0.25, 0, 0.7, 0)
+					selectBtn.Position = UDim2.new(0.72, 0, 0.5, 0)
+					selectBtn.AnchorPoint = Vector2.new(0, 0.5)
 					selectBtn.BackgroundColor3 = COLORS.Accent
 					selectBtn.BorderSizePixel = 0
 					selectBtn.Font = Enum.Font.GothamBold
 					selectBtn.Text = "Select"
 					selectBtn.TextColor3 = COLORS.Text
-					selectBtn.TextSize = 12
 					selectBtn.AutoButtonColor = false
 					selectBtn.Parent = frame
+					makeTextAdaptive(selectBtn, 12)
 
 					createCorner(6).Parent = selectBtn
 
@@ -2221,10 +2256,10 @@ local function createPlayerCard(targetPlayer)
 				end)
 				
 
-				-- Give Button (UPDATE INI)
+				-- Give Button (✅ ADAPTIVE)
 				local giveBtn = createButton("Give Selected Items", COLORS.Success, COLORS.Success)
-				giveBtn.Size = UDim2.new(1, -40, 0, 50)
-				giveBtn.Position = UDim2.new(0, 20, 1, -70)
+				giveBtn.Size = UDim2.new(0.9, 0, 0.1, 0)
+				giveBtn.Position = UDim2.new(0.05, 0, 0.85, 0)
 				giveBtn.Parent = giveItemsPopup
 
 				giveBtn.MouseButton1Click:Connect(function()
@@ -2272,10 +2307,10 @@ local function createPlayerCard(targetPlayer)
 				end)		
 			end)
 
-			-- Show panel with animation
+			-- Show panel with animation (✅ ADAPTIVE)
 			playerDetailPanel.Size = UDim2.new(0, 0, 0, 0)
 			playerDetailPanel.Visible = true
-			tweenSize(playerDetailPanel, UDim2.new(0.208, 0, 0.7, 0), 0.3)
+			tweenSize(playerDetailPanel, UDim2.new(0.7, 0, 0.9, 0), 0.3)
 
 		end)
 	else
@@ -2341,34 +2376,33 @@ eventsScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 eventsScroll.Parent = eventsTab
 
 local eventsLayout = Instance.new("UIListLayout")
-eventsLayout.Padding = UDim.new(0, 10)
+eventsLayout.Padding = UDim.new(0.015, 0)  -- ✅ Scale-based padding
 eventsLayout.SortOrder = Enum.SortOrder.LayoutOrder
 eventsLayout.Parent = eventsScroll
 
--- Title
+-- Title (✅ ADAPTIVE)
 local eventsTitle = Instance.new("TextLabel")
-eventsTitle.Size = UDim2.new(1, 0, 0, 30)
+eventsTitle.Size = UDim2.new(1, 0, 0.06, 0)
 eventsTitle.BackgroundTransparency = 1
 eventsTitle.Font = Enum.Font.GothamBold
 eventsTitle.Text = "🎉 Global Event Manager"
 eventsTitle.TextColor3 = COLORS.Text
-eventsTitle.TextSize = 18
-eventsTitle.TextScaled = false
 eventsTitle.TextXAlignment = Enum.TextXAlignment.Left
 eventsTitle.LayoutOrder = 1
 eventsTitle.Parent = eventsScroll
+makeTextAdaptive(eventsTitle, 18)
 
 local eventsDesc = Instance.new("TextLabel")
-eventsDesc.Size = UDim2.new(1, 0, 0, 40)
+eventsDesc.Size = UDim2.new(1, 0, 0.08, 0)
 eventsDesc.BackgroundTransparency = 1
 eventsDesc.Font = Enum.Font.Gotham
 eventsDesc.Text = "Activate events to boost summit rewards across ALL servers"
 eventsDesc.TextColor3 = COLORS.TextSecondary
-eventsDesc.TextSize = 13
 eventsDesc.TextWrapped = true
 eventsDesc.TextXAlignment = Enum.TextXAlignment.Left
 eventsDesc.LayoutOrder = 2
 eventsDesc.Parent = eventsScroll
+makeTextAdaptive(eventsDesc, 13)
 
 -- Load EventConfig
 local EventConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("EventConfig"))
@@ -2393,10 +2427,10 @@ task.spawn(function()
 	end
 end)
 
--- ✅ RESPONSIVE EVENT CARDS
+-- ✅ FULLY ADAPTIVE EVENT CARDS
 for i, event in ipairs(EventConfig.AvailableEvents) do
 	local eventCard = Instance.new("Frame")
-	eventCard.Size = UDim2.new(1, 0, 0, 120)  -- Fixed height OK untuk list
+	eventCard.Size = UDim2.new(1, 0, 0.18, 0)  -- ✅ Scale-based
 	eventCard.BackgroundColor3 = COLORS.Panel
 	eventCard.BorderSizePixel = 0
 	eventCard.LayoutOrder = 2 + i
@@ -2404,82 +2438,71 @@ for i, event in ipairs(EventConfig.AvailableEvents) do
 
 	createCorner(8).Parent = eventCard
 
-	-- ✅ Icon (LEFT - SCALE)
+	-- ✅ Icon (FULLY SCALE)
 	local iconLabel = Instance.new("TextLabel")
-	iconLabel.Size = UDim2.new(0.1, 0, 0, 50)  -- 10% width, 50px height
-	iconLabel.Position = UDim2.new(0.02, 0, 0.5, -25)  -- 2% dari kiri, centered vertically
+	iconLabel.Size = UDim2.new(0.1, 0, 0.5, 0)
+	iconLabel.Position = UDim2.new(0.02, 0, 0.5, 0)
 	iconLabel.AnchorPoint = Vector2.new(0, 0.5)
 	iconLabel.BackgroundTransparency = 1
 	iconLabel.Font = Enum.Font.GothamBold
 	iconLabel.Text = event.Icon
-	iconLabel.TextSize = 32
-	iconLabel.TextScaled = false
 	iconLabel.Parent = eventCard
+	makeTextAdaptive(iconLabel, 32)
 
-	-- ✅ Event Name (SCALE)
+	-- ✅ Event Name (FULLY SCALE)
 	local nameLabel = Instance.new("TextLabel")
-	nameLabel.Size = UDim2.new(0.5, 0, 0, 30)  -- 50% width
-	nameLabel.Position = UDim2.new(0.13, 0, 0.15, 0)  -- 13% from left, 15% from top
+	nameLabel.Size = UDim2.new(0.5, 0, 0.25, 0)
+	nameLabel.Position = UDim2.new(0.13, 0, 0.1, 0)
 	nameLabel.BackgroundTransparency = 1
 	nameLabel.Font = Enum.Font.GothamBold
 	nameLabel.Text = event.Name
 	nameLabel.TextColor3 = COLORS.Text
-	nameLabel.TextSize = 16
-	nameLabel.TextScaled = false
 	nameLabel.TextXAlignment = Enum.TextXAlignment.Left
 	nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	nameLabel.Parent = eventCard
+	makeTextAdaptive(nameLabel, 16)
 
-	-- ✅ Event Description (SCALE)
+	-- ✅ Event Description (FULLY SCALE)
 	local descLabel = Instance.new("TextLabel")
-	descLabel.Size = UDim2.new(0.5, 0, 0, 25)  -- 50% width
-	descLabel.Position = UDim2.new(0.13, 0, 0.45, 0)  -- 13% from left, 45% from top
+	descLabel.Size = UDim2.new(0.5, 0, 0.25, 0)
+	descLabel.Position = UDim2.new(0.13, 0, 0.38, 0)
 	descLabel.BackgroundTransparency = 1
 	descLabel.Font = Enum.Font.Gotham
 	descLabel.Text = event.Description
 	descLabel.TextColor3 = COLORS.TextSecondary
-	descLabel.TextSize = 12
-	descLabel.TextScaled = false
 	descLabel.TextXAlignment = Enum.TextXAlignment.Left
 	descLabel.TextWrapped = true
 	descLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	descLabel.Parent = eventCard
+	makeTextAdaptive(descLabel, 12)
 
-	-- ✅ Multiplier Badge (SCALE)
+	-- ✅ Multiplier Badge (FULLY SCALE)
 	local badgeLabel = Instance.new("TextLabel")
-	badgeLabel.Size = UDim2.new(0.12, 0, 0, 30)  -- 12% width, 30px height
-	badgeLabel.Position = UDim2.new(0.13, 0, 0.7, 0)  -- 13% from left, 70% from top
+	badgeLabel.Size = UDim2.new(0.12, 0, 0.25, 0)
+	badgeLabel.Position = UDim2.new(0.13, 0, 0.68, 0)
 	badgeLabel.BackgroundColor3 = event.Color
 	badgeLabel.Font = Enum.Font.GothamBold
 	badgeLabel.Text = "x" .. event.Multiplier
 	badgeLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-	badgeLabel.TextSize = 14
-	badgeLabel.TextScaled = false
 	badgeLabel.Parent = eventCard
+	makeTextAdaptive(badgeLabel, 14)
 
 	createCorner(6).Parent = badgeLabel
 
-	-- ✅ Toggle Button (SCALE - RESPONSIVE!)
+	-- ✅ Toggle Button (FULLY SCALE)
 	local toggleBtn = Instance.new("TextButton")
-	toggleBtn.Size = UDim2.new(0.28, 0, 0.42, 0)  -- 28% width, 42% height
-	toggleBtn.Position = UDim2.new(0.7, 0, 0.29, 0)  -- 70% from left, 29% from top (centered)
+	toggleBtn.Size = UDim2.new(0.28, 0, 0.42, 0)
+	toggleBtn.Position = UDim2.new(0.7, 0, 0.29, 0)
 	toggleBtn.BackgroundColor3 = COLORS.Button
 	toggleBtn.BorderSizePixel = 0
 	toggleBtn.Font = Enum.Font.GothamBold
 	toggleBtn.Text = "Activate"
 	toggleBtn.TextColor3 = COLORS.Text
-	toggleBtn.TextSize = 14
-	toggleBtn.TextScaled = true  -- ✅ Auto-scale text
 	toggleBtn.AutoButtonColor = false
 	toggleBtn.Parent = eventCard
+	makeTextAdaptive(toggleBtn, 14)
 
 	createCorner(8).Parent = toggleBtn
-
-	-- ✅ TextScaled constraint untuk button
-	local textSizeConstraint = Instance.new("UITextSizeConstraint")
-	textSizeConstraint.MaxTextSize = 14
-	textSizeConstraint.MinTextSize = 10
-	textSizeConstraint.Parent = toggleBtn
 
 	-- Update button state based on active event
 	local function updateButtonState()
@@ -2593,7 +2616,7 @@ end)
 
 
 
--- Leaderboard Tab
+-- Leaderboard Tab (✅ ADAPTIVE)
 local leaderboardTab, leaderboardTabBtn = createTab("Leaderboard", 4)
 
 local leaderboardScroll = Instance.new("ScrollingFrame")
@@ -2607,54 +2630,54 @@ leaderboardScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 leaderboardScroll.Parent = leaderboardTab
 
 local leaderboardLayout = Instance.new("UIListLayout")
-leaderboardLayout.Padding = UDim.new(0, 10)
+leaderboardLayout.Padding = UDim.new(0.015, 0)  -- ✅ Scale-based padding
 leaderboardLayout.SortOrder = Enum.SortOrder.LayoutOrder
 leaderboardLayout.Parent = leaderboardScroll
 
--- Search Input
+-- Search Input (✅ ADAPTIVE)
 local searchFrame = Instance.new("Frame")
-searchFrame.Size = UDim2.new(1, 0, 0, 50)
+searchFrame.Size = UDim2.new(1, 0, 0.12, 0)
 searchFrame.BackgroundTransparency = 1
 searchFrame.LayoutOrder = 1
 searchFrame.Parent = leaderboardScroll
 
 local searchLabel = Instance.new("TextLabel")
-searchLabel.Size = UDim2.new(1, 0, 0, 20)
+searchLabel.Size = UDim2.new(1, 0, 0.35, 0)
 searchLabel.BackgroundTransparency = 1
 searchLabel.Font = Enum.Font.GothamBold
 searchLabel.Text = "Search Player(s)"
 searchLabel.TextColor3 = COLORS.Text
-searchLabel.TextSize = 14
 searchLabel.TextXAlignment = Enum.TextXAlignment.Left
 searchLabel.Parent = searchFrame
+makeTextAdaptive(searchLabel, 14)
 
 local searchBox = Instance.new("TextBox")
-searchBox.Size = UDim2.new(0.82, 0, 0, 35)
-searchBox.Position = UDim2.new(0, 0, 0, 25)
+searchBox.Size = UDim2.new(0.82, 0, 0.55, 0)
+searchBox.Position = UDim2.new(0, 0, 0.4, 0)
 searchBox.BackgroundColor3 = COLORS.Panel
 searchBox.BorderSizePixel = 0
 searchBox.Font = Enum.Font.Gotham
 searchBox.PlaceholderText = "Enter username(s), separate with comma (max 5)"
 searchBox.Text = ""
 searchBox.TextColor3 = COLORS.Text
-searchBox.TextSize = 13
 searchBox.ClearTextOnFocus = false
 searchBox.Parent = searchFrame
+makeTextAdaptive(searchBox, 13)
 
 createCorner(6).Parent = searchBox
 createPadding(10).Parent = searchBox
 
 local searchButton = Instance.new("TextButton")
-searchButton.Size = UDim2.new(0.15, 0, 0, 35)
-searchButton.Position = UDim2.new(0.84, 0, 0, 25)
+searchButton.Size = UDim2.new(0.15, 0, 0.55, 0)
+searchButton.Position = UDim2.new(0.84, 0, 0.4, 0)
 searchButton.BackgroundColor3 = COLORS.Accent
 searchButton.BorderSizePixel = 0
 searchButton.Font = Enum.Font.GothamBold
 searchButton.Text = "🔍"
 searchButton.TextColor3 = COLORS.Text
-searchButton.TextSize = 18
 searchButton.AutoButtonColor = false
 searchButton.Parent = searchFrame
+makeTextAdaptive(searchButton, 18)
 
 createCorner(6).Parent = searchButton
 
@@ -2666,7 +2689,7 @@ resultsContainer.LayoutOrder = 2
 resultsContainer.Parent = leaderboardScroll
 
 local resultsLayout = Instance.new("UIListLayout")
-resultsLayout.Padding = UDim.new(0, 8)
+resultsLayout.Padding = UDim.new(0.015, 0)  -- ✅ Scale-based
 resultsLayout.SortOrder = Enum.SortOrder.LayoutOrder
 resultsLayout.Parent = resultsContainer
 
@@ -2674,9 +2697,9 @@ resultsLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
 	resultsContainer.Size = UDim2.new(1, 0, 0, resultsLayout.AbsoluteContentSize.Y)
 end)
 
--- Delete All Button (Hidden by default)
+-- Delete All Button (Hidden by default) (✅ ADAPTIVE)
 local deleteAllFrame = Instance.new("Frame")
-deleteAllFrame.Size = UDim2.new(1, 0, 0, 50)
+deleteAllFrame.Size = UDim2.new(1, 0, 0.1, 0)
 deleteAllFrame.BackgroundTransparency = 1
 deleteAllFrame.LayoutOrder = 3
 deleteAllFrame.Visible = false
@@ -2686,22 +2709,22 @@ local deleteAllButton = createButton("🗑️ Delete All Selected Players", COLO
 deleteAllButton.Size = UDim2.new(1, 0, 1, 0)
 deleteAllButton.Parent = deleteAllFrame
 
--- Function to create player result card
+-- Function to create player result card (✅ ADAPTIVE)
 local searchResults = {} -- Store search results
 
 local function createLeaderboardCard(data)
 	local card = Instance.new("Frame")
-	card.Size = UDim2.new(1, 0, 0, 180)
+	card.Size = UDim2.new(1, 0, 0.35, 0)  -- ✅ Scale-based
 	card.BackgroundColor3 = COLORS.Panel
 	card.BorderSizePixel = 0
 	card.Parent = resultsContainer
 
 	createCorner(8).Parent = card
 
-	-- Avatar
+	-- Avatar (✅ ADAPTIVE)
 	local avatar = Instance.new("ImageLabel")
-	avatar.Size = UDim2.new(0, 60, 0, 60)
-	avatar.Position = UDim2.new(0, 10, 0, 10)
+	avatar.Size = UDim2.new(0.15, 0, 0.35, 0)
+	avatar.Position = UDim2.new(0.02, 0, 0.05, 0)
 	avatar.BackgroundColor3 = COLORS.Button
 	avatar.BorderSizePixel = 0
 	avatar.Image = "rbxthumb://type=AvatarHeadShot&id=" .. data.UserId .. "&w=150&h=150"
@@ -2709,32 +2732,31 @@ local function createLeaderboardCard(data)
 
 	createCorner(30).Parent = avatar
 
-	-- Username
+	-- Username (✅ ADAPTIVE)
 	local nameLabel = Instance.new("TextLabel")
-	nameLabel.Size = UDim2.new(1, -85, 0, 25)
-	nameLabel.Position = UDim2.new(0, 75, 0, 10)
+	nameLabel.Size = UDim2.new(0.65, 0, 0.15, 0)
+	nameLabel.Position = UDim2.new(0.2, 0, 0.05, 0)
 	nameLabel.BackgroundTransparency = 1
 	nameLabel.Font = Enum.Font.GothamBold
 	nameLabel.Text = data.Username
 	nameLabel.TextColor3 = COLORS.Text
-	nameLabel.TextSize = 16
 	nameLabel.TextXAlignment = Enum.TextXAlignment.Left
 	nameLabel.Parent = card
+	makeTextAdaptive(nameLabel, 16)
 
-	-- User ID
+	-- User ID (✅ ADAPTIVE)
 	local idLabel = Instance.new("TextLabel")
-	idLabel.Size = UDim2.new(1, -85, 0, 20)
-	idLabel.Position = UDim2.new(0, 75, 0, 35)
+	idLabel.Size = UDim2.new(0.65, 0, 0.12, 0)
+	idLabel.Position = UDim2.new(0.2, 0, 0.2, 0)
 	idLabel.BackgroundTransparency = 1
 	idLabel.Font = Enum.Font.Gotham
 	idLabel.Text = "ID: " .. data.UserId
 	idLabel.TextColor3 = COLORS.TextSecondary
-	idLabel.TextSize = 12
 	idLabel.TextXAlignment = Enum.TextXAlignment.Left
 	idLabel.Parent = card
+	makeTextAdaptive(idLabel, 12)
 
-	-- Stats Display
-	local statsY = 75
+	-- Stats Display (✅ ADAPTIVE)
 	local stats = {
 		{icon = "🏔️", label = "Summit", value = tostring(data.Summit)},
 		{icon = "⏱️", label = "Speedrun", value = data.Speedrun},
@@ -2744,8 +2766,10 @@ local function createLeaderboardCard(data)
 
 	for i, stat in ipairs(stats) do
 		local statFrame = Instance.new("Frame")
-		statFrame.Size = UDim2.new(0.48, 0, 0, 20)
-		statFrame.Position = UDim2.new((i - 1) % 2 == 0 and 0.02 or 0.5, 0, 0, statsY + math.floor((i - 1) / 2) * 25)
+		statFrame.Size = UDim2.new(0.48, 0, 0.12, 0)
+		local xPos = (i - 1) % 2 == 0 and 0.02 or 0.5
+		local yPos = 0.35 + math.floor((i - 1) / 2) * 0.14
+		statFrame.Position = UDim2.new(xPos, 0, yPos, 0)
 		statFrame.BackgroundTransparency = 1
 		statFrame.Parent = card
 
@@ -2755,23 +2779,23 @@ local function createLeaderboardCard(data)
 		statLabel.Font = Enum.Font.Gotham
 		statLabel.Text = stat.icon .. " " .. stat.label .. ": " .. stat.value
 		statLabel.TextColor3 = COLORS.TextSecondary
-		statLabel.TextSize = 12
 		statLabel.TextXAlignment = Enum.TextXAlignment.Left
 		statLabel.Parent = statFrame
+		makeTextAdaptive(statLabel, 12)
 	end
 
-	-- Delete Button
+	-- Delete Button (✅ ADAPTIVE)
 	local deleteBtn = Instance.new("TextButton")
-	deleteBtn.Size = UDim2.new(0.96, 0, 0, 35)
-	deleteBtn.Position = UDim2.new(0.02, 0, 1, -45)
+	deleteBtn.Size = UDim2.new(0.96, 0, 0.18, 0)
+	deleteBtn.Position = UDim2.new(0.02, 0, 0.78, 0)
 	deleteBtn.BackgroundColor3 = COLORS.Danger
 	deleteBtn.BorderSizePixel = 0
 	deleteBtn.Font = Enum.Font.GothamBold
 	deleteBtn.Text = "🗑️ Delete Data"
 	deleteBtn.TextColor3 = COLORS.Text
-	deleteBtn.TextSize = 13
 	deleteBtn.AutoButtonColor = false
 	deleteBtn.Parent = card
+	makeTextAdaptive(deleteBtn, 13)
 
 	createCorner(6).Parent = deleteBtn
 
@@ -2784,9 +2808,9 @@ local function createLeaderboardCard(data)
 	end)
 
 	deleteBtn.MouseButton1Click:Connect(function()
-		-- Show delete options popup
+		-- Show delete options popup (✅ ADAPTIVE)
 		local deletePopup = Instance.new("Frame")
-		deletePopup.Size = UDim2.new(0, 320, 0, 280)
+		deletePopup.Size = UDim2.new(0.22, 0, 0.35, 0)
 		deletePopup.Position = UDim2.new(0.5, 0, 0.5, 0)
 		deletePopup.AnchorPoint = Vector2.new(0.5, 0.5)
 		deletePopup.BackgroundColor3 = COLORS.Background
@@ -2796,10 +2820,11 @@ local function createLeaderboardCard(data)
 
 		createCorner(12).Parent = deletePopup
 		createStroke(COLORS.Border, 2).Parent = deletePopup
+		addAspectRatio(deletePopup, 1.15)
 
-		-- Header
+		-- Header (✅ ADAPTIVE)
 		local popupHeader = Instance.new("Frame")
-		popupHeader.Size = UDim2.new(1, 0, 0, 50)
+		popupHeader.Size = UDim2.new(1, 0, 0.15, 0)
 		popupHeader.BackgroundColor3 = COLORS.Header
 		popupHeader.BorderSizePixel = 0
 		popupHeader.Parent = deletePopup
@@ -2807,33 +2832,34 @@ local function createLeaderboardCard(data)
 		createCorner(12).Parent = popupHeader
 
 		local headerBottom = Instance.new("Frame")
-		headerBottom.Size = UDim2.new(1, 0, 0, 15)
-		headerBottom.Position = UDim2.new(0, 0, 1, -15)
+		headerBottom.Size = UDim2.new(1, 0, 0.3, 0)
+		headerBottom.Position = UDim2.new(0, 0, 0.7, 0)
 		headerBottom.BackgroundColor3 = COLORS.Header
 		headerBottom.BorderSizePixel = 0
 		headerBottom.Parent = popupHeader
 
 		local popupTitle = Instance.new("TextLabel")
-		popupTitle.Size = UDim2.new(1, -50, 1, 0)
-		popupTitle.Position = UDim2.new(0, 15, 0, 0)
+		popupTitle.Size = UDim2.new(0.8, 0, 1, 0)
+		popupTitle.Position = UDim2.new(0.05, 0, 0, 0)
 		popupTitle.BackgroundTransparency = 1
 		popupTitle.Font = Enum.Font.GothamBold
 		popupTitle.Text = "Delete " .. data.Username .. "'s Data"
 		popupTitle.TextColor3 = COLORS.Text
-		popupTitle.TextSize = 14
 		popupTitle.TextXAlignment = Enum.TextXAlignment.Left
 		popupTitle.Parent = popupHeader
+		makeTextAdaptive(popupTitle, 14)
 
 		local closePopupBtn = Instance.new("TextButton")
-		closePopupBtn.Size = UDim2.new(0, 30, 0, 30)
-		closePopupBtn.Position = UDim2.new(1, -40, 0, 10)
+		closePopupBtn.Size = UDim2.new(0.1, 0, 0.6, 0)
+		closePopupBtn.Position = UDim2.new(0.93, 0, 0.5, 0)
+		closePopupBtn.AnchorPoint = Vector2.new(1, 0.5)
 		closePopupBtn.BackgroundColor3 = COLORS.Button
 		closePopupBtn.BorderSizePixel = 0
 		closePopupBtn.Text = "✕"
 		closePopupBtn.Font = Enum.Font.GothamBold
-		closePopupBtn.TextSize = 16
 		closePopupBtn.TextColor3 = COLORS.Text
 		closePopupBtn.Parent = popupHeader
+		makeTextAdaptive(closePopupBtn, 16)
 
 		createCorner(6).Parent = closePopupBtn
 
@@ -2841,8 +2867,18 @@ local function createLeaderboardCard(data)
 			deletePopup:Destroy()
 		end)
 
-		-- Delete options
-		local yPos = 65
+		-- Delete options container (✅ ADAPTIVE)
+		local optionsContainer = Instance.new("Frame")
+		optionsContainer.Size = UDim2.new(0.9, 0, 0.8, 0)
+		optionsContainer.Position = UDim2.new(0.05, 0, 0.18, 0)
+		optionsContainer.BackgroundTransparency = 1
+		optionsContainer.Parent = deletePopup
+
+		local optionsLayout = Instance.new("UIListLayout")
+		optionsLayout.Padding = UDim.new(0.02, 0)
+		optionsLayout.SortOrder = Enum.SortOrder.LayoutOrder
+		optionsLayout.Parent = optionsContainer
+
 		local deleteOptions = {
 			{text = "Delete Summit Data", type = "summit"},
 			{text = "Delete Speedrun Data", type = "speedrun"},
@@ -2851,18 +2887,18 @@ local function createLeaderboardCard(data)
 			{text = "DELETE ALL DATA", type = "all", isAll = true}
 		}
 
-		for _, option in ipairs(deleteOptions) do
+		for idx, option in ipairs(deleteOptions) do
 			local optionBtn = Instance.new("TextButton")
-			optionBtn.Size = UDim2.new(1, -30, 0, 38)
-			optionBtn.Position = UDim2.new(0, 15, 0, yPos)
+			optionBtn.Size = UDim2.new(1, 0, 0.16, 0)
 			optionBtn.BackgroundColor3 = option.isAll and COLORS.Danger or COLORS.Button
 			optionBtn.BorderSizePixel = 0
 			optionBtn.Font = Enum.Font.GothamBold
 			optionBtn.Text = option.text
 			optionBtn.TextColor3 = COLORS.Text
-			optionBtn.TextSize = 12
 			optionBtn.AutoButtonColor = false
-			optionBtn.Parent = deletePopup
+			optionBtn.LayoutOrder = idx
+			optionBtn.Parent = optionsContainer
+			makeTextAdaptive(optionBtn, 12)
 
 			createCorner(6).Parent = optionBtn
 
@@ -3041,7 +3077,7 @@ deleteAllButton.MouseButton1Click:Connect(function()
 
 	confirmDialog.Size = UDim2.new(0, 0, 0, 0)
 	confirmDialog.Visible = true
-	tweenSize(confirmDialog, UDim2.new(0, 380, 0, 200), 0.3)
+	tweenSize(confirmDialog, UDim2.new(0.4, 0, 0.4, 0), 0.3)  -- ✅ Ukuran lebih besar
 end)
 
 -- Create Admin Button
@@ -3060,7 +3096,7 @@ if topbarPlusLoaded and Icon then
 		isOpen = true
 		mainPanel.Size = UDim2.new(0, 0, 0, 0)
 		mainPanel.Visible = true
-		tweenSize(mainPanel, UDim2.new(0.25, 0, 0.7, 0), 0.3)
+		tweenSize(mainPanel, UDim2.new(0.7, 0, 0.9, 0), 0.3)  -- ✅ Scale-based
 	end)
 
 	adminIcon.deselected:Connect(function()
@@ -3072,7 +3108,7 @@ if topbarPlusLoaded and Icon then
 
 		tweenSize(mainPanel, UDim2.new(0, 0, 0, 0), 0.3, function()
 			mainPanel.Visible = false
-			mainPanel.Size = UDim2.new(0.167, 0, 0.417, 0)
+			mainPanel.Size = UDim2.new(0.7, 0, 0.9, 0)  -- ✅ Scale-based
 			-- Kembalikan visibility tab yang aktif
 			if currentTab then
 				currentTab.Visible = true
@@ -3087,7 +3123,7 @@ if topbarPlusLoaded and Icon then
 
 	print("✓ TopbarPlus icon created")
 else
-	-- Fallback: Create custom button
+	-- Fallback: Create custom button (✅ FULLY ADAPTIVE)
 	warn("Using fallback admin button")
 
 	-- Hide default topbar to prevent conflicts
@@ -3101,8 +3137,8 @@ else
 	fallbackButton.Parent = playerGui
 
 	local buttonFrame = Instance.new("TextButton")
-	buttonFrame.Size = UDim2.new(0.063, 0, 0.037, 0)
-	buttonFrame.Position = UDim2.new(0.005, 0, 0.009, 0)
+	buttonFrame.Size = UDim2.new(0.07, 0, 0.04, 0)  -- ✅ Scale-based
+	buttonFrame.Position = UDim2.new(0.005, 0, 0.01, 0)
 	buttonFrame.BackgroundColor3 = COLORS.Panel
 	buttonFrame.BorderSizePixel = 0
 	buttonFrame.Font = Enum.Font.GothamBold
@@ -3114,23 +3150,23 @@ else
 	createStroke(COLORS.Border, 2).Parent = buttonFrame
 
 	local icon = Instance.new("ImageLabel")
-	icon.Size = UDim2.new(0, 24, 0, 24)
-	icon.Position = UDim2.new(0, 8, 0, 8)
+	icon.Size = UDim2.new(0.3, 0, 0.8, 0)  -- ✅ Scale-based
+	icon.Position = UDim2.new(0.05, 0, 0.1, 0)
 	icon.BackgroundTransparency = 1
 	icon.Image = "rbxassetid://7733954760"
 	icon.ImageColor3 = COLORS.Text
 	icon.Parent = buttonFrame
 
 	local label = Instance.new("TextLabel")
-	label.Size = UDim2.new(1, -40, 1, 0)
-	label.Position = UDim2.new(0, 40, 0, 0)
+	label.Size = UDim2.new(0.6, 0, 1, 0)  -- ✅ Scale-based
+	label.Position = UDim2.new(0.38, 0, 0, 0)
 	label.BackgroundTransparency = 1
 	label.Font = Enum.Font.GothamBold
 	label.Text = "Admin"
 	label.TextColor3 = COLORS.Text
-	label.TextSize = 14
 	label.TextXAlignment = Enum.TextXAlignment.Left
 	label.Parent = buttonFrame
+	makeTextAdaptive(label, 14)  -- ✅ Adaptive text
 
 	buttonFrame.MouseButton1Click:Connect(function()
 		isOpen = not isOpen
@@ -3139,12 +3175,12 @@ else
 			buttonFrame.BackgroundColor3 = COLORS.Accent
 			mainPanel.Size = UDim2.new(0, 0, 0, 0)
 			mainPanel.Visible = true
-			tweenSize(mainPanel, UDim2.new(0.167, 0, 0.417, 0), 0.3)
+			tweenSize(mainPanel, UDim2.new(0.7, 0, 0.9, 0), 0.3)  -- ✅ Scale-based
 		else
 			buttonFrame.BackgroundColor3 = COLORS.Panel
 			tweenSize(mainPanel, UDim2.new(0, 0, 0, 0), 0.3, function()
 				mainPanel.Visible = false
-				mainPanel.Size = UDim2.new(0.167, 0, 0.417, 0)
+				mainPanel.Size = UDim2.new(0.7, 0, 0.9, 0)  -- ✅ Scale-based
 			end)
 		end
 	end)
@@ -3173,7 +3209,7 @@ else
 
 		tweenSize(mainPanel, UDim2.new(0, 0, 0, 0), 0.3, function()
 			mainPanel.Visible = false
-			mainPanel.Size = UDim2.new(0.167, 0, 0.417, 0)
+			mainPanel.Size = UDim2.new(0.7, 0, 0.9, 0)  -- ✅ Scale-based
 			-- Kembalikan visibility tab yang aktif
 			if currentTab then
 				currentTab.Visible = true
@@ -3183,5 +3219,6 @@ else
 
 	print("✓ Fallback admin button created")
 end
+
 
 print("Admin Panel System Loaded Successfully")
