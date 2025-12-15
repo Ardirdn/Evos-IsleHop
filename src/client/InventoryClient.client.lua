@@ -90,6 +90,33 @@ local function createStroke(color, thickness)
 	return stroke
 end
 
+-- ✅ Helper: Create adaptive text with TextScaled and UITextSizeConstraint
+local function makeTextAdaptive(textLabel, maxTextSize)
+	textLabel.TextScaled = true
+	local constraint = Instance.new("UITextSizeConstraint")
+	constraint.MaxTextSize = maxTextSize or 14
+	constraint.Parent = textLabel
+end
+
+-- ✅ Helper: Add UIAspectRatioConstraint to main frames
+local function addAspectRatio(frame, ratio)
+	local aspectRatio = Instance.new("UIAspectRatioConstraint")
+	aspectRatio.AspectRatio = ratio or 0.8
+	aspectRatio.DominantAxis = Enum.DominantAxis.Width
+	aspectRatio.Parent = frame
+end
+
+-- ✅ Helper: Tween Size with animation
+local function tweenSize(object, endSize, time, callback)
+	local TweenInfo = TweenInfo.new(time or 0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+	local tween = TweenService:Create(object, TweenInfo, {Size = endSize})
+	tween:Play()
+	if callback then
+		tween.Completed:Connect(callback)
+	end
+	return tween
+end
+
 -- ==================== CREATE GUI ====================
 
 local screenGui = Instance.new("ScreenGui")
@@ -100,22 +127,26 @@ screenGui.Enabled = true  -- ✅ UBAH JADI TRUE
 screenGui.Parent = playerGui
 
 
--- Main Panel
+-- Main Panel (✅ FULLY ADAPTIVE)
 local mainPanel = Instance.new("Frame")
-mainPanel.Size = UDim2.new(0, 700, 0, 500)
+mainPanel.Name = "MainPanel"
+mainPanel.Size = UDim2.new(0.7, 0, 0.9, 0)  -- ✅ Scale-based
 mainPanel.Position = UDim2.new(0.5, 0, 0.5, 0)
 mainPanel.AnchorPoint = Vector2.new(0.5, 0.5)
 mainPanel.BackgroundColor3 = COLORS.Background
 mainPanel.BorderSizePixel = 0
 mainPanel.Visible = false
+mainPanel.ClipsDescendants = true
 mainPanel.Parent = screenGui
 
 createCorner(15).Parent = mainPanel
 createStroke(COLORS.Border, 2).Parent = mainPanel
+addAspectRatio(mainPanel, 1.3)  -- ✅ AspectRatio dengan DominantAxis = Width
 
--- Header
+-- Header (✅ SCALE-BASED)
 local header = Instance.new("Frame")
-header.Size = UDim2.new(1, 0, 0, 60)
+header.Name = "Header"
+header.Size = UDim2.new(1, 0, 0.1, 0)  -- ✅ Scale-based
 header.BackgroundColor3 = COLORS.Panel
 header.BorderSizePixel = 0
 header.Parent = mainPanel
@@ -123,36 +154,36 @@ header.Parent = mainPanel
 createCorner(15).Parent = header
 
 local headerBottom = Instance.new("Frame")
-headerBottom.Size = UDim2.new(1, 0, 0, 15)
-headerBottom.Position = UDim2.new(0, 0, 1, -15)
+headerBottom.Size = UDim2.new(1, 0, 0.3, 0)  -- ✅ Scale-based
+headerBottom.Position = UDim2.new(0, 0, 0.7, 0)  -- ✅ Scale-based
 headerBottom.BackgroundColor3 = COLORS.Panel
 headerBottom.BorderSizePixel = 0
 headerBottom.Parent = header
 
 local headerTitle = Instance.new("TextLabel")
-headerTitle.Size = UDim2.new(0, 200, 1, 0)
-headerTitle.Position = UDim2.new(0, 20, 0, 0)
+headerTitle.Size = UDim2.new(0.5, 0, 1, 0)  -- ✅ Scale-based
+headerTitle.Position = UDim2.new(0.03, 0, 0, 0)  -- ✅ Scale-based
 headerTitle.BackgroundTransparency = 1
 headerTitle.Font = Enum.Font.GothamBold
 headerTitle.Text = "INVENTORY"
 headerTitle.TextColor3 = COLORS.Text
-headerTitle.TextSize = 20
 headerTitle.TextXAlignment = Enum.TextXAlignment.Left
 headerTitle.Parent = header
+makeTextAdaptive(headerTitle, 20)  -- ✅ Adaptive text
 
--- Close Button
+-- Close Button (✅ SCALE-BASED)
 local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0, 40, 0, 40)
-closeBtn.Position = UDim2.new(1, -50, 0.5, 0)
-closeBtn.AnchorPoint = Vector2.new(0, 0.5)
+closeBtn.Size = UDim2.new(0.08, 0, 0.7, 0)  -- ✅ Scale-based
+closeBtn.Position = UDim2.new(0.95, 0, 0.5, 0)  -- ✅ Scale-based
+closeBtn.AnchorPoint = Vector2.new(1, 0.5)
 closeBtn.BackgroundColor3 = COLORS.Button
 closeBtn.BorderSizePixel = 0
 closeBtn.Text = "✕"
 closeBtn.Font = Enum.Font.GothamBold
-closeBtn.TextSize = 20
 closeBtn.TextColor3 = COLORS.Text
 closeBtn.AutoButtonColor = false
 closeBtn.Parent = header
+makeTextAdaptive(closeBtn, 20)  -- ✅ Adaptive text
 
 createCorner(10).Parent = closeBtn
 
@@ -165,26 +196,29 @@ closeBtn.MouseLeave:Connect(function()
 end)
 
 closeBtn.MouseButton1Click:Connect(function()
-	mainPanel.Visible = false
+	tweenSize(mainPanel, UDim2.new(0, 0, 0, 0), 0.3, function()
+		mainPanel.Visible = false
+		mainPanel.Size = UDim2.new(0.7, 0, 0.9, 0)  -- ✅ Reset ke ukuran asli
+	end)
 end)
 
--- Category Frame
+-- Category Frame (✅ SCALE-BASED)
 local categoryFrame = Instance.new("Frame")
-categoryFrame.Size = UDim2.new(1, -30, 0, 40)
-categoryFrame.Position = UDim2.new(0, 15, 0, 70)
+categoryFrame.Size = UDim2.new(0.94, 0, 0.08, 0)  -- ✅ Scale-based
+categoryFrame.Position = UDim2.new(0.03, 0, 0.12, 0)  -- ✅ Scale-based
 categoryFrame.BackgroundTransparency = 1
 categoryFrame.Parent = mainPanel
 
 local categoryLayout = Instance.new("UIListLayout")
 categoryLayout.FillDirection = Enum.FillDirection.Horizontal
-categoryLayout.Padding = UDim.new(0, 8)
+categoryLayout.Padding = UDim.new(0.015, 0)  -- ✅ Scale-based
 categoryLayout.SortOrder = Enum.SortOrder.LayoutOrder
 categoryLayout.Parent = categoryFrame
 
--- Content Frame
+-- Content Frame (✅ SCALE-BASED)
 local contentFrame = Instance.new("Frame")
-contentFrame.Size = UDim2.new(1, -30, 1, -130)
-contentFrame.Position = UDim2.new(0, 15, 0, 120)
+contentFrame.Size = UDim2.new(0.94, 0, 0.76, 0)  -- ✅ Scale-based
+contentFrame.Position = UDim2.new(0.03, 0, 0.22, 0)  -- ✅ Scale-based
 contentFrame.BackgroundTransparency = 1
 contentFrame.Parent = mainPanel
 
@@ -194,21 +228,18 @@ local categoryTabs = {}
 
 local function createCategoryTab(categoryName, order)
 	local tab = Instance.new("TextButton")
-	tab.Size = UDim2.new(0, 0, 1, 0)
+	tab.Size = UDim2.new(0.22, 0, 1, 0)  -- ✅ Scale-based
 	tab.BackgroundColor3 = categoryName == "All" and COLORS.Accent or COLORS.Button
 	tab.BorderSizePixel = 0
 	tab.Font = Enum.Font.GothamBold
 	tab.Text = categoryName
 	tab.TextColor3 = COLORS.Text
-	tab.TextSize = 14
 	tab.AutoButtonColor = false
 	tab.LayoutOrder = order
 	tab.Parent = categoryFrame
 
 	createCorner(8).Parent = tab
-
-	local textSize = game:GetService("TextService"):GetTextSize(categoryName, 14, Enum.Font.GothamBold, Vector2.new(1000, 40))
-	tab.Size = UDim2.new(0, textSize.X + 30, 1, 0)
+	makeTextAdaptive(tab, 14)  -- ✅ Adaptive text
 
 	local content = Instance.new("Frame")
 	content.Name = categoryName .. "Content"
@@ -257,8 +288,8 @@ allScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 allScroll.Parent = allContent
 
 local allGrid = Instance.new("UIGridLayout")
-allGrid.CellSize = UDim2.new(0, 100, 0, 120)
-allGrid.CellPadding = UDim2.new(0, 10, 0, 10)
+allGrid.CellSize = UDim2.new(0.18, 0, 0.25, 0)  -- ✅ Scale-based
+allGrid.CellPadding = UDim2.new(0.02, 0, 0.02, 0)  -- ✅ Scale-based
 allGrid.SortOrder = Enum.SortOrder.LayoutOrder
 allGrid.Parent = allScroll
 
@@ -275,8 +306,8 @@ aurasScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 aurasScroll.Parent = aurasContent
 
 local aurasGrid = Instance.new("UIGridLayout")
-aurasGrid.CellSize = UDim2.new(0, 100, 0, 120)
-aurasGrid.CellPadding = UDim2.new(0, 10, 0, 10)
+aurasGrid.CellSize = UDim2.new(0.18, 0, 0.25, 0)  -- ✅ Scale-based
+aurasGrid.CellPadding = UDim2.new(0.02, 0, 0.02, 0)  -- ✅ Scale-based
 aurasGrid.SortOrder = Enum.SortOrder.LayoutOrder
 aurasGrid.Parent = aurasScroll
 
@@ -293,8 +324,8 @@ toolsScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 toolsScroll.Parent = toolsContent
 
 local toolsGrid = Instance.new("UIGridLayout")
-toolsGrid.CellSize = UDim2.new(0, 100, 0, 120)
-toolsGrid.CellPadding = UDim2.new(0, 10, 0, 10)
+toolsGrid.CellSize = UDim2.new(0.18, 0, 0.25, 0)  -- ✅ Scale-based
+toolsGrid.CellPadding = UDim2.new(0.02, 0, 0.02, 0)  -- ✅ Scale-based
 toolsGrid.SortOrder = Enum.SortOrder.LayoutOrder
 toolsGrid.Parent = toolsScroll
 
@@ -302,28 +333,28 @@ toolsGrid.Parent = toolsScroll
 
 -- Filter Frame
 local titleFilterFrame = Instance.new("Frame")
-titleFilterFrame.Size = UDim2.new(1, 0, 0, 35)
+titleFilterFrame.Size = UDim2.new(1, 0, 0.1, 0)  -- ✅ Scale-based
 titleFilterFrame.BackgroundTransparency = 1
 titleFilterFrame.Parent = titlesContent
 
 local titleFilterLayout = Instance.new("UIListLayout")
 titleFilterLayout.FillDirection = Enum.FillDirection.Horizontal
-titleFilterLayout.Padding = UDim.new(0, 8)
+titleFilterLayout.Padding = UDim.new(0.02, 0)  -- ✅ Scale-based
 titleFilterLayout.Parent = titleFilterFrame
 
 local function createTitleFilterBtn(text, filter)
 	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0, 90, 1, 0)
+	btn.Size = UDim2.new(0.2, 0, 1, 0)  -- ✅ Scale-based
 	btn.BackgroundColor3 = filter == "All" and COLORS.Accent or COLORS.Button
 	btn.BorderSizePixel = 0
 	btn.Font = Enum.Font.GothamBold
 	btn.Text = text
 	btn.TextColor3 = COLORS.Text
-	btn.TextSize = 13
 	btn.AutoButtonColor = false
 	btn.Parent = titleFilterFrame
 
 	createCorner(6).Parent = btn
+	makeTextAdaptive(btn, 13)  -- ✅ Adaptive text
 
 	btn.MouseButton1Click:Connect(function()
 		currentTitleFilter = filter
@@ -345,8 +376,8 @@ createTitleFilterBtn("Summit", "Summit")
 
 -- Titles Scroll
 local titlesScroll = Instance.new("ScrollingFrame")
-titlesScroll.Size = UDim2.new(1, 0, 1, -45)
-titlesScroll.Position = UDim2.new(0, 0, 0, 45)
+titlesScroll.Size = UDim2.new(1, 0, 0.88, 0)  -- ✅ Scale-based
+titlesScroll.Position = UDim2.new(0, 0, 0.12, 0)  -- ✅ Scale-based
 titlesScroll.BackgroundTransparency = 1
 titlesScroll.BorderSizePixel = 0
 titlesScroll.ScrollBarThickness = 6
@@ -356,20 +387,20 @@ titlesScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 titlesScroll.Parent = titlesContent
 
 local titlesGrid = Instance.new("UIGridLayout")
-titlesGrid.CellSize = UDim2.new(0, 200, 0, 80)
-titlesGrid.CellPadding = UDim2.new(0, 10, 0, 10)
+titlesGrid.CellSize = UDim2.new(0.47, 0, 0, 65)  -- ✅ Fixed height untuk Title cards
+titlesGrid.CellPadding = UDim2.new(0.03, 0, 0, 12)  -- ✅ Increased padding
 titlesGrid.SortOrder = Enum.SortOrder.LayoutOrder
 titlesGrid.Parent = titlesScroll
 
 local titlesEmptyLabel = Instance.new("TextLabel")
-titlesEmptyLabel.Size = UDim2.new(1, 0, 0, 100)
+titlesEmptyLabel.Size = UDim2.new(1, 0, 0.25, 0)  -- ✅ Scale-based
 titlesEmptyLabel.BackgroundTransparency = 1
 titlesEmptyLabel.Font = Enum.Font.Gotham
 titlesEmptyLabel.Text = "No titles unlocked yet"
 titlesEmptyLabel.TextColor3 = COLORS.TextSecondary
-titlesEmptyLabel.TextSize = 14
 titlesEmptyLabel.Visible = false
 titlesEmptyLabel.Parent = titlesScroll
+makeTextAdaptive(titlesEmptyLabel, 14)  -- ✅ Adaptive text
 
 -- ==================== ITEM CREATION ====================
 
@@ -389,8 +420,8 @@ local function createAuraItem(auraId, parentFrame)
 
 	if isEquipped then
 		local equippedBadge = Instance.new("Frame")
-		equippedBadge.Size = UDim2.new(0, 70, 0, 20)
-		equippedBadge.Position = UDim2.new(0.5, 0, 0, 5)
+		equippedBadge.Size = UDim2.new(0.7, 0, 0.15, 0)  -- ✅ Scale-based
+		equippedBadge.Position = UDim2.new(0.5, 0, 0.02, 0)  -- ✅ Scale-based
 		equippedBadge.AnchorPoint = Vector2.new(0.5, 0)
 		equippedBadge.BackgroundColor3 = COLORS.Equipped
 		equippedBadge.BorderSizePixel = 0
@@ -404,57 +435,54 @@ local function createAuraItem(auraId, parentFrame)
 		badgeLabel.Font = Enum.Font.GothamBold
 		badgeLabel.Text = "EQUIPPED"
 		badgeLabel.TextColor3 = COLORS.Text
-		badgeLabel.TextSize = 10
 		badgeLabel.Parent = equippedBadge
+		makeTextAdaptive(badgeLabel, 10)  -- ✅ Adaptive text
 	end
 
 	local icon = Instance.new("TextLabel")
-	icon.Size = UDim2.new(1, 0, 0, 40)
-	icon.Position = UDim2.new(0, 0, 0, 25)
+	icon.Size = UDim2.new(1, 0, 0.35, 0)  -- ✅ Scale-based
+	icon.Position = UDim2.new(0, 0, 0.18, 0)  -- ✅ Scale-based
 	icon.BackgroundTransparency = 1
 	icon.Font = Enum.Font.GothamBold
 	icon.Text = "✨"
 	icon.TextColor3 = COLORS.Accent
-	icon.TextSize = 30
 	icon.Parent = frame
+	makeTextAdaptive(icon, 30)  -- ✅ Adaptive text
 
 	local nameLabel = Instance.new("TextLabel")
-	nameLabel.Size = UDim2.new(1, -10, 0, 20)
-	nameLabel.Position = UDim2.new(0, 5, 0, 70)
+	nameLabel.Size = UDim2.new(0.9, 0, 0.15, 0)  -- ✅ Scale-based
+	nameLabel.Position = UDim2.new(0.05, 0, 0.55, 0)  -- ✅ Scale-based
 	nameLabel.BackgroundTransparency = 1
 	nameLabel.Font = Enum.Font.Gotham
 	nameLabel.Text = auraId
 	nameLabel.TextColor3 = COLORS.Text
-	nameLabel.TextSize = 12
 	nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	nameLabel.Parent = frame
+	makeTextAdaptive(nameLabel, 12)  -- ✅ Adaptive text
 
 	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0.9, 0, 0, 25)
-	btn.Position = UDim2.new(0.5, 0, 1, -30)
-	btn.AnchorPoint = Vector2.new(0.5, 0)
+	btn.Size = UDim2.new(0.9, 0, 0.2, 0)  -- ✅ Scale-based
+	btn.Position = UDim2.new(0.5, 0, 0.95, 0)  -- ✅ Scale-based
+	btn.AnchorPoint = Vector2.new(0.5, 1)
 	btn.BackgroundColor3 = isEquipped and COLORS.Danger or COLORS.Accent
 	btn.BorderSizePixel = 0
 	btn.Font = Enum.Font.GothamBold
 	btn.Text = isEquipped and "Unequip" or "Equip"
 	btn.TextColor3 = COLORS.Text
-	btn.TextSize = 12
 	btn.AutoButtonColor = false
 	btn.Parent = frame
+	makeTextAdaptive(btn, 12)  -- ✅ Adaptive text
 
 	createCorner(6).Parent = btn
 
 	btn.MouseButton1Click:Connect(function()
 		if isEquipped then
 			unequipAuraEvent:FireServer()
-			-- Update local state immediately for responsive UI
 			inventoryData.EquippedAura = nil
 		else
 			equipAuraEvent:FireServer(auraId)
-			-- Update local state immediately for responsive UI
 			inventoryData.EquippedAura = auraId
 		end
-		-- Refresh UI after short delay to let server process
 		task.delay(0.1, function()
 			updateInventory()
 		end)
@@ -479,8 +507,8 @@ local function createToolItem(toolId, parentFrame)
 
 	if isEquipped then
 		local equippedBadge = Instance.new("Frame")
-		equippedBadge.Size = UDim2.new(0, 70, 0, 20)
-		equippedBadge.Position = UDim2.new(0.5, 0, 0, 5)
+		equippedBadge.Size = UDim2.new(0.7, 0, 0.15, 0)  -- ✅ Scale-based
+		equippedBadge.Position = UDim2.new(0.5, 0, 0.02, 0)  -- ✅ Scale-based
 		equippedBadge.AnchorPoint = Vector2.new(0.5, 0)
 		equippedBadge.BackgroundColor3 = COLORS.Equipped
 		equippedBadge.BorderSizePixel = 0
@@ -494,57 +522,54 @@ local function createToolItem(toolId, parentFrame)
 		badgeLabel.Font = Enum.Font.GothamBold
 		badgeLabel.Text = "EQUIPPED"
 		badgeLabel.TextColor3 = COLORS.Text
-		badgeLabel.TextSize = 10
 		badgeLabel.Parent = equippedBadge
+		makeTextAdaptive(badgeLabel, 10)  -- ✅ Adaptive text
 	end
 
 	local icon = Instance.new("TextLabel")
-	icon.Size = UDim2.new(1, 0, 0, 40)
-	icon.Position = UDim2.new(0, 0, 0, 25)
+	icon.Size = UDim2.new(1, 0, 0.35, 0)  -- ✅ Scale-based
+	icon.Position = UDim2.new(0, 0, 0.18, 0)  -- ✅ Scale-based
 	icon.BackgroundTransparency = 1
 	icon.Font = Enum.Font.GothamBold
 	icon.Text = "🔧"
 	icon.TextColor3 = COLORS.Success
-	icon.TextSize = 30
 	icon.Parent = frame
+	makeTextAdaptive(icon, 30)  -- ✅ Adaptive text
 
 	local nameLabel = Instance.new("TextLabel")
-	nameLabel.Size = UDim2.new(1, -10, 0, 20)
-	nameLabel.Position = UDim2.new(0, 5, 0, 70)
+	nameLabel.Size = UDim2.new(0.9, 0, 0.15, 0)  -- ✅ Scale-based
+	nameLabel.Position = UDim2.new(0.05, 0, 0.55, 0)  -- ✅ Scale-based
 	nameLabel.BackgroundTransparency = 1
 	nameLabel.Font = Enum.Font.Gotham
 	nameLabel.Text = toolId
 	nameLabel.TextColor3 = COLORS.Text
-	nameLabel.TextSize = 12
 	nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	nameLabel.Parent = frame
+	makeTextAdaptive(nameLabel, 12)  -- ✅ Adaptive text
 
 	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0.9, 0, 0, 25)
-	btn.Position = UDim2.new(0.5, 0, 1, -30)
-	btn.AnchorPoint = Vector2.new(0.5, 0)
+	btn.Size = UDim2.new(0.9, 0, 0.2, 0)  -- ✅ Scale-based
+	btn.Position = UDim2.new(0.5, 0, 0.95, 0)  -- ✅ Scale-based
+	btn.AnchorPoint = Vector2.new(0.5, 1)
 	btn.BackgroundColor3 = isEquipped and COLORS.Danger or COLORS.Accent
 	btn.BorderSizePixel = 0
 	btn.Font = Enum.Font.GothamBold
 	btn.Text = isEquipped and "Unequip" or "Equip"
 	btn.TextColor3 = COLORS.Text
-	btn.TextSize = 12
 	btn.AutoButtonColor = false
 	btn.Parent = frame
+	makeTextAdaptive(btn, 12)  -- ✅ Adaptive text
 
 	createCorner(6).Parent = btn
 
 	btn.MouseButton1Click:Connect(function()
 		if isEquipped then
 			unequipToolEvent:FireServer()
-			-- Update local state immediately for responsive UI
 			inventoryData.EquippedTool = nil
 		else
 			equipToolEvent:FireServer(toolId)
-			-- Update local state immediately for responsive UI
 			inventoryData.EquippedTool = toolId
 		end
-		-- Refresh UI after short delay to let server process
 		task.delay(0.1, function()
 			updateInventory()
 		end)
@@ -587,8 +612,8 @@ local function createTitleItem(titleName)
 
 	if isEquipped then
 		local equippedBadge = Instance.new("Frame")
-		equippedBadge.Size = UDim2.new(0, 70, 0, 20)
-		equippedBadge.Position = UDim2.new(0.5, 0, 0, 5)
+		equippedBadge.Size = UDim2.new(0.35, 0, 0.25, 0)  -- ✅ Scale-based
+		equippedBadge.Position = UDim2.new(0.5, 0, 0.02, 0)  -- ✅ Scale-based
 		equippedBadge.AnchorPoint = Vector2.new(0.5, 0)
 		equippedBadge.BackgroundColor3 = COLORS.Equipped
 		equippedBadge.BorderSizePixel = 0
@@ -602,57 +627,57 @@ local function createTitleItem(titleName)
 		badgeLabel.Font = Enum.Font.GothamBold
 		badgeLabel.Text = "EQUIPPED"
 		badgeLabel.TextColor3 = COLORS.Text
-		badgeLabel.TextSize = 10
 		badgeLabel.Parent = equippedBadge
+		makeTextAdaptive(badgeLabel, 10)  -- ✅ Adaptive text
 	end
 
 	local icon = Instance.new("TextLabel")
-	icon.Size = UDim2.new(0, 30, 0, 30)
-	icon.Position = UDim2.new(0, 10, 0.5, -15)
+	icon.Size = UDim2.new(0.15, 0, 0.6, 0)  -- ✅ Scale-based
+	icon.Position = UDim2.new(0.03, 0, 0.5, 0)  -- ✅ Scale-based
+	icon.AnchorPoint = Vector2.new(0, 0.5)
 	icon.BackgroundTransparency = 1
 	icon.Font = Enum.Font.GothamBold
 	icon.Text = titleInfo.Icon
 	icon.TextColor3 = titleInfo.Color
-	icon.TextSize = 24
 	icon.Parent = frame
+	makeTextAdaptive(icon, 24)  -- ✅ Adaptive text
 
 	local nameLabel = Instance.new("TextLabel")
-	nameLabel.Size = UDim2.new(1, -120, 0, 25)
-	nameLabel.Position = UDim2.new(0, 45, 0.5, -12)
+	nameLabel.Size = UDim2.new(0.5, 0, 0.4, 0)  -- ✅ Scale-based
+	nameLabel.Position = UDim2.new(0.2, 0, 0.5, 0)  -- ✅ Scale-based
+	nameLabel.AnchorPoint = Vector2.new(0, 0.5)
 	nameLabel.BackgroundTransparency = 1
 	nameLabel.Font = Enum.Font.GothamBold
 	nameLabel.Text = titleInfo.DisplayName
 	nameLabel.TextColor3 = titleInfo.Color
-	nameLabel.TextSize = 14
 	nameLabel.TextXAlignment = Enum.TextXAlignment.Left
 	nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	nameLabel.Parent = frame
+	makeTextAdaptive(nameLabel, 14)  -- ✅ Adaptive text
 
 	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0, 70, 0, 30)
-	btn.Position = UDim2.new(1, -80, 0.5, -15)
+	btn.Size = UDim2.new(0.25, 0, 0.45, 0)  -- ✅ Scale-based
+	btn.Position = UDim2.new(0.95, 0, 0.5, 0)  -- ✅ Scale-based
+	btn.AnchorPoint = Vector2.new(1, 0.5)
 	btn.BackgroundColor3 = isEquipped and COLORS.Danger or COLORS.Accent
 	btn.BorderSizePixel = 0
 	btn.Font = Enum.Font.GothamBold
 	btn.Text = isEquipped and "Unequip" or "Equip"
 	btn.TextColor3 = COLORS.Text
-	btn.TextSize = 12
 	btn.AutoButtonColor = false
 	btn.Parent = frame
+	makeTextAdaptive(btn, 12)  -- ✅ Adaptive text
 
 	createCorner(6).Parent = btn
 
 	btn.MouseButton1Click:Connect(function()
 		if isEquipped then
 			unequipTitleEvent:FireServer()
-			-- ✅ Update local state immediately for responsive UI
 			titleData.EquippedTitle = nil
 		else
 			equipTitleEvent:FireServer(titleName)
-			-- ✅ Update local state immediately for responsive UI
 			titleData.EquippedTitle = titleName
 		end
-		-- ✅ Refresh UI after short delay to let server process
 		task.delay(0.1, function()
 			updateTitlesTab()
 		end)

@@ -74,6 +74,33 @@ local function formatMoney(amount)
 	end
 end
 
+-- ✅ Helper: Create adaptive text with TextScaled and UITextSizeConstraint
+local function makeTextAdaptive(textLabel, maxTextSize)
+	textLabel.TextScaled = true
+	local constraint = Instance.new("UITextSizeConstraint")
+	constraint.MaxTextSize = maxTextSize or 14
+	constraint.Parent = textLabel
+end
+
+-- ✅ Helper: Add UIAspectRatioConstraint to main frames
+local function addAspectRatio(frame, ratio)
+	local aspectRatio = Instance.new("UIAspectRatioConstraint")
+	aspectRatio.AspectRatio = ratio or 0.8
+	aspectRatio.DominantAxis = Enum.DominantAxis.Width
+	aspectRatio.Parent = frame
+end
+
+-- ✅ Helper: Tween Size with animation
+local function tweenSize(object, endSize, time, callback)
+	local tweenInfo = TweenInfo.new(time or 0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+	local tween = TweenService:Create(object, tweenInfo, {Size = endSize})
+	tween:Play()
+	if callback then
+		tween.Completed:Connect(callback)
+	end
+	return tween
+end
+
 local function showNotification(message, color)
 	StarterGui:SetCore("SendNotification", {
 		Title = "Shop",
@@ -90,22 +117,26 @@ screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 screenGui.Enabled = false
 screenGui.Parent = playerGui
 
--- Main Panel
+-- Main Panel (✅ FULLY ADAPTIVE)
 local mainPanel = Instance.new("Frame")
-mainPanel.Size = UDim2.new(0.45, 0, 0.6, 0)  -- 800/1920, 500/1080
+mainPanel.Name = "MainPanel"
+mainPanel.Size = UDim2.new(0.7, 0, 0.9, 0)  -- ✅ Scale-based yang lebih besar
 mainPanel.Position = UDim2.new(0.5, 0, 0.5, 0)
 mainPanel.AnchorPoint = Vector2.new(0.5, 0.5)
 mainPanel.BackgroundColor3 = COLORS.Background
 mainPanel.BorderSizePixel = 0
 mainPanel.Visible = false
+mainPanel.ClipsDescendants = true
 mainPanel.Parent = screenGui
 
 createCorner(15).Parent = mainPanel
 createStroke(COLORS.Border, 2).Parent = mainPanel
+addAspectRatio(mainPanel, 1.3)  -- ✅ AspectRatio dengan DominantAxis = Width
 
--- Header
+-- Header (✅ SCALE-BASED)
 local header = Instance.new("Frame")
-header.Size = UDim2.new(1, 0, 0.12, 0)
+header.Name = "Header"
+header.Size = UDim2.new(1, 0, 0.1, 0)  -- ✅ Scale-based
 header.BackgroundColor3 = COLORS.Panel
 header.BorderSizePixel = 0
 header.Parent = mainPanel
@@ -113,22 +144,22 @@ header.Parent = mainPanel
 createCorner(15).Parent = header
 
 local headerBottom = Instance.new("Frame")
-headerBottom.Size = UDim2.new(1, 0, 0, 15)
-headerBottom.Position = UDim2.new(0, 0, 1, -15)
+headerBottom.Size = UDim2.new(1, 0, 0.3, 0)  -- ✅ Scale-based
+headerBottom.Position = UDim2.new(0, 0, 0.7, 0)  -- ✅ Scale-based
 headerBottom.BackgroundColor3 = COLORS.Panel
 headerBottom.BorderSizePixel = 0
 headerBottom.Parent = header
 
 local headerTitle = Instance.new("TextLabel")
-headerTitle.Size = UDim2.new(0.25, 0, 1, 0)  -- 200/800
+headerTitle.Size = UDim2.new(0.25, 0, 1, 0)
 headerTitle.Position = UDim2.new(0.025, 0, 0, 0)
 headerTitle.BackgroundTransparency = 1
 headerTitle.Font = Enum.Font.GothamBold
 headerTitle.Text = "SHOP"
 headerTitle.TextColor3 = COLORS.Text
-headerTitle.TextSize = 20
 headerTitle.TextXAlignment = Enum.TextXAlignment.Left
 headerTitle.Parent = header
+makeTextAdaptive(headerTitle, 20)  -- ✅ Adaptive text
 
 -- Money Display in Header
 local moneyFrame = Instance.new("Frame")
@@ -157,57 +188,56 @@ moneyLabel.BackgroundTransparency = 1
 moneyLabel.Font = Enum.Font.GothamBold
 moneyLabel.Text = "$0"
 moneyLabel.TextColor3 = COLORS.Success
-moneyLabel.TextSize = 16
 moneyLabel.TextXAlignment = Enum.TextXAlignment.Left
 moneyLabel.Parent = moneyFrame
+makeTextAdaptive(moneyLabel, 16)  -- ✅ Adaptive text
 
--- Add Money Button
 local addMoneyBtn = Instance.new("TextButton")
-addMoneyBtn.Size = UDim2.new(0.044, 0, 0.583, 0)  -- 35/800, 35/60
+addMoneyBtn.Size = UDim2.new(0.044, 0, 0.583, 0)
 addMoneyBtn.Position = UDim2.new(0.85, 0, 0.5, 0)
 addMoneyBtn.AnchorPoint = Vector2.new(0, 0.5)
 addMoneyBtn.BackgroundColor3 = COLORS.Accent
 addMoneyBtn.BorderSizePixel = 0
 addMoneyBtn.Text = "+"
 addMoneyBtn.Font = Enum.Font.GothamBold
-addMoneyBtn.TextSize = 20
 addMoneyBtn.TextColor3 = COLORS.Text
 addMoneyBtn.Parent = header
+makeTextAdaptive(addMoneyBtn, 20)  -- ✅ Adaptive text
 
 createCorner(8).Parent = addMoneyBtn
 
--- Close Button
+-- Close Button (✅ SCALE-BASED)
 local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0.05, 0, 0.667, 0)  -- 40/800, 40/60
-closeBtn.Position = UDim2.new(0.9875, 0, 0.5, 0)
+closeBtn.Size = UDim2.new(0.05, 0, 0.667, 0)
+closeBtn.Position = UDim2.new(0.95, 0, 0.5, 0)
 closeBtn.AnchorPoint = Vector2.new(1, 0.5)
 closeBtn.BackgroundColor3 = COLORS.Button
 closeBtn.BorderSizePixel = 0
 closeBtn.Text = "✕"
 closeBtn.Font = Enum.Font.GothamBold
-closeBtn.TextSize = 20
 closeBtn.TextColor3 = COLORS.Text
 closeBtn.Parent = header
+makeTextAdaptive(closeBtn, 20)  -- ✅ Adaptive text
 
 createCorner(10).Parent = closeBtn
 
--- Tab Frame
+-- Tab Frame (✅ SCALE-BASED)
 local tabFrame = Instance.new("Frame")
-tabFrame.Size = UDim2.new(0.9625, 0, 0.08, 0)  -- (800-30)/800, 40/500
-tabFrame.Position = UDim2.new(0.019, 0, 0.14, 0)  -- 15/800, 70/500
+tabFrame.Size = UDim2.new(0.94, 0, 0.07, 0)  -- ✅ Scale-based
+tabFrame.Position = UDim2.new(0.03, 0, 0.12, 0)  -- ✅ Scale-based
 tabFrame.BackgroundTransparency = 1
 tabFrame.Parent = mainPanel
 
 local tabLayout = Instance.new("UIListLayout")
 tabLayout.FillDirection = Enum.FillDirection.Horizontal
-tabLayout.Padding = UDim.new(0, 8)
+tabLayout.Padding = UDim.new(0.015, 0)  -- ✅ Scale-based
 tabLayout.SortOrder = Enum.SortOrder.LayoutOrder
 tabLayout.Parent = tabFrame
 
--- Content Frame
+-- Content Frame (✅ SCALE-BASED)
 local contentFrame = Instance.new("Frame")
-contentFrame.Size = UDim2.new(0.9625, 0, 0.76, 0)  -- (500-130)/500
-contentFrame.Position = UDim2.new(0.019, 0, 0.24, 0)  -- 120/500
+contentFrame.Size = UDim2.new(0.94, 0, 0.78, 0)  -- ✅ Scale-based
+contentFrame.Position = UDim2.new(0.03, 0, 0.2, 0)  -- ✅ Scale-based
 contentFrame.BackgroundTransparency = 1
 contentFrame.Parent = mainPanel
 
@@ -216,22 +246,18 @@ local tabs = {}
 
 local function createTab(tabName, order)
 	local tab = Instance.new("TextButton")
-	tab.Size = UDim2.new(0, 0, 1, 0)
+	tab.Size = UDim2.new(0.22, 0, 1, 0)  -- ✅ Scale-based
 	tab.BackgroundColor3 = tabName == "Auras" and COLORS.Accent or COLORS.Button
 	tab.BorderSizePixel = 0
 	tab.Font = Enum.Font.GothamBold
 	tab.Text = tabName
 	tab.TextColor3 = COLORS.Text
-	tab.TextSize = 14
 	tab.AutoButtonColor = false
 	tab.LayoutOrder = order
 	tab.Parent = tabFrame
 
 	createCorner(8).Parent = tab
-
-	-- Auto size
-	local textSize = game:GetService("TextService"):GetTextSize(tabName, 14, Enum.Font.GothamBold, Vector2.new(1000, 40))
-	tab.Size = UDim2.new(0, textSize.X + 30, 1, 0)
+	makeTextAdaptive(tab, 14)  -- ✅ Adaptive text
 
 	-- Content container
 	local content = Instance.new("Frame")
@@ -279,17 +305,17 @@ auraFilterLayout.Parent = auraFilterFrame
 
 local function createFilterBtn(text, filter)
 	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0.117, 0, 1, 0)  -- 90/770 (content width)
+	btn.Size = UDim2.new(0.2, 0, 1, 0)  -- ✅ Scale-based
 	btn.BackgroundColor3 = filter == "All" and COLORS.Accent or COLORS.Button
 	btn.BorderSizePixel = 0
 	btn.Font = Enum.Font.GothamBold
 	btn.Text = text
 	btn.TextColor3 = COLORS.Text
-	btn.TextSize = 13
 	btn.AutoButtonColor = false
 	btn.Parent = auraFilterFrame
 
 	createCorner(6).Parent = btn
+	makeTextAdaptive(btn, 13)  -- ✅ Adaptive text
 
 	btn.MouseButton1Click:Connect(function()
 		currentAuraFilter = filter
@@ -328,14 +354,14 @@ aurasGrid.SortOrder = Enum.SortOrder.LayoutOrder
 aurasGrid.Parent = aurasScroll
 
 local aurasEmptyLabel = Instance.new("TextLabel")
-aurasEmptyLabel.Size = UDim2.new(1, 0, 0, 100)
+aurasEmptyLabel.Size = UDim2.new(1, 0, 0.25, 0)  -- ✅ Scale-based
 aurasEmptyLabel.BackgroundTransparency = 1
 aurasEmptyLabel.Font = Enum.Font.Gotham
 aurasEmptyLabel.Text = "Kamu sudah membeli semua aura, Terimakasih"
 aurasEmptyLabel.TextColor3 = COLORS.TextSecondary
-aurasEmptyLabel.TextSize = 14
 aurasEmptyLabel.Visible = false
 aurasEmptyLabel.Parent = aurasScroll
+makeTextAdaptive(aurasEmptyLabel, 14)  -- ✅ Adaptive text
 
 -- ==================== TOOLS TAB ====================
 -- Filter Frame
@@ -346,22 +372,22 @@ toolFilterFrame.Parent = toolsContent
 
 local toolFilterLayout = Instance.new("UIListLayout")
 toolFilterLayout.FillDirection = Enum.FillDirection.Horizontal
-toolFilterLayout.Padding = UDim.new(0, 8)
+toolFilterLayout.Padding = UDim.new(0.02, 0)  -- ✅ Scale-based
 toolFilterLayout.Parent = toolFilterFrame
 
 local function createToolFilterBtn(text, filter)
 	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0.117, 0, 1, 0)
+	btn.Size = UDim2.new(0.2, 0, 1, 0)  -- ✅ Scale-based
 	btn.BackgroundColor3 = filter == "All" and COLORS.Accent or COLORS.Button
 	btn.BorderSizePixel = 0
 	btn.Font = Enum.Font.GothamBold
 	btn.Text = text
 	btn.TextColor3 = COLORS.Text
-	btn.TextSize = 13
 	btn.AutoButtonColor = false
 	btn.Parent = toolFilterFrame
 
 	createCorner(6).Parent = btn
+	makeTextAdaptive(btn, 13)  -- ✅ Adaptive text
 
 	btn.MouseButton1Click:Connect(function()
 		currentToolFilter = filter
@@ -400,14 +426,14 @@ toolsGrid.SortOrder = Enum.SortOrder.LayoutOrder
 toolsGrid.Parent = toolsScroll
 
 local toolsEmptyLabel = Instance.new("TextLabel")
-toolsEmptyLabel.Size = UDim2.new(1, 0, 0, 100)
+toolsEmptyLabel.Size = UDim2.new(1, 0, 0.25, 0)  -- ✅ Scale-based
 toolsEmptyLabel.BackgroundTransparency = 1
 toolsEmptyLabel.Font = Enum.Font.Gotham
 toolsEmptyLabel.Text = "Kamu sudah membeli semua tools, Terimakasih"
 toolsEmptyLabel.TextColor3 = COLORS.TextSecondary
-toolsEmptyLabel.TextSize = 14
 toolsEmptyLabel.Visible = false
 toolsEmptyLabel.Parent = toolsScroll
+makeTextAdaptive(toolsEmptyLabel, 14)  -- ✅ Adaptive text
 
 -- ==================== GAMEPASSES TAB ====================
 local gamepassScroll = Instance.new("ScrollingFrame")
@@ -422,7 +448,7 @@ gamepassScroll.ScrollingDirection = Enum.ScrollingDirection.X
 gamepassScroll.Parent = gamepassesContent
 
 local gamepassLayout = Instance.new("UIListLayout")
-gamepassLayout.Padding = UDim.new(0, 10)
+gamepassLayout.Padding = UDim.new(0.02, 0)  -- ✅ Scale-based
 gamepassLayout.FillDirection = Enum.FillDirection.Horizontal
 gamepassLayout.SortOrder = Enum.SortOrder.LayoutOrder
 gamepassLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
@@ -430,20 +456,20 @@ gamepassLayout.VerticalAlignment = Enum.VerticalAlignment.Top
 gamepassLayout.Parent = gamepassScroll
 
 local gamepassPadding = Instance.new("UIPadding")
-gamepassPadding.PaddingLeft = UDim.new(0, 5)
-gamepassPadding.PaddingRight = UDim.new(0, 5)
-gamepassPadding.PaddingTop = UDim.new(0, 5)
+gamepassPadding.PaddingLeft = UDim.new(0.01, 0)  -- ✅ Scale-based
+gamepassPadding.PaddingRight = UDim.new(0.01, 0)
+gamepassPadding.PaddingTop = UDim.new(0.01, 0)
 gamepassPadding.Parent = gamepassScroll
 
 local gamepassEmptyLabel = Instance.new("TextLabel")
-gamepassEmptyLabel.Size = UDim2.new(1, 0, 0, 100)
+gamepassEmptyLabel.Size = UDim2.new(1, 0, 0.25, 0)  -- ✅ Scale-based
 gamepassEmptyLabel.BackgroundTransparency = 1
 gamepassEmptyLabel.Font = Enum.Font.Gotham
 gamepassEmptyLabel.Text = "Kamu sudah membeli semua gamepass, Terimakasih"
 gamepassEmptyLabel.TextColor3 = COLORS.TextSecondary
-gamepassEmptyLabel.TextSize = 14
 gamepassEmptyLabel.Visible = false
 gamepassEmptyLabel.Parent = gamepassScroll
+makeTextAdaptive(gamepassEmptyLabel, 14)  -- ✅ Adaptive text
 
 -- ==================== MONEY TAB ====================
 local moneyScroll = Instance.new("ScrollingFrame")
@@ -458,7 +484,7 @@ moneyScroll.ScrollingDirection = Enum.ScrollingDirection.X
 moneyScroll.Parent = moneyContent
 
 local moneyLayout = Instance.new("UIListLayout")
-moneyLayout.Padding = UDim.new(0, 10)
+moneyLayout.Padding = UDim.new(0.02, 0)  -- ✅ Scale-based
 moneyLayout.FillDirection = Enum.FillDirection.Horizontal
 moneyLayout.SortOrder = Enum.SortOrder.LayoutOrder
 moneyLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
@@ -466,9 +492,9 @@ moneyLayout.VerticalAlignment = Enum.VerticalAlignment.Top
 moneyLayout.Parent = moneyScroll
 
 local moneyPadding = Instance.new("UIPadding")
-moneyPadding.PaddingLeft = UDim.new(0, 5)
-moneyPadding.PaddingRight = UDim.new(0, 5)
-moneyPadding.PaddingTop = UDim.new(0, 5)
+moneyPadding.PaddingLeft = UDim.new(0.01, 0)  -- ✅ Scale-based
+moneyPadding.PaddingRight = UDim.new(0.01, 0)
+moneyPadding.PaddingTop = UDim.new(0.01, 0)
 moneyPadding.Parent = moneyScroll
 
 -- ==================== ITEM CREATION FUNCTIONS ====================
@@ -509,8 +535,8 @@ local function createAuraItem(auraData)
 		badgeLabel.Font = Enum.Font.GothamBold
 		badgeLabel.Text = "PREMIUM"
 		badgeLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
-		badgeLabel.TextSize = 11
 		badgeLabel.Parent = badge
+		makeTextAdaptive(badgeLabel, 11)  -- ✅ Adaptive text
 	end
 
 	-- Title
@@ -521,10 +547,10 @@ local function createAuraItem(auraData)
 	titleLabel.Font = Enum.Font.GothamBold
 	titleLabel.Text = auraData.Title
 	titleLabel.TextColor3 = COLORS.Text
-	titleLabel.TextSize = 14
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 	titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	titleLabel.Parent = frame
+	makeTextAdaptive(titleLabel, 14)  -- ✅ Adaptive text
 
 	-- Price
 	local priceLabel = Instance.new("TextLabel")
@@ -534,9 +560,9 @@ local function createAuraItem(auraData)
 	priceLabel.Font = Enum.Font.GothamBold
 	priceLabel.Text = auraData.IsPremium and ("R$ " .. auraData.Price) or formatMoney(auraData.Price)
 	priceLabel.TextColor3 = auraData.IsPremium and COLORS.Premium or COLORS.Success
-	priceLabel.TextSize = 16
 	priceLabel.TextXAlignment = Enum.TextXAlignment.Left
 	priceLabel.Parent = frame
+	makeTextAdaptive(priceLabel, 16)  -- ✅ Adaptive text
 
 	-- Buy Button
 	local buyBtn = Instance.new("TextButton")
@@ -547,9 +573,9 @@ local function createAuraItem(auraData)
 	buyBtn.Font = Enum.Font.GothamBold
 	buyBtn.Text = "Buy"
 	buyBtn.TextColor3 = COLORS.Text
-	buyBtn.TextSize = 15
 	buyBtn.AutoButtonColor = false
 	buyBtn.Parent = frame
+	makeTextAdaptive(buyBtn, 15)  -- ✅ Adaptive text
 
 	createCorner(8).Parent = buyBtn
 
@@ -613,8 +639,8 @@ local function createToolItem(toolData)
 		badgeLabel.Font = Enum.Font.GothamBold
 		badgeLabel.Text = "PREMIUM"
 		badgeLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
-		badgeLabel.TextSize = 11
 		badgeLabel.Parent = badge
+		makeTextAdaptive(badgeLabel, 11)  -- ✅ Adaptive text
 	end
 
 	-- Title
@@ -625,10 +651,10 @@ local function createToolItem(toolData)
 	titleLabel.Font = Enum.Font.GothamBold
 	titleLabel.Text = toolData.Title
 	titleLabel.TextColor3 = COLORS.Text
-	titleLabel.TextSize = 14
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 	titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	titleLabel.Parent = frame
+	makeTextAdaptive(titleLabel, 14)  -- ✅ Adaptive text
 
 	-- Price
 	local priceLabel = Instance.new("TextLabel")
@@ -638,9 +664,9 @@ local function createToolItem(toolData)
 	priceLabel.Font = Enum.Font.GothamBold
 	priceLabel.Text = toolData.IsPremium and ("R$ " .. toolData.Price) or formatMoney(toolData.Price)
 	priceLabel.TextColor3 = toolData.IsPremium and COLORS.Premium or COLORS.Success
-	priceLabel.TextSize = 16
 	priceLabel.TextXAlignment = Enum.TextXAlignment.Left
 	priceLabel.Parent = frame
+	makeTextAdaptive(priceLabel, 16)  -- ✅ Adaptive text
 
 	-- Buy Button
 	local buyBtn = Instance.new("TextButton")
@@ -651,9 +677,9 @@ local function createToolItem(toolData)
 	buyBtn.Font = Enum.Font.GothamBold
 	buyBtn.Text = "Buy"
 	buyBtn.TextColor3 = COLORS.Text
-	buyBtn.TextSize = 15
 	buyBtn.AutoButtonColor = false
 	buyBtn.Parent = frame
+	makeTextAdaptive(buyBtn, 15)  -- ✅ Adaptive text
 
 	createCorner(8).Parent = buyBtn
 
@@ -703,14 +729,14 @@ local function createGamepassItem(gamepassData)
 	-- Title
 	local titleLabel = Instance.new("TextLabel")
 	titleLabel.Size = UDim2.new(0.943, 0, 0.079, 0)
-	titleLabel.Position = UDim2.new(0.029, 0, 0.474, 0)-- Sesuaikan posisi
+	titleLabel.Position = UDim2.new(0.029, 0, 0.474, 0)
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.Font = Enum.Font.GothamBold
 	titleLabel.Text = gamepassData.Name
 	titleLabel.TextColor3 = COLORS.Text
-	titleLabel.TextSize = 18
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 	titleLabel.Parent = frame
+	makeTextAdaptive(titleLabel, 18)  -- ✅ Adaptive text
 
 	-- Description
 	local descLabel = Instance.new("TextLabel")
@@ -720,11 +746,11 @@ local function createGamepassItem(gamepassData)
 	descLabel.Font = Enum.Font.Gotham
 	descLabel.Text = gamepassData.Description or ""
 	descLabel.TextColor3 = COLORS.TextSecondary
-	descLabel.TextSize = 12
 	descLabel.TextWrapped = true
 	descLabel.TextXAlignment = Enum.TextXAlignment.Left
 	descLabel.TextYAlignment = Enum.TextYAlignment.Top
 	descLabel.Parent = frame
+	makeTextAdaptive(descLabel, 12)  -- ✅ Adaptive text
 
 	-- Price
 	local priceLabel = Instance.new("TextLabel")
@@ -734,22 +760,22 @@ local function createGamepassItem(gamepassData)
 	priceLabel.Font = Enum.Font.GothamBold
 	priceLabel.Text = "R$ " .. gamepassData.Price
 	priceLabel.TextColor3 = COLORS.Premium
-	priceLabel.TextSize = 20
 	priceLabel.TextXAlignment = Enum.TextXAlignment.Left
 	priceLabel.Parent = frame
+	makeTextAdaptive(priceLabel, 20)  -- ✅ Adaptive text
 
 	-- Buy Button
 	local buyBtn = Instance.new("TextButton")
 	buyBtn.Size = UDim2.new(0.943, 0, 0.118, 0)
-	buyBtn.Position = UDim2.new(0.029, 0, 0.803, 0) -- Posisi tetap terlihat
+	buyBtn.Position = UDim2.new(0.029, 0, 0.803, 0)
 	buyBtn.BackgroundColor3 = COLORS.Success
 	buyBtn.BorderSizePixel = 0
 	buyBtn.Font = Enum.Font.GothamBold
 	buyBtn.Text = "Purchase"
 	buyBtn.TextColor3 = COLORS.Text
-	buyBtn.TextSize = 16
 	buyBtn.AutoButtonColor = false
 	buyBtn.Parent = frame
+	makeTextAdaptive(buyBtn, 16)  -- ✅ Adaptive text
 
 	createCorner(8).Parent = buyBtn
 
@@ -788,9 +814,9 @@ local function createMoneyPackItem(packData)
 	titleLabel.Font = Enum.Font.GothamBold
 	titleLabel.Text = packData.Title
 	titleLabel.TextColor3 = COLORS.Text
-	titleLabel.TextSize = 16
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 	titleLabel.Parent = frame
+	makeTextAdaptive(titleLabel, 16)  -- ✅ Adaptive text
 
 	-- Reward
 	local rewardLabel = Instance.new("TextLabel")
@@ -800,9 +826,9 @@ local function createMoneyPackItem(packData)
 	rewardLabel.Font = Enum.Font.GothamBold
 	rewardLabel.Text = formatMoney(packData.MoneyReward)
 	rewardLabel.TextColor3 = COLORS.Success
-	rewardLabel.TextSize = 22
 	rewardLabel.TextXAlignment = Enum.TextXAlignment.Left
 	rewardLabel.Parent = frame
+	makeTextAdaptive(rewardLabel, 22)  -- ✅ Adaptive text
 
 	-- Price
 	local priceLabel = Instance.new("TextLabel")
@@ -812,9 +838,9 @@ local function createMoneyPackItem(packData)
 	priceLabel.Font = Enum.Font.GothamBold
 	priceLabel.Text = "R$ " .. packData.Price
 	priceLabel.TextColor3 = COLORS.Premium
-	priceLabel.TextSize = 18
 	priceLabel.TextXAlignment = Enum.TextXAlignment.Left
 	priceLabel.Parent = frame
+	makeTextAdaptive(priceLabel, 18)  -- ✅ Adaptive text
 
 	-- Buy Button
 	local buyBtn = Instance.new("TextButton")
@@ -825,9 +851,9 @@ local function createMoneyPackItem(packData)
 	buyBtn.Font = Enum.Font.GothamBold
 	buyBtn.Text = "Purchase"
 	buyBtn.TextColor3 = COLORS.Text
-	buyBtn.TextSize = 16
 	buyBtn.AutoButtonColor = false
 	buyBtn.Parent = frame
+	makeTextAdaptive(buyBtn, 16)  -- ✅ Adaptive text
 
 	createCorner(8).Parent = buyBtn
 
@@ -1154,12 +1180,17 @@ local shopIcon = Icon.new()
 	:setLabel("Shop")
 	:bindEvent("selected", function()
 		screenGui.Enabled = true
+		mainPanel.Size = UDim2.new(0, 0, 0, 0)
 		mainPanel.Visible = true
+		tweenSize(mainPanel, UDim2.new(0.7, 0, 0.9, 0), 0.3)  -- ✅ Animate open
 		refreshShopData()
 	end)
 	:bindEvent("deselected", function()
-		screenGui.Enabled = false
-		mainPanel.Visible = false
+		tweenSize(mainPanel, UDim2.new(0, 0, 0, 0), 0.3, function()
+			mainPanel.Visible = false
+			mainPanel.Size = UDim2.new(0.7, 0, 0.9, 0)  -- ✅ Reset ukuran
+			screenGui.Enabled = false
+		end)
 	end)
 
 -- Initial load with delay

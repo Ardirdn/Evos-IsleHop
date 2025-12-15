@@ -46,6 +46,35 @@ local function createStroke(color, thickness)
 	return stroke
 end
 
+-- ✅ Helper: Create adaptive text with TextScaled and UITextSizeConstraint
+local function makeTextAdaptive(textLabel, maxTextSize)
+	textLabel.TextScaled = true
+	local constraint = Instance.new("UITextSizeConstraint")
+	constraint.MaxTextSize = maxTextSize or 14
+	constraint.MinTextSize = 1
+	constraint.Parent = textLabel
+end
+
+-- ✅ Helper: Add UIAspectRatioConstraint to main frames
+local function addAspectRatio(frame, ratio)
+	local aspectRatio = Instance.new("UIAspectRatioConstraint")
+	aspectRatio.AspectRatio = ratio or 0.8
+	aspectRatio.DominantAxis = Enum.DominantAxis.Width
+	aspectRatio.Parent = frame
+end
+
+-- ✅ Helper: tweenSize for animations
+local function tweenSize(object, endSize, time, callback)
+	local tween = TweenService:Create(object, TweenInfo.new(time or 0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+		Size = endSize
+	})
+	tween:Play()
+	if callback then
+		tween.Completed:Connect(callback)
+	end
+	return tween
+end
+
 -- ==================== CREATE GUI ====================
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "RedeemGui"
@@ -55,19 +84,21 @@ screenGui.DisplayOrder = 50
 screenGui.Enabled = false
 screenGui.Parent = playerGui
 
--- Main Panel
+-- Main Panel (✅ FULLY ADAPTIVE)
 local mainPanel = Instance.new("Frame")
 mainPanel.Name = "MainPanel"
-mainPanel.Size = UDim2.new(0.5, 0, 0.85, 0)
-mainPanel.Position = UDim2.new(0.5, 0, 1.5, 0)
+mainPanel.Size = UDim2.new(1, 0, 0.8, 0)  -- ✅ Full scale, controlled by AspectRatio
+mainPanel.Position = UDim2.new(0.5, 0, 1.5, 0)  -- ✅ Start off-screen for animation
 mainPanel.AnchorPoint = Vector2.new(0.5, 0.5)
 mainPanel.BackgroundColor3 = COLORS.Background
 mainPanel.BorderSizePixel = 0
 mainPanel.Visible = false
+mainPanel.ClipsDescendants = true
 mainPanel.Parent = screenGui
 
 createCorner(15).Parent = mainPanel
 createStroke(COLORS.Border, 2).Parent = mainPanel
+addAspectRatio(mainPanel, 0.8)  -- ✅ AspectRatio 0.8 dengan DominantAxis = Width
 
 -- Header
 local header = Instance.new("Frame")
@@ -79,8 +110,8 @@ header.Parent = mainPanel
 createCorner(15).Parent = header
 
 local headerBottom = Instance.new("Frame")
-headerBottom.Size = UDim2.new(1, 0, 0, 15)
-headerBottom.Position = UDim2.new(0, 0, 1, -15)
+headerBottom.Size = UDim2.new(1, 0, 0.3, 0)  -- ✅ Scale-based
+headerBottom.Position = UDim2.new(0, 0, 0.7, 0)  -- ✅ Scale-based
 headerBottom.BackgroundColor3 = COLORS.Panel
 headerBottom.BorderSizePixel = 0
 headerBottom.Parent = header
@@ -92,21 +123,21 @@ headerTitle.BackgroundTransparency = 1
 headerTitle.Font = Enum.Font.GothamBold
 headerTitle.Text = "REDEEM CODES"
 headerTitle.TextColor3 = COLORS.Text
-headerTitle.TextSize = 18
 headerTitle.TextXAlignment = Enum.TextXAlignment.Left
 headerTitle.Parent = header
+makeTextAdaptive(headerTitle, 18)  -- ✅ Adaptive text
 
 local closeBtn = Instance.new("TextButton")
-closeBtn.Size = UDim2.new(0.06, 0, 0.8, 0)
-closeBtn.Position = UDim2.new(0.92, 0, 0.5, 0)
-closeBtn.AnchorPoint = Vector2.new(0, 0.5)
+closeBtn.Size = UDim2.new(0.1, 0, 0.7, 0)  -- ✅ Scale-based
+closeBtn.Position = UDim2.new(0.95, 0, 0.5, 0)  -- ✅ Scale-based
+closeBtn.AnchorPoint = Vector2.new(1, 0.5)  -- ✅ Anchor to right
 closeBtn.BackgroundColor3 = COLORS.Button
 closeBtn.BorderSizePixel = 0
 closeBtn.Text = "✕"
 closeBtn.Font = Enum.Font.GothamBold
-closeBtn.TextSize = 20
 closeBtn.TextColor3 = COLORS.Text
 closeBtn.Parent = header
+makeTextAdaptive(closeBtn, 20)  -- ✅ Adaptive text
 
 createCorner(10).Parent = closeBtn
 
@@ -126,51 +157,51 @@ local mainTabs = {}
 
 -- Redeem Codes Tab (always visible)
 local redeemTab = Instance.new("TextButton")
-redeemTab.Size = UDim2.new(0.31, 0, 1, 0) -- ✅ 3 tabs
+redeemTab.Size = UDim2.new(0.31, 0, 1, 0)  -- ✅ Scale-based
 redeemTab.BackgroundColor3 = COLORS.Accent
 redeemTab.BorderSizePixel = 0
 redeemTab.Text = "Redeem Codes"
 redeemTab.Font = Enum.Font.GothamBold
-redeemTab.TextSize = 12
 redeemTab.TextColor3 = COLORS.Text
 redeemTab.AutoButtonColor = false
 redeemTab.Parent = mainTabFrame
 
 createCorner(8).Parent = redeemTab
+makeTextAdaptive(redeemTab, 13)  -- ✅ Adaptive text
 
 mainTabs["Redeem Codes"] = redeemTab
 
 -- Create Redeem Code Tab (admin only)
 local createTab = Instance.new("TextButton")
-createTab.Size = UDim2.new(0.31, 0, 1, 0)
+createTab.Size = UDim2.new(0.31, 0, 1, 0)  -- ✅ Scale-based
 createTab.BackgroundColor3 = COLORS.Button
 createTab.BorderSizePixel = 0
 createTab.Text = "Create Code"
 createTab.Font = Enum.Font.GothamBold
-createTab.TextSize = 12
 createTab.TextColor3 = COLORS.Text
 createTab.AutoButtonColor = false
 createTab.Visible = false
 createTab.Parent = mainTabFrame
 
 createCorner(8).Parent = createTab
+makeTextAdaptive(createTab, 13)  -- ✅ Adaptive text
 
 mainTabs["Create Redeem Code"] = createTab
 
 -- ✅ AVAILABLE CODES TAB (Admin only)
 local availableTab = Instance.new("TextButton")
-availableTab.Size = UDim2.new(0.31, 0, 1, 0)
+availableTab.Size = UDim2.new(0.31, 0, 1, 0)  -- ✅ Scale-based
 availableTab.BackgroundColor3 = COLORS.Button
 availableTab.BorderSizePixel = 0
 availableTab.Text = "Available Codes"
 availableTab.Font = Enum.Font.GothamBold
-availableTab.TextSize = 12
 availableTab.TextColor3 = COLORS.Text
 availableTab.AutoButtonColor = false
 availableTab.Visible = false
 availableTab.Parent = mainTabFrame
 
 createCorner(8).Parent = availableTab
+makeTextAdaptive(availableTab, 13)  -- ✅ Adaptive text
 
 mainTabs["Available Codes"] = availableTab
 
@@ -184,7 +215,7 @@ contentContainer.Parent = mainPanel
 -- ==================== REDEEM CODES CONTENT ====================
 
 local redeemContent = Instance.new("Frame")
-redeemContent.Size = UDim2.new(1, 0, 1, 0)
+redeemContent.Size = UDim2.new(1, 0, .8, 0)
 redeemContent.BackgroundTransparency = 1
 redeemContent.Visible = true
 redeemContent.Parent = contentContainer
@@ -200,28 +231,28 @@ codeInputFrame.Parent = redeemContent
 createCorner(10).Parent = codeInputFrame
 
 local codeInputBox = Instance.new("TextBox")
-codeInputBox.Size = UDim2.new(0.9, 0, 0.7, 0)
-codeInputBox.Position = UDim2.new(0.05, 0, 0.15, 0)
+codeInputBox.Size = UDim2.new(0.9, 0, 0.7, 0)  -- ✅ Scale-based
+codeInputBox.Position = UDim2.new(0.05, 0, 0.15, 0)  -- ✅ Scale-based
 codeInputBox.BackgroundTransparency = 1
 codeInputBox.Font = Enum.Font.GothamBold
 codeInputBox.PlaceholderText = "Enter code here..."
 codeInputBox.Text = ""
 codeInputBox.TextColor3 = COLORS.Text
-codeInputBox.TextSize = 16
 codeInputBox.ClearTextOnFocus = false
 codeInputBox.Parent = codeInputFrame
+makeTextAdaptive(codeInputBox, 16)  -- ✅ Adaptive text
 
 -- Redeem Button
 local redeemButton = Instance.new("TextButton")
-redeemButton.Size = UDim2.new(0.5, 0, 0.08, 0)
-redeemButton.Position = UDim2.new(0.25, 0, 0.45, 0)
+redeemButton.Size = UDim2.new(0.5, 0, 0.08, 0)  -- ✅ Scale-based
+redeemButton.Position = UDim2.new(0.25, 0, 0.45, 0)  -- ✅ Scale-based
 redeemButton.BackgroundColor3 = COLORS.Accent
 redeemButton.BorderSizePixel = 0
 redeemButton.Text = "REDEEM"
 redeemButton.Font = Enum.Font.GothamBold
-redeemButton.TextSize = 16
 redeemButton.TextColor3 = COLORS.Text
 redeemButton.Parent = redeemContent
+makeTextAdaptive(redeemButton, 16)  -- ✅ Adaptive text
 
 createCorner(10).Parent = redeemButton
 
@@ -248,17 +279,17 @@ local rewardTabs = {}
 
 for i, rewardType in ipairs(RedeemConfig.AdminTabs) do
 	local tab = Instance.new("TextButton")
-	tab.Size = UDim2.new(0.188, 0, 1, 0)
+	tab.Size = UDim2.new(0.188, 0, 1, 0)  -- ✅ Scale-based
 	tab.BackgroundColor3 = (i == 1) and COLORS.Accent or COLORS.Button
 	tab.BorderSizePixel = 0
 	tab.Text = rewardType
 	tab.Font = Enum.Font.GothamBold
-	tab.TextSize = 12
 	tab.TextColor3 = COLORS.Text
 	tab.AutoButtonColor = false
 	tab.Parent = rewardTabFrame
 
 	createCorner(6).Parent = tab
+	makeTextAdaptive(tab, 12)  -- ✅ Adaptive text
 
 	rewardTabs[rewardType] = tab
 end
@@ -304,87 +335,87 @@ codeCreationFrame.Parent = createContent
 createCorner(10).Parent = codeCreationFrame
 
 local codeCreationPadding = Instance.new("UIPadding")
-codeCreationPadding.PaddingTop = UDim.new(0, 15)
-codeCreationPadding.PaddingLeft = UDim.new(0, 20)
-codeCreationPadding.PaddingRight = UDim.new(0, 20)
-codeCreationPadding.PaddingBottom = UDim.new(0, 15)
+codeCreationPadding.PaddingTop = UDim.new(0.05, 0)  -- ✅ Scale-based
+codeCreationPadding.PaddingLeft = UDim.new(0.03, 0)  -- ✅ Scale-based
+codeCreationPadding.PaddingRight = UDim.new(0.03, 0)  -- ✅ Scale-based
+codeCreationPadding.PaddingBottom = UDim.new(0.05, 0)  -- ✅ Scale-based
 codeCreationPadding.Parent = codeCreationFrame
 
 -- ✅ LEFT SIDE - CODE INPUT
 local codeInputContainer = Instance.new("Frame")
-codeInputContainer.Size = UDim2.new(0.48, 0, 0, 70) -- Shorter height
-codeInputContainer.Position = UDim2.new(0, 0, 0, 0)
+codeInputContainer.Size = UDim2.new(0.48, 0, 0.45, 0)  -- ✅ Scale-based
+codeInputContainer.Position = UDim2.new(0, 0, 0, 0)  -- ✅ Scale-based
 codeInputContainer.BackgroundTransparency = 1
 codeInputContainer.Parent = codeCreationFrame
 
 local codeInputLabel = Instance.new("TextLabel")
-codeInputLabel.Size = UDim2.new(1, 0, 0, 18)
+codeInputLabel.Size = UDim2.new(1, 0, 0.3, 0)  -- ✅ Scale-based
 codeInputLabel.BackgroundTransparency = 1
 codeInputLabel.Font = Enum.Font.GothamBold
 codeInputLabel.Text = "Code:"
 codeInputLabel.TextColor3 = COLORS.Text
-codeInputLabel.TextSize = 12 -- ✅ Slightly smaller
 codeInputLabel.TextXAlignment = Enum.TextXAlignment.Left
 codeInputLabel.Parent = codeInputContainer
+makeTextAdaptive(codeInputLabel, 12)  -- ✅ Adaptive text
 
 local createCodeInput = Instance.new("TextBox")
-createCodeInput.Size = UDim2.new(1, 0, 0, 45) -- ✅ 45px height
-createCodeInput.Position = UDim2.new(0, 0, 0, 22)
+createCodeInput.Size = UDim2.new(1, 0, 0.65, 0)  -- ✅ Scale-based
+createCodeInput.Position = UDim2.new(0, 0, 0.35, 0)  -- ✅ Scale-based
 createCodeInput.BackgroundColor3 = COLORS.Button
 createCodeInput.BorderSizePixel = 0
 createCodeInput.Font = Enum.Font.Gotham
 createCodeInput.PlaceholderText = "e.g., SUMMER2025"
 createCodeInput.Text = ""
 createCodeInput.TextColor3 = COLORS.Text
-createCodeInput.TextSize = 12
 createCodeInput.ClearTextOnFocus = false
 createCodeInput.Parent = codeInputContainer
+makeTextAdaptive(createCodeInput, 12)  -- ✅ Adaptive text
 
 createCorner(8).Parent = createCodeInput
 
 -- ✅ RIGHT SIDE - MAX USES INPUT
 local maxUsesContainer = Instance.new("Frame")
-maxUsesContainer.Size = UDim2.new(0.48, 0, 0, 70) -- Same height as code
-maxUsesContainer.Position = UDim2.new(0.52, 0, 0, 0) -- 52% for gap
+maxUsesContainer.Size = UDim2.new(0.48, 0, 0.45, 0)  -- ✅ Scale-based
+maxUsesContainer.Position = UDim2.new(0.52, 0, 0, 0)  -- ✅ Scale-based
 maxUsesContainer.BackgroundTransparency = 1
 maxUsesContainer.Parent = codeCreationFrame
 
 local maxUsesLabel = Instance.new("TextLabel")
-maxUsesLabel.Size = UDim2.new(1, 0, 0, 18)
+maxUsesLabel.Size = UDim2.new(1, 0, 0.3, 0)  -- ✅ Scale-based
 maxUsesLabel.BackgroundTransparency = 1
 maxUsesLabel.Font = Enum.Font.GothamBold
 maxUsesLabel.Text = "Max Uses:"
 maxUsesLabel.TextColor3 = COLORS.Text
-maxUsesLabel.TextSize = 12 -- ✅ Slightly smaller
 maxUsesLabel.TextXAlignment = Enum.TextXAlignment.Left
 maxUsesLabel.Parent = maxUsesContainer
+makeTextAdaptive(maxUsesLabel, 12)  -- ✅ Adaptive text
 
 local maxUsesInput = Instance.new("TextBox")
-maxUsesInput.Size = UDim2.new(1, 0, 0, 45) -- ✅ 45px height
-maxUsesInput.Position = UDim2.new(0, 0, 0, 22)
+maxUsesInput.Size = UDim2.new(1, 0, 0.65, 0)  -- ✅ Scale-based
+maxUsesInput.Position = UDim2.new(0, 0, 0.35, 0)  -- ✅ Scale-based
 maxUsesInput.BackgroundColor3 = COLORS.Button
 maxUsesInput.BorderSizePixel = 0
 maxUsesInput.Font = Enum.Font.Gotham
 maxUsesInput.PlaceholderText = "e.g., 100"
 maxUsesInput.Text = ""
 maxUsesInput.TextColor3 = COLORS.Text
-maxUsesInput.TextSize = 12
 maxUsesInput.ClearTextOnFocus = false
 maxUsesInput.Parent = maxUsesContainer
+makeTextAdaptive(maxUsesInput, 12)  -- ✅ Adaptive text
 
 createCorner(8).Parent = maxUsesInput
 
 -- ✅ FULL-WIDTH CREATE BUTTON BELOW
 local createCodeButton = Instance.new("TextButton")
-createCodeButton.Size = UDim2.new(1, 0, 0, 50) -- ✅ 50px height
-createCodeButton.Position = UDim2.new(0, 0, 0, 85) -- ✅ Below inputs (70 + 15 gap)
+createCodeButton.Size = UDim2.new(1, 0, 0.35, 0)  -- ✅ Scale-based
+createCodeButton.Position = UDim2.new(0, 0, 0.55, 0)  -- ✅ Scale-based
 createCodeButton.BackgroundColor3 = COLORS.Success
 createCodeButton.BorderSizePixel = 0
 createCodeButton.Text = "CREATE CODE"
 createCodeButton.Font = Enum.Font.GothamBold
-createCodeButton.TextSize = 15
 createCodeButton.TextColor3 = COLORS.Text
 createCodeButton.Parent = codeCreationFrame
+makeTextAdaptive(createCodeButton, 15)  -- ✅ Adaptive text
 
 createCorner(10).Parent = createCodeButton
 
@@ -411,7 +442,7 @@ availableScrollFrame.ClipsDescendants = true
 availableScrollFrame.Parent = availableContent
 
 local availableLayout = Instance.new("UIListLayout")
-availableLayout.Padding = UDim.new(0, 8)
+availableLayout.Padding = UDim.new(0.02, 0)  -- ✅ Scale-based padding
 availableLayout.SortOrder = Enum.SortOrder.LayoutOrder
 availableLayout.Parent = availableScrollFrame
 
@@ -432,7 +463,7 @@ local function refreshAvailableCodes()
 		if success and codes then
 			for _, codeData in ipairs(codes) do
 				local codeCard = Instance.new("Frame")
-				codeCard.Size = UDim2.new(1, 0, 0, 80)
+				codeCard.Size = UDim2.new(1, 0, 0.15, 0)  -- ✅ Scale-based
 				codeCard.BackgroundColor3 = COLORS.Panel
 				codeCard.BorderSizePixel = 0
 				codeCard.Parent = availableScrollFrame
@@ -441,39 +472,39 @@ local function refreshAvailableCodes()
 
 				-- Code Label
 				local codeLabel = Instance.new("TextLabel")
-				codeLabel.Size = UDim2.new(0.6, 0, 0.4, 0)
-				codeLabel.Position = UDim2.new(0.05, 0, 0.1, 0)
+				codeLabel.Size = UDim2.new(0.6, 0, 0.4, 0)  -- ✅ Scale-based
+				codeLabel.Position = UDim2.new(0.05, 0, 0.1, 0)  -- ✅ Scale-based
 				codeLabel.BackgroundTransparency = 1
 				codeLabel.Font = Enum.Font.GothamBold
 				codeLabel.Text = codeData.Code
 				codeLabel.TextColor3 = COLORS.Accent
-				codeLabel.TextSize = 14
 				codeLabel.TextXAlignment = Enum.TextXAlignment.Left
 				codeLabel.Parent = codeCard
+				makeTextAdaptive(codeLabel, 14)  -- ✅ Adaptive text
 
 				-- Type & Reward
 				local rewardLabel = Instance.new("TextLabel")
-				rewardLabel.Size = UDim2.new(0.9, 0, 0.3, 0)
-				rewardLabel.Position = UDim2.new(0.05, 0, 0.5, 0)
+				rewardLabel.Size = UDim2.new(0.9, 0, 0.3, 0)  -- ✅ Scale-based
+				rewardLabel.Position = UDim2.new(0.05, 0, 0.5, 0)  -- ✅ Scale-based
 				rewardLabel.BackgroundTransparency = 1
 				rewardLabel.Font = Enum.Font.Gotham
 				rewardLabel.Text = string.format("%s: %s", codeData.Type, tostring(codeData.Reward))
 				rewardLabel.TextColor3 = COLORS.TextSecondary
-				rewardLabel.TextSize = 12
 				rewardLabel.TextXAlignment = Enum.TextXAlignment.Left
 				rewardLabel.Parent = codeCard
+				makeTextAdaptive(rewardLabel, 12)  -- ✅ Adaptive text
 
 				-- Remaining Uses
 				local remainingLabel = Instance.new("TextLabel")
-				remainingLabel.Size = UDim2.new(0.3, 0, 0.4, 0)
-				remainingLabel.Position = UDim2.new(0.65, 0, 0.1, 0)
+				remainingLabel.Size = UDim2.new(0.3, 0, 0.4, 0)  -- ✅ Scale-based
+				remainingLabel.Position = UDim2.new(0.65, 0, 0.1, 0)  -- ✅ Scale-based
 				remainingLabel.BackgroundTransparency = 1
 				remainingLabel.Font = Enum.Font.GothamBold
 				remainingLabel.Text = string.format("%d/%d", codeData.Remaining, codeData.MaxUses)
 				remainingLabel.TextColor3 = codeData.Remaining > 0 and COLORS.Success or COLORS.Danger
-				remainingLabel.TextSize = 16
 				remainingLabel.TextXAlignment = Enum.TextXAlignment.Right
 				remainingLabel.Parent = codeCard
+				makeTextAdaptive(remainingLabel, 16)  -- ✅ Adaptive text
 			end
 		else
 			warn("⚠️ Failed to get available codes")
@@ -483,15 +514,15 @@ end
 
 -- Refresh Button
 local refreshBtn = Instance.new("TextButton")
-refreshBtn.Size = UDim2.new(0.5, 0, 0.08, 0)
-refreshBtn.Position = UDim2.new(0.25, 0, 0.9, 0)
+refreshBtn.Size = UDim2.new(0.5, 0, 0.08, 0)  -- ✅ Scale-based
+refreshBtn.Position = UDim2.new(0.25, 0, 0.9, 0)  -- ✅ Scale-based
 refreshBtn.BackgroundColor3 = COLORS.Accent
 refreshBtn.BorderSizePixel = 0
 refreshBtn.Text = "REFRESH"
 refreshBtn.Font = Enum.Font.GothamBold
-refreshBtn.TextSize = 14
 refreshBtn.TextColor3 = COLORS.Text
 refreshBtn.Parent = availableContent
+makeTextAdaptive(refreshBtn, 14)  -- ✅ Adaptive text
 
 createCorner(10).Parent = refreshBtn
 
@@ -535,15 +566,15 @@ local function createRewardCard(rewardData, rewardType)
 
 	-- ✅ SEMUA TIPE: HANYA TEXT
 	local nameLabel = Instance.new("TextLabel")
-	nameLabel.Size = UDim2.new(0.9, 0, 0.8, 0)
-	nameLabel.Position = UDim2.new(0.05, 0, 0.1, 0)
+	nameLabel.Size = UDim2.new(0.9, 0, 0.8, 0)  -- ✅ Scale-based
+	nameLabel.Position = UDim2.new(0.05, 0, 0.1, 0)  -- ✅ Scale-based
 	nameLabel.BackgroundTransparency = 1
 	nameLabel.Font = Enum.Font.GothamBold
 	nameLabel.Text = rewardData.Name
 	nameLabel.TextColor3 = rewardData.Color or COLORS.Text
-	nameLabel.TextSize = 12
 	nameLabel.TextWrapped = true
 	nameLabel.Parent = card
+	makeTextAdaptive(nameLabel, 12)  -- ✅ Adaptive text
 
 	-- Click handler
 	local clickBtn = Instance.new("TextButton")
@@ -630,24 +661,21 @@ end
 local function showPanel()
 	screenGui.Enabled = true
 	mainPanel.Visible = true
-	mainPanel.Position = UDim2.new(0.5, 0, 1.5, 0)
+	mainPanel.Position = UDim2.new(0.5, 0, 0.5, 0)  -- ✅ Center position
+	mainPanel.Size = UDim2.new(0, 0, 0, 0)  -- ✅ Start small for tweenSize
 
 	task.wait()
 
-	TweenService:Create(mainPanel, TweenInfo.new(RedeemConfig.AnimationDuration, Enum.EasingStyle.Back), {
-		Position = UDim2.new(0.5, 0, 0.5, 0)
-	}):Play()
+	-- ✅ Use tweenSize for smooth animation
+	tweenSize(mainPanel, UDim2.new(1, 0, 0.8, 0), RedeemConfig.AnimationDuration)
 end
 
 local function hidePanel()
-	local slideDown = TweenService:Create(mainPanel, TweenInfo.new(RedeemConfig.AnimationDuration, Enum.EasingStyle.Quad), {
-		Position = UDim2.new(0.5, 0, 1.5, 0)
-	})
-
-	slideDown:Play()
-	slideDown.Completed:Connect(function()
+	-- ✅ Use tweenSize for smooth animation
+	tweenSize(mainPanel, UDim2.new(0, 0, 0, 0), RedeemConfig.AnimationDuration, function()
 		mainPanel.Visible = false
 		screenGui.Enabled = false
+		mainPanel.Size = UDim2.new(1, 0, 0.8, 0)  -- ✅ Reset size for next show
 	end)
 end
 
