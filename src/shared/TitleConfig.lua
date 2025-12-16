@@ -179,21 +179,14 @@ TitleConfig.ZoneColors = {
 -- Both have the same "Admin" title
 
 TitleConfig.PrimaryAdminIds = {
+	8714136305,
 	
-	8578879617,
-	8592664252,
 }
 
 TitleConfig.SecondaryAdminIds = {
-	
+	8970505309,
     4680144719,
-    3539387444,
-    5670874280,
-	9378557196,
-	9099778359,
-	9515803542,
-	9288548837,
-	9164623064,
+    
 }
 
 -- Combine semua admin IDs (untuk compatibility dengan existing code)
@@ -211,7 +204,15 @@ end
 -- Can ONLY do: Teleport, Freeze, Give Shop Items (non-premium), Kick (no ban), Delete Leaderboard Data
 
 TitleConfig.ThirdpartyAdminIds = {
-	8714136305,
+	
+	9209793056,
+	 8910155229,
+	 3573849857,
+	 8600262000,
+	 8418638393,
+	 9139343773,
+	 3574034140,
+	 5252854473,
 	-- Tambahkan User ID thirdparty admin di sini
 	-- Contoh: 1234567890,
 }

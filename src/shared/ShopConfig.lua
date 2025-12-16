@@ -10,14 +10,14 @@ ShopConfig.Gamepasses = {
 	{
 		Name = "VIP",
 		Price = 100,
-		Thumbnail = "rbxassetid://7733964640",
+		Thumbnail = "rbxassetid://93839116673767",
 		GamepassId = 1604161626, -- GANTI DENGAN GAMEPASS ID
 		Description = "Unlock VIP features and exclusive perks!"
 	},
 	{
 		Name = "VVIP",
 		Price = 500,
-		Thumbnail = "rbxassetid://7733964640",
+		Thumbnail = "rbxassetid://113168148931190",
 		GamepassId = 1603523555, -- GANTI DENGAN GAMEPASS ID
 		Description = "Ultimate VIP with premium benefits!"
 	},
@@ -27,7 +27,7 @@ ShopConfig.Gamepasses = {
         Description = "Dapatkan 2x lipat summit setiap mencapai puncak!",
         Price = 100,
 		GamepassId = 1604095605, -- GANTI dengan ID gamepass kamu
-        Thumbnail = "rbxassetid://0", -- Upload icon x2 ke Roblox, ganti ID-nya
+        Thumbnail = "rbxassetid://130384558824672", -- Upload icon x2 ke Roblox, ganti ID-nya
         Icon = "⚡",
         Color = Color3.fromRGB(255, 165, 0)
     },
@@ -140,28 +140,28 @@ ShopConfig.Auras = {
 		Title = "Fire Aura",
 		IsPremium = false,
 		Price = 1000, -- In-game money
-		Thumbnail = "rbxassetid://92031641833338",
+		Thumbnail = "rbxassetid://137186433949829",
 		AuraId = "FireAura"
 	},
 	{
 		Title = "Ice Aura",
 		IsPremium = false,
 		Price = 1500,
-		Thumbnail = "rbxassetid://92031641833338",
+		Thumbnail = "rbxassetid://117932928077084",
 		AuraId = "IceAura"
 	},
 	{
 		Title = "Lightning Aura",
 		IsPremium = false,
 		Price = 2000,
-		Thumbnail = "rbxassetid://92031641833338",
+		Thumbnail = "rbxassetid://138063742624133",
 		AuraId = "LightningAura"
 	},
 	{
 		Title = "Shadow Aura",
 		IsPremium = false,
 		Price = 2500,
-		Thumbnail = "rbxassetid://92031641833338",
+		Thumbnail = "rbxassetid://99172280237398",
 		AuraId = "ShadowAura"
 	},
 	{
@@ -169,7 +169,7 @@ ShopConfig.Auras = {
 		IsPremium = true,
 		Price = 100, -- Robux price
 		ProductId = 3465227826, -- GANTI DENGAN DEVELOPER PRODUCT ID
-		Thumbnail = "rbxassetid://92031641833338",
+		Thumbnail = "rbxassetid://135525537490161",
 		AuraId = "RainbowAura"
 	},
 	{
@@ -177,7 +177,7 @@ ShopConfig.Auras = {
 		IsPremium = true,
 		Price = 250, -- Robux price
 		ProductId = 3465227441, -- GANTI DENGAN DEVELOPER PRODUCT ID
-		Thumbnail = "rbxassetid://92031641833338",
+		Thumbnail = " rbxassetid://99172280237398",
 		AuraId = "GalaxyAura"
 	},
 }
@@ -188,14 +188,14 @@ ShopConfig.Tools = {
 		Title = "Speed Coil",
 		IsPremium = false,
 		Price = 500,
-		Thumbnail = "rbxassetid://7733764811",
+		Thumbnail = "rbxassetid://126083559497297",
 		ToolId = "SpeedCoil"
 	},
 	{
 		Title = "Gravity Coil",
 		IsPremium = false,
 		Price = 750,
-		Thumbnail = "rbxassetid://7733764811",
+		Thumbnail = "rbxassetid://78073594661667",
 		ToolId = "GravityCoil"
 	},
 	{
@@ -227,35 +227,35 @@ ShopConfig.Tools = {
 		Title = "Speed Coil",
 		IsPremium = false,
 		Price = 500,
-		Thumbnail = "rbxassetid://72190200747830",
+		Thumbnail = "rbxassetid://126083559497297",
 		ToolId = "SpeedCoil"
 	},
 	{
 		Title = "Gravity Coil",
 		IsPremium = false,
 		Price = 750,
-		Thumbnail = "rbxassetid://72190200747830",
+		Thumbnail = "rbxassetid://78073594661667",
 		ToolId = "GravityCoil"
 	},
 	{
 		Title = "Double Coil",
 		IsPremium = false,
 		Price = 1000,
-		Thumbnail = "rbxassetid://72190200747830",
+		Thumbnail = "rbxassetid://78073594661667",
 		ToolId = "DoubleCoil"
 	},
 	{
 		Title = "Flashlight",
 		IsPremium = false,
 		Price = 300,
-		Thumbnail = "rbxassetid://72190200747830",
+		Thumbnail = "rbxassetid://106048277357918",
 		ToolId = "Flashlight"
 	},
 	{
 		Title = "Sign Board",
 		IsPremium = false,
 		Price = 400,
-		Thumbnail = "rbxassetid://72190200747830",
+		Thumbnail = "rbxassetid://92313592030698",
 		ToolId = "SignBoard"
 	},
 	{
@@ -270,21 +270,21 @@ ShopConfig.Tools = {
 		IsPremium = true,
 		Price = 150,
 		ProductId = 0,
-		Thumbnail = "rbxassetid://72190200747830",
+		Thumbnail = "rbxassetid://104882725235129",
 		ToolId = "Boombox"
 	},
 	{
 		Title = "Selfie Stick",
 		IsPremium = false,
 		Price = 2000,
-		Thumbnail = "rbxassetid://72190200747830",
+		Thumbnail = "rbxassetid://132639002206556",
 		ToolId = "SelfieStick"
 	},
 	{
 		Title = "BoomBox",
 		IsPremium = false,
 		Price = 200,
-		Thumbnail = "rbxassetid://72190200747830",
+		Thumbnail = "rbxassetid://124949563487240",
 		ToolId = "BoomBox"
 	},
 }

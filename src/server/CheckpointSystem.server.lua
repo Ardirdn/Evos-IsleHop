@@ -8,15 +8,63 @@ local Players = game:GetService("Players")
 local DataStoreService = game:GetService("DataStoreService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local MarketplaceService = game:GetService("MarketplaceService")
+local PhysicsService = game:GetService("PhysicsService")
 
 CONFIG = {
 	MONEY_PER_SUMMIT = 1000, -- Money diberikan saat mencapai puncak
-	MONEY_PER_CHECKPOINT = 50, -- Money diberikan per checkpoint
+	MONEY_PER_CHECKPOINT = 50, -- Money diberikan per checkpoint (jika DISTRIBUTE = false)
 	DISTRIBUTE_MONEY_TO_CHECKPOINTS = true, -- Jika true, kasih money per checkpoint
-	GIVE_SUMMIT_BONUS = false,
+	GIVE_SUMMIT_BONUS = true,  -- ✅ ENABLED: Bonus $1000 saat sampai puncak
 	DISABLE_BODY_BLOCK = true, -- Set false untuk enable collision antar player
 	SKIP_PRODUCT_ID = 3466042624, -- ✅ GANTI dengan Product ID kamu!
 }
+
+-- ✅ FIX: Setup collision groups for player-to-player no collision
+local PLAYERS_COLLISION_GROUP = "NoPlayerCollision"
+
+local function setupPlayerCollisionGroup()
+	if not CONFIG.DISABLE_BODY_BLOCK then return end
+	
+	-- Try to create the collision group
+	local success = pcall(function()
+		PhysicsService:RegisterCollisionGroup(PLAYERS_COLLISION_GROUP)
+	end)
+	
+	-- Set players to not collide with each other (whether new or existing group)
+	pcall(function()
+		PhysicsService:CollisionGroupSetCollidable(PLAYERS_COLLISION_GROUP, PLAYERS_COLLISION_GROUP, false)
+	end)
+	
+	print("✅ [COLLISION] NoPlayerCollision group setup complete")
+end
+
+-- ✅ Function to apply collision group to a character
+local function applyNoCollisionToCharacter(character)
+	if not CONFIG.DISABLE_BODY_BLOCK then return end
+	if not character then return end
+	
+	local partCount = 0
+	
+	-- Apply to all existing parts
+	for _, part in pairs(character:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.CollisionGroup = PLAYERS_COLLISION_GROUP
+			partCount = partCount + 1
+		end
+	end
+	
+	-- Watch for new parts (like accessories loaded later)
+	character.DescendantAdded:Connect(function(descendant)
+		if descendant:IsA("BasePart") then
+			descendant.CollisionGroup = PLAYERS_COLLISION_GROUP
+		end
+	end)
+	
+	print(string.format("[NO COLLISION] Applied to %d parts for: %s", partCount, character.Name))
+end
+
+-- Run setup immediately
+setupPlayerCollisionGroup()
 
 local ShopConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("ShopConfig"))
 local DataStoreConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("DataStoreConfig"))
@@ -250,8 +298,11 @@ local function loadPlayerData(player)
 	print(string.format("[DATA LOAD] Loading data for: %s", player.Name))
 	local userId = player.UserId
 
-	-- ✅ WAIT FOR DATAHANDLER TO LOAD (with timeout)
-	local maxRetries = 10
+	-- ✅ Initial delay to let DataHandler load first
+	task.wait(1)
+
+	-- ✅ WAIT FOR DATAHANDLER TO LOAD (with longer timeout)
+	local maxRetries = 20  -- Increased from 10
 	local retries = 0
 	local data = nil
 
@@ -263,7 +314,9 @@ local function loadPlayerData(player)
 
 		retries = retries + 1
 		task.wait(0.5)
-		print(string.format("[DATA LOAD] Retry %d/%d for %s...", retries, maxRetries, player.Name))
+		if retries % 5 == 0 then  -- Only log every 5 retries to reduce spam
+			print(string.format("[DATA LOAD] Retry %d/%d for %s...", retries, maxRetries, player.Name))
+		end
 	end
 
 	if not data then
@@ -462,6 +515,20 @@ Players.PlayerAdded:Connect(function(player)
 	print("[PLAYER] Player joined:", player.Name, "UserID:", player.UserId)
 	local data = loadPlayerData(player)
 
+	-- ✅ FIX: Handle nil data gracefully - use defaults if loading fails
+	if not data then
+		warn(string.format("[PLAYER] Using default data for %s (DataHandler not ready)", player.Name))
+		local userId = player.UserId
+		data = {
+			LastCheckpoint = 0,
+			TotalSummits = 0,
+			BestSpeedrun = nil,
+			TotalPlaytime = 0,
+		}
+		playerData[userId] = data
+		playerCurrentCheckpoint[userId] = 0
+	end
+
 	-- Setup PlayerStats (renamed from leaderstats to hide from Tab playerlist)
 	-- Using "PlayerStats" instead of "leaderstats" so stats don't appear in Tab menu
 	-- This keeps the data available for billboards and leaderboards
@@ -471,7 +538,7 @@ Players.PlayerAdded:Connect(function(player)
 
 	local summitsValue = Instance.new("IntValue")
 	summitsValue.Name = "Summit"
-	summitsValue.Value = data.TotalSummits
+	summitsValue.Value = data.TotalSummits or 0
 	summitsValue.Parent = playerStats
 
 	local bestTimeValue = Instance.new("StringValue")
@@ -481,7 +548,7 @@ Players.PlayerAdded:Connect(function(player)
 
 	local playtimeValue = Instance.new("StringValue")
 	playtimeValue.Name = "Playtime"
-	playtimeValue.Value = formatPlaytime(data.TotalPlaytime)
+	playtimeValue.Value = formatPlaytime(data.TotalPlaytime or 0)
 	playtimeValue.Parent = playerStats
 
 	print("[PLAYER] PlayerStats created for:", player.Name)
@@ -492,25 +559,10 @@ Players.PlayerAdded:Connect(function(player)
 	player.CharacterAdded:Connect(function(character)
 		print("[SPAWN] Character spawned for:", player.Name)
 		local humanoid = character:WaitForChild("Humanoid")
-		task.wait(0.1)
+		task.wait(0.2)
 
-		-- ✅ DISABLE BODY BLOCK ANTAR PLAYER
-		if CONFIG.DISABLE_BODY_BLOCK then
-			for _, part in pairs(character:GetDescendants()) do
-				if part:IsA("BasePart") then
-					part.CanCollide = false
-				end
-			end
-
-			-- Auto-apply ke part baru yang ditambahkan
-			character.DescendantAdded:Connect(function(descendant)
-				if descendant:IsA("BasePart") then
-					descendant.CanCollide = false
-				end
-			end)
-
-			print("[BODY BLOCK] Disabled for:", player.Name)
-		end
+		-- ✅ Apply no-collision between players
+		applyNoCollisionToCharacter(character)
 
 		-- ✅ AMBIL FRESH DATA DARI playerData
 		local currentData = playerData[player.UserId]
@@ -575,7 +627,8 @@ for checkpointNum, checkpoint in pairs(checkpoints) do
 		local lastTouch = playerCooldowns[userId][cooldownKey] or 0
 		local currentTime = tick()
 
-		if currentTime - lastTouch < 2 then
+		-- ✅ FIX: Increased cooldown to 5 seconds to prevent multi-trigger
+		if currentTime - lastTouch < 5 then
 			return
 		end
 
@@ -612,8 +665,9 @@ for checkpointNum, checkpoint in pairs(checkpoints) do
 			return
 		end
 
-		if checkpointNum < currentCheckpoint then
-			print("[CHECKPOINT] Player", player.Name, "went back to previous checkpoint:", checkpointNum)
+		-- ✅ FIX: Block if player already reached or passed this checkpoint
+		if checkpointNum <= currentCheckpoint then
+			print("[CHECKPOINT] Player", player.Name, "already passed checkpoint:", checkpointNum, "(current:", currentCheckpoint, ")")
 			return
 		end
 

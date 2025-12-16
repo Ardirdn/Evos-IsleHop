@@ -22,7 +22,7 @@ local DataStoreConfig = {}
 -- ============================================
 -- 🔧 MAIN VERSION - CHANGE THIS TO RESET ALL DATA
 -- ============================================
-DataStoreConfig.VERSION = "v1"
+DataStoreConfig.VERSION = "v1000"
 
 -- ============================================
 -- 📦 DATASTORE NAMES (AUTO-GENERATED)

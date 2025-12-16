@@ -38,9 +38,10 @@ local CONFIG = {
 local DESIGN = {
 	TextColor = Color3.fromRGB(255, 255, 255),
 	TitleColor = Color3.fromRGB(200, 200, 205),
-	MoneyColor = Color3.fromRGB(0, 255, 13),
-	SummitColor = Color3.fromRGB(255, 238, 0),
+	MoneyColor = Color3.fromRGB(255, 255, 255),  -- ✅ Changed to WHITE (was green)
+	SummitColor = Color3.fromRGB(255, 255, 255), -- ✅ Changed to WHITE (was yellow)
 	DefaultAccent = Color3.fromRGB(80, 80, 90),
+	MainFont = Enum.Font.FredokaOne,  -- ✅ Clean modern font for all text
 }
 
 -- ✅ Function to hide/show all titles (called from SettingsClient)
@@ -84,8 +85,8 @@ local function createBillboard(character, targetPlayer)
 
 	local billboard = Instance.new("BillboardGui")
 	billboard.Name = "PlayerInfoBillboard"
-	billboard.Size = UDim2.new(8, 0, 2, 0)
-	billboard.StudsOffset = Vector3.new(0, 3.2, 0)
+	billboard.Size = UDim2.new(6, 0, 3.5, 0)  -- ✅ TALLER for 4 vertical rows
+	billboard.StudsOffset = Vector3.new(0, 3.5, 0)  -- ✅ Adjusted offset
 	billboard.AlwaysOnTop = true
 	billboard.MaxDistance = CONFIG.MAX_DISTANCE
 	billboard.LightInfluence = 0
@@ -104,13 +105,16 @@ local function createBillboard(character, targetPlayer)
 	mainFrame.BorderSizePixel = 0
 	mainFrame.Parent = billboard
 
-	-- Title Label
+	-- ✅ NEW LAYOUT: 4 vertical rows (Title, Name, Summit, Money)
+	-- Each row = 25% height
+
+	-- Row 1: Title Label (top)
 	local titleLabel = Instance.new("TextLabel")
 	titleLabel.Name = "TitleLabel"
-	titleLabel.Size = UDim2.new(1, 0, 0.3, 0)
-	titleLabel.Position = UDim2.new(0, 0, 0, 0)
+	titleLabel.Size = UDim2.new(1, 0, 0.25, 0)
+	titleLabel.Position = UDim2.new(0, 0, 0, 0)  -- Row 1: 0%
 	titleLabel.BackgroundTransparency = 1
-	titleLabel.Font = Enum.Font.GothamBlack
+	titleLabel.Font = DESIGN.MainFont
 	titleLabel.TextScaled = true
 	titleLabel.TextColor3 = DESIGN.TitleColor
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Center
@@ -123,13 +127,13 @@ local function createBillboard(character, targetPlayer)
 	titleStroke.Transparency = 0.3
 	titleStroke.Parent = titleLabel
 
-	-- Name Label
+	-- Row 2: Name Label
 	local nameLabel = Instance.new("TextLabel")
 	nameLabel.Name = "NameLabel"
-	nameLabel.Size = UDim2.new(1, 0, 0.35, 0)
-	nameLabel.Position = UDim2.new(0, 0, 0.4, 0)
+	nameLabel.Size = UDim2.new(1, 0, 0.28, 0)
+	nameLabel.Position = UDim2.new(0, 0, 0.22, 0)  -- Row 2: 22%
 	nameLabel.BackgroundTransparency = 1
-	nameLabel.Font = Enum.Font.GothamBlack
+	nameLabel.Font = DESIGN.MainFont
 	nameLabel.TextScaled = true
 	nameLabel.TextColor3 = DESIGN.TextColor
 	nameLabel.TextXAlignment = Enum.TextXAlignment.Center
@@ -142,40 +146,20 @@ local function createBillboard(character, targetPlayer)
 	nameStroke.Transparency = 0.2
 	nameStroke.Parent = nameLabel
 
-	-- Accent Bar
-	local accentBar = Instance.new("Frame")
-	accentBar.Name = "AccentBar"
-	accentBar.Size = UDim2.new(0.8, 0, 0.03, 0)
-	accentBar.Position = UDim2.new(0.5, 0, 0.77, 0)
-	accentBar.AnchorPoint = Vector2.new(0.5, 0.5)
-	accentBar.BackgroundColor3 = DESIGN.DefaultAccent
-	accentBar.BorderSizePixel = 0
-	accentBar.Parent = mainFrame
+	-- ✅ REMOVED: Accent Bar (user requested no colored line)
 
-	local accentCorner = Instance.new("UICorner")
-	accentCorner.CornerRadius = UDim.new(0.5, 0)
-	accentCorner.Parent = accentBar
-
-	-- Stats Row
-	local statsRow = Instance.new("Frame")
-	statsRow.Name = "StatsRow"
-	statsRow.Size = UDim2.new(1, 0, 0.3, 0)
-	statsRow.Position = UDim2.new(0, 0, 0.8, 0)
-	statsRow.BackgroundTransparency = 1
-	statsRow.Parent = mainFrame
-
-	-- Summit Label
+	-- Row 3: Summit Label (below name) - SMALLER TEXT
 	local summitsLabel = Instance.new("TextLabel")
 	summitsLabel.Name = "SummitsLabel"
-	summitsLabel.Size = UDim2.new(0.48, 0, 1, 0)
-	summitsLabel.Position = UDim2.new(0, 0, 0, 0)
+	summitsLabel.Size = UDim2.new(1, 0, 0.14, 0)  -- ✅ SMALLER (was 0.22)
+	summitsLabel.Position = UDim2.new(0, 0, 0.55, 0)  -- Adjusted position
 	summitsLabel.BackgroundTransparency = 1
-	summitsLabel.Font = Enum.Font.GothamBlack
+	summitsLabel.Font = DESIGN.MainFont
 	summitsLabel.TextScaled = true
 	summitsLabel.TextColor3 = DESIGN.SummitColor
 	summitsLabel.TextXAlignment = Enum.TextXAlignment.Center
 	summitsLabel.Text = "⛰️ 0"
-	summitsLabel.Parent = statsRow
+	summitsLabel.Parent = mainFrame
 
 	local summitStroke = Instance.new("UIStroke")
 	summitStroke.Color = Color3.fromRGB(0, 0, 0)
@@ -183,18 +167,18 @@ local function createBillboard(character, targetPlayer)
 	summitStroke.Transparency = 0.3
 	summitStroke.Parent = summitsLabel
 
-	-- Money Label
+	-- Row 4: Money Label (bottom) - SMALLER TEXT
 	local moneyLabel = Instance.new("TextLabel")
 	moneyLabel.Name = "MoneyLabel"
-	moneyLabel.Size = UDim2.new(0.48, 0, 1, 0)
-	moneyLabel.Position = UDim2.new(0.52, 0, 0, 0)
+	moneyLabel.Size = UDim2.new(1, 0, 0.14, 0)  -- ✅ SMALLER (was 0.22)
+	moneyLabel.Position = UDim2.new(0, 0, 0.70, 0)  -- Adjusted position
 	moneyLabel.BackgroundTransparency = 1
-	moneyLabel.Font = Enum.Font.GothamBlack
+	moneyLabel.Font = DESIGN.MainFont
 	moneyLabel.TextScaled = true
 	moneyLabel.TextColor3 = DESIGN.MoneyColor
 	moneyLabel.TextXAlignment = Enum.TextXAlignment.Center
 	moneyLabel.Text = "💵 $0"
-	moneyLabel.Parent = statsRow
+	moneyLabel.Parent = mainFrame
 
 	local moneyStroke = Instance.new("UIStroke")
 	moneyStroke.Color = Color3.fromRGB(0, 0, 0)
@@ -215,7 +199,7 @@ local function updateTitle(targetPlayer, titleName)
 	local mainFrame = billboard:FindFirstChild("MainFrame")
 	if not mainFrame then return end
 
-	local accentBar = mainFrame:FindFirstChild("AccentBar")
+	-- local accentBar = mainFrame:FindFirstChild("AccentBar")  -- ✅ REMOVED
 	local titleLabel = mainFrame:FindFirstChild("TitleLabel")
 	if not titleLabel then return end
 
@@ -242,13 +226,13 @@ local function updateTitle(targetPlayer, titleName)
 
 	if titleData then
 		titleColor = titleData.Color
-		if accentBar then accentBar.BackgroundColor3 = titleColor end
+		-- if accentBar then accentBar.BackgroundColor3 = titleColor end  -- ✅ REMOVED
 		titleLabel.Text = titleData.Icon .. " " .. titleData.DisplayName
 		titleLabel.TextColor3 = titleColor
 	else
 		titleLabel.Text = "👤 Visitor"
 		titleLabel.TextColor3 = DESIGN.TitleColor
-		if accentBar then accentBar.BackgroundColor3 = DESIGN.DefaultAccent end
+		-- if accentBar then accentBar.BackgroundColor3 = DESIGN.DefaultAccent end  -- ✅ REMOVED
 	end
 end
 
@@ -257,8 +241,7 @@ local function updateSummit(targetPlayer, summits)
 	if not billboard then return end
 
 	local mainFrame = billboard:FindFirstChild("MainFrame")
-	local statsRow = mainFrame and mainFrame:FindFirstChild("StatsRow")
-	local summitsLabel = statsRow and statsRow:FindFirstChild("SummitsLabel")
+	local summitsLabel = mainFrame and mainFrame:FindFirstChild("SummitsLabel")  -- ✅ Direct child now
 
 	if summitsLabel then
 		summitsLabel.Text = "⛰️ " .. tostring(summits)
@@ -270,8 +253,7 @@ local function updateMoney(targetPlayer, money)
 	if not billboard then return end
 
 	local mainFrame = billboard:FindFirstChild("MainFrame")
-	local statsRow = mainFrame and mainFrame:FindFirstChild("StatsRow")
-	local moneyLabel = statsRow and statsRow:FindFirstChild("MoneyLabel")
+	local moneyLabel = mainFrame and mainFrame:FindFirstChild("MoneyLabel")  -- ✅ Direct child now
 
 	if moneyLabel then
 		local formatted = tostring(money)
@@ -289,17 +271,40 @@ end
 local function setupPlayer(targetPlayer)
 	-- Watch for character
 	local function onCharacterAdded(character)
-		local billboard = createBillboard(character, targetPlayer)
-		if not billboard then return end
+		-- ✅ FIX: Add retry for billboard creation
+		local billboard = nil
+		local retries = 0
+		
+		while not billboard and retries < 5 do
+			billboard = createBillboard(character, targetPlayer)
+			if not billboard then
+				retries = retries + 1
+				task.wait(0.5)
+			end
+		end
+		
+		if not billboard then 
+			warn("[TITLE] Failed to create billboard for", targetPlayer.Name)
+			return 
+		end
 
 		-- ✅ SIMPLE: Client fetches title from server for THIS player only
 		task.spawn(function()
 			task.wait(2) -- Wait for server data to be ready
 			if not targetPlayer or not targetPlayer.Parent then return end
 			
-			local success, title = pcall(function()
-				return getTitleFunc:InvokeServer(targetPlayer)
-			end)
+			-- ✅ FIX: Retry title fetch with better error handling
+			local success, title = nil, nil
+			for attempt = 1, 3 do
+				success, title = pcall(function()
+					return getTitleFunc:InvokeServer(targetPlayer)
+				end)
+				
+				if success and title then
+					break
+				end
+				task.wait(1)
+			end
 			
 			if success and title then
 				updateTitle(targetPlayer, title)

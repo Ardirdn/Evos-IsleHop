@@ -247,15 +247,16 @@ purchaseMoneyPackEvent.OnServerEvent:Connect(function(player, productId)
 	MarketplaceService:PromptProductPurchase(player, productId)
 end)
 
--- Money passive income ($1 per second)
-Players.PlayerAdded:Connect(function(player)
-	task.spawn(function()
-		while player.Parent do
-			task.wait(1)
-			DataHandler:Increment(player, "Money", 1)
-			sendDataUpdate(player)
-		end
-	end)
-end)
+-- ✅ DISABLED: Money passive income ($1 per second)
+-- User requested: Money only from summit/checkpoint, not per second
+-- Players.PlayerAdded:Connect(function(player)
+-- 	task.spawn(function()
+-- 		while player.Parent do
+-- 			task.wait(1)
+-- 			DataHandler:Increment(player, "Money", 1)
+-- 			sendDataUpdate(player)
+-- 		end
+-- 	end)
+-- end)
 
-print("✅ [SHOP SERVER] System loaded")
+print("✅ [SHOP SERVER] System loaded (Passive income DISABLED)")

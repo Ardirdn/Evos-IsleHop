@@ -115,7 +115,13 @@ TextChatService.OnIncomingMessage = function(message: TextChatMessage)
 	local userId = message.TextSource.UserId
 	local titleName = playerTitles[userId]
 
+	-- ✅ DEFAULT: White color for messages without title
+	local defaultColor = Color3.fromRGB(255, 255, 255)
+
 	if not titleName then
+		-- ✅ FIX: Even without title, make text white (not black)
+		local nameDisplay = message.PrefixText or ""
+		properties.PrefixText = string.format("<font color='rgb(255,255,255)'>%s</font>", nameDisplay)
 		return properties
 	end
 
@@ -132,14 +138,28 @@ TextChatService.OnIncomingMessage = function(message: TextChatMessage)
 	if titleData then
 		local displayName = titleData.DisplayName or titleName
 		local icon = titleData.Icon or ""
-		local colors = titleData.Colors or {titleData.Color or Color3.fromRGB(255, 255, 255)}
+		local colors = titleData.Colors or {titleData.Color or defaultColor}
+		local mainColor = colors[1] or defaultColor
 
 		local tagText = string.format("[%s %s]", icon, displayName)
 		local gradientTag = GradientText(tagText, colors)
 
-		properties.PrefixText = gradientTag .. " " .. message.PrefixText
+		-- ✅ FIX: Player name color matches title color
+		local playerName = message.TextSource.Name
+		local nameColorRGB = string.format("rgb(%d,%d,%d)", 
+			math.floor(mainColor.R * 255), 
+			math.floor(mainColor.G * 255), 
+			math.floor(mainColor.B * 255))
+		
+		local coloredName = string.format("<font color='%s'>%s:</font>", nameColorRGB, playerName)
+		
+		properties.PrefixText = gradientTag .. " " .. coloredName
 
 		print(string.format("[CHAT TITLE CLIENT] ✅ Applied title for %s: %s", message.TextSource.Name, displayName))
+	else
+		-- ✅ FIX: Title not found in config but player has title - show white
+		local nameDisplay = message.PrefixText or ""
+		properties.PrefixText = string.format("<font color='rgb(255,255,255)'>%s</font>", nameDisplay)
 	end
 
 	return properties
