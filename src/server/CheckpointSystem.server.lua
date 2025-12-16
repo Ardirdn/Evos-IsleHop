@@ -10,15 +10,21 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local MarketplaceService = game:GetService("MarketplaceService")
 
 CONFIG = {
-	MONEY_PER_SUMMIT = 2000,
-	DISTRIBUTE_MONEY_TO_CHECKPOINTS = true,
+	MONEY_PER_SUMMIT = 1000, -- Money diberikan saat mencapai puncak
+	MONEY_PER_CHECKPOINT = 50, -- Money diberikan per checkpoint
+	DISTRIBUTE_MONEY_TO_CHECKPOINTS = true, -- Jika true, kasih money per checkpoint
 	GIVE_SUMMIT_BONUS = false,
 	DISABLE_BODY_BLOCK = true, -- Set false untuk enable collision antar player
 	SKIP_PRODUCT_ID = 3466042624, -- ✅ GANTI dengan Product ID kamu!
 }
 
 local ShopConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("ShopConfig"))
+local DataStoreConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("DataStoreConfig"))
 local CheckpointSystem = {}
+
+-- ✅ Forward declarations (defined properly later, this silences LSP warnings)
+local playerData = nil
+local playerCurrentCheckpoint = nil
 
 -- ✅ Export skip product ID to global
 _G.SKIP_PRODUCT_ID = CONFIG.SKIP_PRODUCT_ID
@@ -28,10 +34,57 @@ local syncEvent = Instance.new("BindableEvent")
 syncEvent.Name = "SyncPlayerDataEvent"
 syncEvent.Parent = game.ServerScriptService
 
--- DataStores
+-- ✅ LISTEN FOR SYNC EVENT FROM DATAHANDLER (after migration)
+local function setupSyncListener()
+	syncEvent.Event:Connect(function(player, migratedData)
+		if not player or not migratedData then return end
+		
+		local userId = player.UserId
+		
+		print(string.format("🔄 [CHECKPOINT SYNC] Received sync for %s", player.Name))
+		print(string.format("   - TotalSummits: %d", migratedData.TotalSummits or 0))
+		
+		-- Update local playerData cache with migrated values
+		if playerData and playerData[userId] then
+			local oldSummits = playerData[userId].TotalSummits or 0
+			
+			playerData[userId].TotalSummits = migratedData.TotalSummits or playerData[userId].TotalSummits
+			playerData[userId].TotalDonations = migratedData.TotalDonations or playerData[userId].TotalDonations
+			playerData[userId].LastCheckpoint = migratedData.LastCheckpoint or playerData[userId].LastCheckpoint
+			playerData[userId].BestSpeedrun = migratedData.BestSpeedrun or playerData[userId].BestSpeedrun
+			playerData[userId].TotalPlaytime = migratedData.TotalPlaytime or playerData[userId].TotalPlaytime
+			
+			print(string.format("   ✅ Cache updated: TotalSummits %d → %d", 
+				oldSummits, playerData[userId].TotalSummits))
+			
+			-- Update playerCurrentCheckpoint too
+			if playerCurrentCheckpoint then
+				playerCurrentCheckpoint[userId] = playerData[userId].LastCheckpoint
+			end
+			
+			-- Update PlayerStats UI values
+			local playerStats = player:FindFirstChild("PlayerStats")
+			if playerStats then
+				local summitsValue = playerStats:FindFirstChild("Summit")
+				if summitsValue then
+					summitsValue.Value = playerData[userId].TotalSummits
+					print(string.format("   ✅ PlayerStats.Summit updated to %d", playerData[userId].TotalSummits))
+				end
+			end
+		else
+			warn(string.format("[CHECKPOINT SYNC] playerData[%d] not found for %s", userId, player.Name))
+		end
+	end)
+	
+	print("✅ [CHECKPOINT] SyncPlayerDataEvent listener ready")
+end
+
+-- DataStores (using centralized config)
 local DataHandler = require(game.ServerScriptService:WaitForChild("DataHandler"))
 local NotificationServer = require(game.ServerScriptService:WaitForChild("NotificationServer"))
-local SummitLeaderboard = DataStoreService:GetOrderedDataStore("SummitLeaderboard")
+
+-- ✅ USE CENTRALIZED DATASTORE CONFIG
+local SummitLeaderboard = DataStoreService:GetOrderedDataStore(DataStoreConfig.Leaderboards.Summit)
 
 local EventManager = nil
 pcall(function()
@@ -46,10 +99,10 @@ if not EventManager then
 	warn("[CHECKPOINT] EventManager not found - multipliers disabled")
 end
 
-local SpeedrunLeaderboard = DataStoreService:GetOrderedDataStore("SpeedrunLeaderboard")
-local PlaytimeLeaderboard = DataStoreService:GetOrderedDataStore("PlaytimeLeaderboard")
+local SpeedrunLeaderboard = DataStoreService:GetOrderedDataStore(DataStoreConfig.Leaderboards.Speedrun)
+local PlaytimeLeaderboard = DataStoreService:GetOrderedDataStore(DataStoreConfig.Leaderboards.Playtime)
 
-print("[DATASTORE] DataStores initialized")
+print(string.format("[CHECKPOINT] Using DataStores from config (Version: %s)", DataStoreConfig.VERSION))
 
 -- Get all checkpoints and sort them
 local checkpointsFolder = workspace:FindFirstChild("Checkpoints")
@@ -90,12 +143,17 @@ if checkpointCount == 0 then
 	return
 end
 
--- Player data storage
-local playerData = {}
+-- Player data storage (assigning to forward-declared variables)
+playerData = {}
 local speedrunTimers = {}
 local playerCooldowns = {}
-local playerCurrentCheckpoint = {}
+playerCurrentCheckpoint = {}
 local playtimeSessions = {}
+local playerReachedCheckpoints = {} -- ✅ NEW: Track which checkpoints were reached in current session
+local playerConnections = {} -- ✅ FIX: Store connections for cleanup on player leave
+
+-- ✅ NOW SETUP SYNC LISTENER (after playerData is defined)
+setupSyncListener()
 
 -- ✅ GAMEPASS CACHE to avoid repeated MarketplaceService calls (PERFORMANCE FIX)
 local gamepassCache = {} -- { [userId] = { x2 = bool, x4 = bool, x16 = bool, timestamp = number } }
@@ -698,7 +756,7 @@ for checkpointNum, checkpoint in pairs(checkpoints) do
 
 			task.spawn(function()
 				task.wait(0.5)
-				local TitleServer = require(game.ServerScriptService:WaitForChild("TitleServer"))
+				local TitleServer = require(script.Parent:WaitForChild("TitleServer"))
 				TitleServer:UpdateSummitTitle(player)
 				print("[SUMMIT] ✅ Title updated")
 			end)

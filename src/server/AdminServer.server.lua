@@ -7,26 +7,113 @@
     - Uses Notification System for all feedback
     - Calls Title System for title management
     - Focus: Admin commands only
+    
+    ADMIN TIERS:
+    - Primary Admin: Full access to all features
+    - Secondary Admin: Limited access (no Notifications & Events)
+    - Thirdparty: Very limited (via title system)
 ]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local DataStoreService = game:GetService("DataStoreService")
 
 local DataHandler = require(script.Parent.DataHandler)
 local NotificationService = require(script.Parent.NotificationServer)
 local TitleServer = require(script.Parent.TitleServer)
 
--- ✅ GANTI JADI INI:
+-- ✅ Require from Modules folder
 local TitleConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("TitleConfig"))
+local DataStoreConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("DataStoreConfig"))
+
+-- Admin Log Service
+local AdminLogServer = require(script.Parent.AdminLogService)
+
+-- ✅ BAN SYSTEM DATASTORE (persistent)
+local BanDataStore = DataStoreService:GetDataStore("BannedPlayers_v1")
+local BannedUsersCache = {} -- In-memory cache for fast lookups
+
+-- ✅ Load ban status from DataStore
+local function isPlayerBanned(userId)
+	-- Check cache first
+	if BannedUsersCache[userId] ~= nil then
+		return BannedUsersCache[userId]
+	end
+	
+	-- Check DataStore
+	local success, isBanned = pcall(function()
+		return BanDataStore:GetAsync(tostring(userId))
+	end)
+	
+	if success and isBanned then
+		BannedUsersCache[userId] = true
+		return true
+	end
+	
+	BannedUsersCache[userId] = false
+	return false
+end
+
+-- ✅ Ban a player (save to DataStore)
+local function banPlayer(userId, bannedBy, reason)
+	local banData = {
+		BannedAt = os.time(),
+		BannedBy = bannedBy,
+		Reason = reason or "No reason provided"
+	}
+	
+	local success, err = pcall(function()
+		BanDataStore:SetAsync(tostring(userId), banData)
+	end)
+	
+	if success then
+		BannedUsersCache[userId] = true
+		return true
+	else
+		warn("[BAN SYSTEM] Failed to save ban:", err)
+		return false
+	end
+end
+
+-- ✅ Unban a player
+local function unbanPlayer(userId)
+	local success, err = pcall(function()
+		BanDataStore:RemoveAsync(tostring(userId))
+	end)
+	
+	if success then
+		BannedUsersCache[userId] = false
+		return true
+	else
+		warn("[BAN SYSTEM] Failed to remove ban:", err)
+		return false
+	end
+end
 
 -- Check if player is admin (using TitleConfig)
 local function isAdmin(userId)
-	for _, id in ipairs(TitleConfig.AdminIds) do
-		if userId == id then
-			return true
-		end
-	end
-	return false
+	return TitleConfig.IsAdmin(userId)
+end
+
+-- Check if player is PRIMARY admin (full access)
+local function isPrimaryAdmin(userId)
+	return TitleConfig.IsPrimaryAdmin(userId)
+end
+
+-- Check if player is THIRDPARTY admin (very limited access)
+local function isThirdpartyAdmin(userId)
+	return TitleConfig.IsThirdpartyAdmin(userId)
+end
+
+-- Check if player is Full Admin (Primary or Secondary, NOT thirdparty)
+local function isFullAdmin(userId)
+	return TitleConfig.IsFullAdmin(userId)
+end
+
+-- Check if thirdparty admin has specific permission
+local function hasThirdpartyPermission(permission)
+	local perms = TitleConfig.ThirdpartyPermissions
+	return perms and perms[permission] == true
 end
 
 -- Create RemoteEvents folder
@@ -115,7 +202,13 @@ if not modifySummitDataEvent then
 	modifySummitDataEvent.Parent = remoteFolder
 end
 
--- ✅ TAMBAHKAN INI SETELAH modifySummitDataEvent
+-- Give Title (unlock only, no auto-equip)
+local giveTitleEvent = remoteFolder:FindFirstChild("GiveTitle")
+if not giveTitleEvent then
+	giveTitleEvent = Instance.new("RemoteEvent")
+	giveTitleEvent.Name = "GiveTitle"
+	giveTitleEvent.Parent = remoteFolder
+end
 
 local searchLeaderboardEvent = remoteFolder:FindFirstChild("SearchLeaderboard")
 if not searchLeaderboardEvent then
@@ -131,8 +224,51 @@ if not deleteLeaderboardEvent then
 	deleteLeaderboardEvent.Parent = remoteFolder
 end
 
+-- GetLeaderboardData RemoteFunction (for leaderboard viewer)
+local getLeaderboardDataFunc = remoteFolder:FindFirstChild("GetLeaderboardData")
+if not getLeaderboardDataFunc then
+	getLeaderboardDataFunc = Instance.new("RemoteFunction")
+	getLeaderboardDataFunc.Name = "GetLeaderboardData"
+	getLeaderboardDataFunc.Parent = remoteFolder
+end
+
+-- ✅ Unban Player Remote Event
+local unbanPlayerEvent = remoteFolder:FindFirstChild("UnbanPlayer")
+if not unbanPlayerEvent then
+	unbanPlayerEvent = Instance.new("RemoteEvent")
+	unbanPlayerEvent.Name = "UnbanPlayer"
+	unbanPlayerEvent.Parent = remoteFolder
+end
 
 print("✅ [ADMIN SERVER] Initialized")
+
+-- ✅ BAN CHECK ON PLAYER JOIN
+Players.PlayerAdded:Connect(function(player)
+	-- Check if player is banned (async check from DataStore or cache)
+	task.spawn(function()
+		if isPlayerBanned(player.UserId) then
+			print(string.format("🚫 [BAN SYSTEM] Kicking banned player: %s (%d)", player.Name, player.UserId))
+			player:Kick("You are permanently banned from this game.")
+		end
+	end)
+end)
+
+-- ✅ INVENTORY UPDATE EVENT (for real-time sync when admin gives items)
+local inventoryRemotes = ReplicatedStorage:FindFirstChild("InventoryRemotes")
+if not inventoryRemotes then
+	inventoryRemotes = Instance.new("Folder")
+	inventoryRemotes.Name = "InventoryRemotes"
+	inventoryRemotes.Parent = ReplicatedStorage
+end
+
+local inventoryUpdatedEvent = inventoryRemotes:FindFirstChild("InventoryUpdated")
+if not inventoryUpdatedEvent then
+	inventoryUpdatedEvent = Instance.new("RemoteEvent")
+	inventoryUpdatedEvent.Name = "InventoryUpdated"
+	inventoryUpdatedEvent.Parent = inventoryRemotes
+end
+
+print("✅ [ADMIN SERVER] Ban system and inventory sync ready")
 
 -- Global/Server Notification RemoteEvent
 local sendGlobalNotificationEvent = remoteFolder:FindFirstChild("SendGlobalNotification")
@@ -142,52 +278,143 @@ if not sendGlobalNotificationEvent then
 	sendGlobalNotificationEvent.Parent = remoteFolder
 end
 
--- Kick Player
+-- Kick Player (Thirdparty CAN kick)
 kickPlayerEvent.OnServerEvent:Connect(function(admin, targetUserId)
 	if not isAdmin(admin.UserId) then
 		warn(string.format("⚠️ [ADMIN SERVER] Non-admin tried to kick: %s", admin.Name))
 		return
 	end
-
-	local targetPlayer = Players:GetPlayerByUserId(targetUserId)
-	if targetPlayer then
-		targetPlayer:Kick("You have been kicked by an administrator")
-
+	
+	-- Thirdparty CAN kick
+	if isThirdpartyAdmin(admin.UserId) and not hasThirdpartyPermission("CanKick") then
 		NotificationService:Send(admin, {
-			Message = string.format("Kicked %s", targetPlayer.Name),
-			Type = "success",
+			Message = "You don't have permission to kick!",
+			Type = "error",
 			Duration = 3
 		})
-
-		print(string.format("👮 [ADMIN SERVER] %s kicked %s", admin.Name, targetPlayer.Name))
-	end
-end)
-
--- Ban Player
-banPlayerEvent.OnServerEvent:Connect(function(admin, targetUserId)
-	if not isAdmin(admin.UserId) then
-		warn(string.format("⚠️ [ADMIN SERVER] Non-admin tried to ban: %s", admin.Name))
 		return
 	end
 
 	local targetPlayer = Players:GetPlayerByUserId(targetUserId)
 	if targetPlayer then
-		-- TODO: Implement ban system (save to DataStore)
-		targetPlayer:Kick("You have been banned by an administrator")
+		local targetName = targetPlayer.Name
+		targetPlayer:Kick("You have been kicked by an administrator")
 
 		NotificationService:Send(admin, {
-			Message = string.format("Banned %s", targetPlayer.Name),
+			Message = string.format("Kicked %s", targetName),
 			Type = "success",
 			Duration = 3
 		})
 
-		print(string.format("🚫 [ADMIN SERVER] %s banned %s", admin.Name, targetPlayer.Name))
+		-- Log the action
+		AdminLogServer:Log(admin.UserId, admin.Name, "kick", {UserId = targetUserId, Name = targetName}, "")
+
+		print(string.format("👮 [ADMIN SERVER] %s kicked %s", admin.Name, targetName))
 	end
 end)
 
--- Teleport Here
+-- Ban Player (Thirdparty CANNOT ban)
+banPlayerEvent.OnServerEvent:Connect(function(admin, targetUserId)
+	if not isAdmin(admin.UserId) then
+		warn(string.format("⚠️ [ADMIN SERVER] Non-admin tried to ban: %s", admin.Name))
+		return
+	end
+	
+	-- ✅ Thirdparty CANNOT ban - require Full Admin
+	if isThirdpartyAdmin(admin.UserId) then
+		NotificationService:Send(admin, {
+			Message = "Thirdparty admins cannot ban players!",
+			Type = "error",
+			Duration = 3
+		})
+		return
+	end
+
+	-- Get target name (player may or may not be online)
+	local targetPlayer = Players:GetPlayerByUserId(targetUserId)
+	local targetName = targetPlayer and targetPlayer.Name or "Unknown"
+	
+	-- ✅ Save ban to DataStore (persistent)
+	local banSuccess = banPlayer(targetUserId, admin.Name, "Banned by admin")
+	
+	if banSuccess then
+		-- Kick if online
+		if targetPlayer then
+			targetName = targetPlayer.Name
+			targetPlayer:Kick("You have been banned by an administrator. Ban is permanent.")
+		end
+
+		NotificationService:Send(admin, {
+			Message = string.format("Banned %s (Permanent)", targetName),
+			Type = "success",
+			Duration = 3
+		})
+
+		-- Log the action
+		AdminLogServer:Log(admin.UserId, admin.Name, "ban", {UserId = targetUserId, Name = targetName}, "Permanent")
+
+		print(string.format("🚫 [ADMIN SERVER] %s PERMANENTLY banned %s (saved to DataStore)", admin.Name, targetName))
+	else
+		NotificationService:Send(admin, {
+			Message = "Failed to save ban to DataStore!",
+			Type = "error",
+			Duration = 3
+		})
+	end
+end)
+
+-- ✅ Unban Player (remove from DataStore)
+unbanPlayerEvent.OnServerEvent:Connect(function(admin, targetUserId)
+	if not isAdmin(admin.UserId) then
+		warn(string.format("⚠️ [ADMIN SERVER] Non-admin tried to unban: %s", admin.Name))
+		return
+	end
+
+	-- Get username for logging
+	local targetName = "Unknown"
+	local nameSuccess, name = pcall(function()
+		return Players:GetNameFromUserIdAsync(targetUserId)
+	end)
+	if nameSuccess then
+		targetName = name
+	end
+
+	-- ✅ Remove ban from DataStore
+	local unbanSuccess = unbanPlayer(targetUserId)
+
+	if unbanSuccess then
+		NotificationService:Send(admin, {
+			Message = string.format("Unbanned %s", targetName),
+			Type = "success",
+			Duration = 3
+		})
+
+		-- Log the action
+		AdminLogServer:Log(admin.UserId, admin.Name, "unban", {UserId = targetUserId, Name = targetName}, "")
+
+		print(string.format("✅ [ADMIN SERVER] %s unbanned %s (removed from DataStore)", admin.Name, targetName))
+	else
+		NotificationService:Send(admin, {
+			Message = "Failed to unban player!",
+			Type = "error",
+			Duration = 3
+		})
+	end
+end)
+
+-- Teleport Here (Thirdparty CAN teleport)
 teleportHereEvent.OnServerEvent:Connect(function(admin, targetUserId)
 	if not isAdmin(admin.UserId) then return end
+	
+	-- Thirdparty CAN teleport
+	if isThirdpartyAdmin(admin.UserId) and not hasThirdpartyPermission("CanTeleport") then
+		NotificationService:Send(admin, {
+			Message = "You don't have permission to teleport!",
+			Type = "error",
+			Duration = 3
+		})
+		return
+	end
 
 	local targetPlayer = Players:GetPlayerByUserId(targetUserId)
 	if targetPlayer and targetPlayer.Character and admin.Character then
@@ -208,9 +435,19 @@ teleportHereEvent.OnServerEvent:Connect(function(admin, targetUserId)
 	end
 end)
 
--- Teleport To
+-- Teleport To (Thirdparty CAN teleport)
 teleportToEvent.OnServerEvent:Connect(function(admin, targetUserId)
 	if not isAdmin(admin.UserId) then return end
+	
+	-- Thirdparty CAN teleport
+	if isThirdpartyAdmin(admin.UserId) and not hasThirdpartyPermission("CanTeleport") then
+		NotificationService:Send(admin, {
+			Message = "You don't have permission to teleport!",
+			Type = "error",
+			Duration = 3
+		})
+		return
+	end
 
 	local targetPlayer = Players:GetPlayerByUserId(targetUserId)
 	if targetPlayer and targetPlayer.Character and admin.Character then
@@ -236,6 +473,16 @@ local frozenPlayers = {}
 
 freezePlayerEvent.OnServerEvent:Connect(function(admin, targetUserId, shouldFreeze)
 	if not isAdmin(admin.UserId) then return end
+	
+	-- Thirdparty CAN freeze
+	if isThirdpartyAdmin(admin.UserId) and not hasThirdpartyPermission("CanFreeze") then
+		NotificationService:Send(admin, {
+			Message = "You don't have permission to freeze!",
+			Type = "error",
+			Duration = 3
+		})
+		return
+	end
 
 	local targetPlayer = Players:GetPlayerByUserId(targetUserId)
 	if targetPlayer and targetPlayer.Character then
@@ -262,6 +509,9 @@ freezePlayerEvent.OnServerEvent:Connect(function(admin, targetUserId, shouldFree
 				})
 
 				print(string.format("❄️ [ADMIN SERVER] %s froze %s", admin.Name, targetPlayer.Name))
+
+				-- Log the action
+				AdminLogServer:Log(admin.UserId, admin.Name, "freeze", {UserId = targetUserId, Name = targetPlayer.Name}, "Frozen")
 
 				-- Auto unfreeze after 3 minutes
 				task.delay(180, function()
@@ -293,15 +543,28 @@ freezePlayerEvent.OnServerEvent:Connect(function(admin, targetUserId, shouldFree
 					})
 
 					print(string.format("🔥 [ADMIN SERVER] %s unfroze %s", admin.Name, targetPlayer.Name))
+
+					-- Log the action
+					AdminLogServer:Log(admin.UserId, admin.Name, "freeze", {UserId = targetUserId, Name = targetPlayer.Name}, "Unfrozen")
 				end
 			end
 		end
 	end
 end)
 
--- Set Speed
+-- Set Speed (Thirdparty CANNOT set speed)
 setSpeedEvent.OnServerEvent:Connect(function(admin, targetUserId, speedMultiplier)
 	if not isAdmin(admin.UserId) then return end
+	
+	-- Thirdparty CANNOT set speed
+	if isThirdpartyAdmin(admin.UserId) then
+		NotificationService:Send(admin, {
+			Message = "Thirdparty admins cannot modify speed!",
+			Type = "error",
+			Duration = 3
+		})
+		return
+	end
 
 	local targetPlayer = Players:GetPlayerByUserId(targetUserId)
 	if targetPlayer and targetPlayer.Character then
@@ -320,9 +583,19 @@ setSpeedEvent.OnServerEvent:Connect(function(admin, targetUserId, speedMultiplie
 	end
 end)
 
--- Set Gravity
+-- Set Gravity (Thirdparty CANNOT set gravity)
 setGravityEvent.OnServerEvent:Connect(function(admin, targetUserId, gravityValue)
 	if not isAdmin(admin.UserId) then return end
+	
+	-- Thirdparty CANNOT set gravity
+	if isThirdpartyAdmin(admin.UserId) then
+		NotificationService:Send(admin, {
+			Message = "Thirdparty admins cannot modify gravity!",
+			Type = "error",
+			Duration = 3
+		})
+		return
+	end
 
 	local targetPlayer = Players:GetPlayerByUserId(targetUserId)
 	if targetPlayer and targetPlayer.Character then
@@ -370,9 +643,26 @@ Players.PlayerAdded:Connect(function(player)
 	end)
 end)
 
--- Kill Player
+-- ✅ FIX: Cleanup frozenPlayers when player leaves
+Players.PlayerRemoving:Connect(function(player)
+	if frozenPlayers[player.UserId] then
+		frozenPlayers[player.UserId] = nil
+	end
+end)
+
+-- Kill Player (Thirdparty CANNOT kill)
 killPlayerEvent.OnServerEvent:Connect(function(admin, targetUserId)
 	if not isAdmin(admin.UserId) then return end
+	
+	-- Thirdparty CANNOT kill
+	if isThirdpartyAdmin(admin.UserId) then
+		NotificationService:Send(admin, {
+			Message = "Thirdparty admins cannot kill players!",
+			Type = "error",
+			Duration = 3
+		})
+		return
+	end
 
 	local targetPlayer = Players:GetPlayerByUserId(targetUserId)
 	if targetPlayer and targetPlayer.Character then
@@ -391,9 +681,19 @@ killPlayerEvent.OnServerEvent:Connect(function(admin, targetUserId)
 	end
 end)
 
--- Set Player Title
+-- Set Player Title (auto-equip) - Thirdparty CANNOT
 setPlayerTitleEvent.OnServerEvent:Connect(function(admin, targetUserId, titleName)
 	if not isAdmin(admin.UserId) then return end
+	
+	-- Thirdparty CANNOT set titles
+	if isThirdpartyAdmin(admin.UserId) then
+		NotificationService:Send(admin, {
+			Message = "Thirdparty admins cannot set titles!",
+			Type = "error",
+			Duration = 3
+		})
+		return
+	end
 
 	local targetPlayer = Players:GetPlayerByUserId(targetUserId)
 	if not targetPlayer then 
@@ -427,6 +727,9 @@ setPlayerTitleEvent.OnServerEvent:Connect(function(admin, targetUserId, titleNam
 		})
 
 		print(string.format("✅ [ADMIN SERVER] Title set successfully"))
+
+		-- Log the action
+		AdminLogServer:Log(admin.UserId, admin.Name, "set_title", {UserId = targetUserId, Name = targetPlayer.Name}, "Title: " .. titleName)
 	else
 		NotificationService:Send(admin, {
 			Message = "Failed to set title!",
@@ -436,9 +739,121 @@ setPlayerTitleEvent.OnServerEvent:Connect(function(admin, targetUserId, titleNam
 	end
 end)
 
--- Give Items (Money, Auras, Tools)
+-- Give Title (unlock only, no auto-equip) - Thirdparty CANNOT
+giveTitleEvent.OnServerEvent:Connect(function(admin, targetUserId, titleName)
+	if not isAdmin(admin.UserId) then return end
+	
+	-- Thirdparty CANNOT give titles
+	if isThirdpartyAdmin(admin.UserId) then
+		NotificationService:Send(admin, {
+			Message = "Thirdparty admins cannot give titles!",
+			Type = "error",
+			Duration = 3
+		})
+		return
+	end
+
+	local targetPlayer = Players:GetPlayerByUserId(targetUserId)
+	if not targetPlayer then 
+		NotificationService:Send(admin, {
+			Message = "Target player not found!",
+			Type = "error",
+			Duration = 3
+		})
+		return 
+	end
+
+	-- Check if title is givable
+	local titleData = TitleConfig.SpecialTitles[titleName]
+	
+	if not titleData then
+		NotificationService:Send(admin, {
+			Message = "Title not found!",
+			Type = "error",
+			Duration = 3
+		})
+		return
+	end
+	
+	if titleData.Givable == false then
+		NotificationService:Send(admin, {
+			Message = "This title cannot be given!",
+			Type = "error",
+			Duration = 3
+		})
+		return
+	end
+
+	print(string.format("🎁 [ADMIN SERVER] %s giving title '%s' to %s", admin.Name, titleName, targetPlayer.Name))
+
+	-- Unlock title without equipping (add to OwnedTitles)
+	local success = false
+	
+	-- Try using TitleServer:UnlockTitle if available
+	if TitleServer.UnlockTitle then
+		success = TitleServer:UnlockTitle(targetPlayer, titleName, "admin")
+	else
+		-- Fallback: directly add to OwnedTitles via DataHandler
+		local ownedTitles = DataHandler:Get(targetPlayer, "OwnedTitles") or {}
+		
+		-- Check if already owned
+		local alreadyOwned = false
+		for _, owned in ipairs(ownedTitles) do
+			if owned == titleName then
+				alreadyOwned = true
+				break
+			end
+		end
+		
+		if not alreadyOwned then
+			DataHandler:AddToArray(targetPlayer, "OwnedTitles", titleName)
+			DataHandler:SavePlayer(targetPlayer)
+			success = true
+		else
+			NotificationService:Send(admin, {
+				Message = string.format("%s already owns this title!", targetPlayer.Name),
+				Type = "warning",
+				Duration = 3
+			})
+			return
+		end
+	end
+
+	if success then
+		-- Notify target player
+		NotificationService:Send(targetPlayer, {
+			Message = string.format("Admin %s gave you title: %s", admin.Name, titleName),
+			Type = "admin",
+			Duration = 5,
+			Icon = "🎁"
+		})
+
+		-- Notify admin
+		NotificationService:Send(admin, {
+			Message = string.format("Gave '%s' title to %s", titleName, targetPlayer.Name),
+			Type = "success",
+			Duration = 3
+		})
+
+		-- Log the action
+		AdminLogServer:Log(admin.UserId, admin.Name, "give_title", {UserId = targetUserId, Name = targetPlayer.Name}, "Title: " .. titleName)
+
+		print(string.format("✅ [ADMIN SERVER] Title '%s' given to %s (unlock only, no equip)", titleName, targetPlayer.Name))
+	else
+		NotificationService:Send(admin, {
+			Message = "Failed to give title!",
+			Type = "error",
+			Duration = 3
+		})
+	end
+end)
+
+-- Give Items (Money, Auras, Tools) - Thirdparty CAN give non-premium only
 giveItemsEvent.OnServerEvent:Connect(function(admin, targetUserId, auras, tools, moneyAmount)
 	if not isAdmin(admin.UserId) then return end
+	
+	-- Thirdparty can give items but only non-premium
+	local isThirdparty = isThirdpartyAdmin(admin.UserId)
 
 	local targetPlayer = Players:GetPlayerByUserId(targetUserId)
 	if not targetPlayer then return end
@@ -491,16 +906,36 @@ giveItemsEvent.OnServerEvent:Connect(function(admin, targetUserId, auras, tools,
 			Duration = 3
 		})
 
+		-- ✅ FIRE INVENTORY UPDATE EVENT (real-time UI refresh for player)
+		if inventoryUpdatedEvent then
+			local updatedData = {
+				OwnedAuras = DataHandler:Get(targetPlayer, "OwnedAuras") or {},
+				OwnedTools = DataHandler:Get(targetPlayer, "OwnedTools") or {},
+				EquippedAura = DataHandler:Get(targetPlayer, "EquippedAura"),
+				EquippedTool = DataHandler:Get(targetPlayer, "EquippedTool"),
+			}
+			inventoryUpdatedEvent:FireClient(targetPlayer, updatedData)
+			print(string.format("📦 [ADMIN SERVER] Inventory update event fired to %s", targetPlayer.Name))
+		end
+
 		print(string.format("✅ [ADMIN SERVER] Items given successfully"))
 	end
 end)
 
--- Update SendGlobalNotification handler
-sendGlobalNotificationEvent.OnServerEvent:Connect(function(admin, notifType, message, textColor)
-	if not isAdmin(admin.UserId) then return end
+-- Update SendGlobalNotification handler (PRIMARY ADMIN ONLY)
+sendGlobalNotificationEvent.OnServerEvent:Connect(function(admin, notifType, message, textColor, notificationType, duration)
+	-- Only Primary Admin can send notifications
+	if not isPrimaryAdmin(admin.UserId) then 
+		NotificationService:Send(admin, {
+			Message = "Only Primary Admin can send notifications!",
+			Type = "error",
+			Duration = 3
+		})
+		return 
+	end
 
-	print(string.format("📢 [ADMIN SERVER] %s sending %s notification: %s (color: %s)", 
-		admin.Name, notifType, message, tostring(textColor)))
+	print(string.format("📢 [ADMIN SERVER] %s sending %s notification: %s (type: %s, duration: %ds)", 
+		admin.Name, notifType, message, notificationType or "SideTextOnly", duration or 5))
 
 	if notifType == "global" or notifType == "server" then
 		-- Convert Color3 to table if needed
@@ -509,28 +944,49 @@ sendGlobalNotificationEvent.OnServerEvent:Connect(function(admin, notifType, mes
 			colorData = {textColor.R, textColor.G, textColor.B}
 		end
 
-		-- Send to all players with custom color
+		-- Send to all players with new notification type system
 		NotificationService:SendToAll({
 			Message = message,
-			Type = "info",
-			Duration = 10,
-			Icon = "📢",
-			CustomColor = colorData -- Pass custom color
-		})
+			NotificationType = notificationType or "SideTextOnly",
+			Duration = duration or 10,
+			-- Sender info for WithSender types
+			SenderUserId = admin.UserId,
+			SenderName = admin.DisplayName,
+			SenderUsername = admin.Name,
+			Sender = {
+				UserId = admin.UserId,
+				Name = admin.Name,
+				DisplayName = admin.DisplayName
+			}
+		}, admin) -- Pass admin as sender
 
 		-- Confirm to admin
 		NotificationService:Send(admin, {
 			Message = "Global notification sent!",
-			Type = "success",
+			NotificationType = "SideTextOnly",
 			Duration = 3
 		})
 
 		print("✅ [ADMIN SERVER] Global notification sent")
+
+		-- Log the action
+		AdminLogServer:Log(admin.UserId, admin.Name, "notification", {UserId = 0, Name = "All Players"}, "Type: " .. notifType .. ", Msg: " .. string.sub(message, 1, 50))
 	end
 end)
 
+-- Modify Summit Data - Thirdparty CANNOT
 modifySummitDataEvent.OnServerEvent:Connect(function(admin, targetUserId, newSummitValue)
 	if not isAdmin(admin.UserId) then return end
+	
+	-- Thirdparty CANNOT modify summit data
+	if isThirdpartyAdmin(admin.UserId) then
+		NotificationService:Send(admin, {
+			Message = "Thirdparty admins cannot modify summit data!",
+			Type = "error",
+			Duration = 3
+		})
+		return
+	end
 
 	if type(newSummitValue) ~= "number" or newSummitValue < 0 then
 		NotificationService:Send(admin, {
@@ -557,6 +1013,22 @@ modifySummitDataEvent.OnServerEvent:Connect(function(admin, targetUserId, newSum
 	DataHandler:Set(targetPlayer, "TotalSummits", newSummitValue)
 	DataHandler:SavePlayer(targetPlayer)
 	print("[ADMIN] ✅ DataStore updated")
+	
+	-- 1.5. ✅ UPDATE LEADERBOARD ORDEREDDATASTORE
+	if DataHandler.UpdateLeaderboards then
+		DataHandler:UpdateLeaderboards(targetPlayer)
+		print("[ADMIN] ✅ Leaderboard OrderedDataStore updated")
+	end
+	
+	-- 1.6. ✅ REFRESH LEADERBOARD DISPLAY (SurfaceGui)
+	task.spawn(function()
+		task.wait(0.5) -- Wait for OrderedDataStore to be fully written
+		local refreshEvent = game.ServerScriptService:FindFirstChild("RefreshLeaderboardsEvent")
+		if refreshEvent and refreshEvent:IsA("BindableEvent") then
+			refreshEvent:Fire("Summit")
+			print("[ADMIN] ✅ Leaderboard display refreshed")
+		end
+	end)
 
 	-- 2. Update PlayerStats UI
 	if targetPlayer:FindFirstChild("PlayerStats") then
@@ -567,7 +1039,7 @@ modifySummitDataEvent.OnServerEvent:Connect(function(admin, targetUserId, newSum
 		end
 	end
 
-	-- 3. SYNC LOCAL CACHE VIA BINDABLE EVENT
+	-- 3. SYNC LOCAL CACHE VIA BINDABLE EVENT (with proper data parameter)
 	task.spawn(function()
 		task.wait(0.5)
 
@@ -575,19 +1047,29 @@ modifySummitDataEvent.OnServerEvent:Connect(function(admin, targetUserId, newSum
 		local syncEvent = game.ServerScriptService:FindFirstChild("SyncPlayerDataEvent")
 
 		if syncEvent and syncEvent:IsA("BindableEvent") then
-			syncEvent:Fire(targetPlayer)
-			print("[ADMIN] ✅ Sync event fired!")
+			-- ✅ FIX: Pass migratedData with updated TotalSummits so CheckpointSystem can sync its cache
+			local syncData = {
+				TotalSummits = newSummitValue,
+				TotalDonations = DataHandler:Get(targetPlayer, "TotalDonations"),
+				LastCheckpoint = DataHandler:Get(targetPlayer, "LastCheckpoint"),
+				BestSpeedrun = DataHandler:Get(targetPlayer, "BestSpeedrun"),
+				TotalPlaytime = DataHandler:Get(targetPlayer, "TotalPlaytime"),
+			}
+			syncEvent:Fire(targetPlayer, syncData)
+			print("[ADMIN] ✅ Sync event fired with data!")
 		else
 			warn("[ADMIN] ❌ Sync event not found!")
 		end
 	end)
 
 
-	-- 4. Update title
+	-- 4. Sync summit titles (add/remove based on new value)
 	task.spawn(function()
 		task.wait(1)  -- Wait biar sync selesai dulu
-		TitleServer:UpdateSummitTitle(targetPlayer)
-		print("[ADMIN] ✅ Title updated")
+		if TitleServer.SyncSummitTitles then
+			TitleServer:SyncSummitTitles(targetPlayer, newSummitValue)
+			print("[ADMIN] ✅ Title synced")
+		end
 	end)
 
 	-- 5. Notify
@@ -604,6 +1086,9 @@ modifySummitDataEvent.OnServerEvent:Connect(function(admin, targetUserId, newSum
 	})
 
 	print(string.format("[ADMIN] ✅ DONE! %s summit = %d", targetPlayer.Name, newSummitValue))
+
+	-- Log the action
+	AdminLogServer:Log(admin.UserId, admin.Name, "set_summit", {UserId = targetUserId, Name = targetPlayer.Name}, "New value: " .. newSummitValue)
 end)
 
 -- ✅ SEARCH LEADERBOARD DATA
@@ -636,12 +1121,11 @@ searchLeaderboardEvent.OnServerInvoke = function(admin, username)
 
 	targetUsername = nameSuccess and displayName or username
 
-	-- Get data from all leaderboards
-	local DataStoreService = game:GetService("DataStoreService")
-	local SummitLeaderboard = DataStoreService:GetOrderedDataStore("SummitLeaderboard")
-	local SpeedrunLeaderboard = DataStoreService:GetOrderedDataStore("SpeedrunLeaderboard")
-	local PlaytimeLeaderboard = DataStoreService:GetOrderedDataStore("PlaytimeLeaderboard")
-	local DonationLeaderboard = DataStoreService:GetOrderedDataStore("DonationLeaderboard")
+	-- Get data from all leaderboards (using centralized config)
+	local SummitLeaderboard = DataStoreService:GetOrderedDataStore(DataStoreConfig.Leaderboards.Summit)
+	local SpeedrunLeaderboard = DataStoreService:GetOrderedDataStore(DataStoreConfig.Leaderboards.Speedrun)
+	local PlaytimeLeaderboard = DataStoreService:GetOrderedDataStore(DataStoreConfig.Leaderboards.Playtime)
+	local DonationLeaderboard = DataStoreService:GetOrderedDataStore(DataStoreConfig.Leaderboards.Donation)
 
 	local leaderboardData = {
 		UserId = targetUserId,
@@ -692,13 +1176,23 @@ searchLeaderboardEvent.OnServerInvoke = function(admin, username)
 	return {success = true, data = leaderboardData}
 end
 
+-- Delete Leaderboard Data - Thirdparty CAN delete leaderboard data
 deleteLeaderboardEvent.OnServerEvent:Connect(function(player, targetUserId, dataType)
 	if not isAdmin(player.UserId) then return end
+	
+	-- Thirdparty CAN delete leaderboard data
+	if isThirdpartyAdmin(player.UserId) and not hasThirdpartyPermission("CanDeleteLeaderboard") then
+		NotificationService:Send(player, {
+			Message = "You don't have permission to delete leaderboard data!",
+			Type = "error",
+			Duration = 3
+		})
+		return
+	end
 
 	print("[ADMIN] " .. player.Name .. " deleting " .. dataType .. " data for UserID: " .. targetUserId)
 
-	local DataStoreService = game:GetService("DataStoreService")
-	local PlayerDataStore = DataStoreService:GetDataStore("PlayerData_v5") -- ✅ Match dengan DataHandler
+	local PlayerDataStore = DataStoreService:GetDataStore(DataStoreConfig.PlayerData) -- ✅ Use config
 
 	-- ✅ LANGSUNG UPDATE DATASTORE dengan UpdateAsync (bypass cache completely)
 	local success, errorMsg = pcall(function()
@@ -739,11 +1233,11 @@ deleteLeaderboardEvent.OnServerEvent:Connect(function(player, targetUserId, data
 
 	print("[ADMIN] ✅ DataStore updated via UpdateAsync")
 
-	-- ✅ DELETE FROM LEADERBOARDS
-	local SummitLeaderboard = DataStoreService:GetOrderedDataStore("SummitLeaderboard")
-	local SpeedrunLeaderboard = DataStoreService:GetOrderedDataStore("SpeedrunLeaderboard")
-	local PlaytimeLeaderboard = DataStoreService:GetOrderedDataStore("PlaytimeLeaderboard")
-	local DonationLeaderboard = DataStoreService:GetOrderedDataStore("DonationLeaderboard")
+	-- ✅ DELETE FROM LEADERBOARDS (using centralized config)
+	local SummitLeaderboard = DataStoreService:GetOrderedDataStore(DataStoreConfig.Leaderboards.Summit)
+	local SpeedrunLeaderboard = DataStoreService:GetOrderedDataStore(DataStoreConfig.Leaderboards.Speedrun)
+	local PlaytimeLeaderboard = DataStoreService:GetOrderedDataStore(DataStoreConfig.Leaderboards.Playtime)
+	local DonationLeaderboard = DataStoreService:GetOrderedDataStore(DataStoreConfig.Leaderboards.Donation)
 
 	if dataType == "summit" or dataType == "all" then
 		pcall(function() SummitLeaderboard:RemoveAsync(tostring(targetUserId)) end)
@@ -805,22 +1299,18 @@ deleteLeaderboardEvent.OnServerEvent:Connect(function(player, targetUserId, data
 					print("[ADMIN] ✅ Updated PlayerStats")
 				end
 
-				-- Update CheckpointSystem cache
-				local successCP, CheckpointSystem = pcall(function()
-					return require(game.ServerScriptService.CheckpointSystem)
-				end)
-
-				if successCP and CheckpointSystem and CheckpointSystem.playerProgress then
-					local progress = CheckpointSystem.playerProgress[targetUserId]
-					if progress then
-						if dataType == "summit" or dataType == "all" then
-							progress.totalSummits = 0
-						end
-						if dataType == "speedrun" or dataType == "all" then
-							progress.bestSpeedrun = 0
-						end
-						print("[ADMIN] ✅ Updated CheckpointSystem cache")
-					end
+				-- ✅ FIX: Use SyncPlayerDataEvent to update CheckpointSystem cache properly
+				local syncEvent = game.ServerScriptService:FindFirstChild("SyncPlayerDataEvent")
+				if syncEvent and syncEvent:IsA("BindableEvent") then
+					local syncData = {
+						TotalSummits = cache and cache.TotalSummits or 0,
+						TotalDonations = cache and cache.TotalDonations or 0,
+						LastCheckpoint = cache and cache.LastCheckpoint or 0,
+						BestSpeedrun = cache and cache.BestSpeedrun or nil,
+						TotalPlaytime = cache and cache.TotalPlaytime or 0,
+					}
+					syncEvent:Fire(targetPlayer, syncData)
+					print("[ADMIN] ✅ Sync event fired for CheckpointSystem cache update")
 				end
 			end
 		end)
@@ -833,15 +1323,12 @@ deleteLeaderboardEvent.OnServerEvent:Connect(function(player, targetUserId, data
 		})
 	end
 
-	-- ✅ Force leaderboard update
+	-- ✅ FIX: Use RefreshLeaderboardsEvent instead of trying to require CheckpointSystem
 	task.delay(1, function()
-		local successCP, CheckpointSystem = pcall(function()
-			return require(game.ServerScriptService.CheckpointSystem)
-		end)
-
-		if successCP and CheckpointSystem and CheckpointSystem.updateLeaderboards then
-			CheckpointSystem.updateLeaderboards()
-			print("[ADMIN] ✅ Leaderboard updated")
+		local refreshEvent = game.ServerScriptService:FindFirstChild("RefreshLeaderboardsEvent")
+		if refreshEvent and refreshEvent:IsA("BindableEvent") then
+			refreshEvent:Fire("All")  -- Refresh all leaderboards
+			print("[ADMIN] ✅ Leaderboard display refresh triggered")
 		end
 	end)
 
@@ -852,12 +1339,99 @@ deleteLeaderboardEvent.OnServerEvent:Connect(function(player, targetUserId, data
 		Duration = 5
 	})
 
+	-- Log the action (get target username)
+	local targetUsername = "Unknown"
+	pcall(function()
+		targetUsername = Players:GetNameFromUserIdAsync(targetUserId)
+	end)
+	AdminLogServer:Log(player.UserId, player.Name, "delete_data", {UserId = targetUserId, Name = targetUsername}, "Type: " .. dataType:upper())
+
 	print("[ADMIN] ✅ DONE! Data deleted via UpdateAsync")
 end)
 
 
-
-
-
-
 print("✅ [ADMIN SERVER] System loaded")
+
+-- ✅ GET LEADERBOARD DATA (for leaderboard viewer)
+getLeaderboardDataFunc.OnServerInvoke = function(admin, leaderboardType, limit)
+	if not isAdmin(admin.UserId) then
+		return {success = false, message = "Not authorized"}
+	end
+	
+	limit = limit or 50 -- Default limit
+	if limit > 100 then limit = 100 end -- Max limit
+	
+	print(string.format("[ADMIN] %s fetching %s leaderboard (limit: %d)", admin.Name, leaderboardType, limit))
+	
+	local leaderboard = nil
+	local isAscending = false -- For speedrun, lower is better
+	local formatValue = nil
+	
+	if leaderboardType == "summit" then
+		leaderboard = DataStoreService:GetOrderedDataStore(DataStoreConfig.Leaderboards.Summit)
+		formatValue = function(val) return tostring(val) end
+	elseif leaderboardType == "speedrun" then
+		leaderboard = DataStoreService:GetOrderedDataStore(DataStoreConfig.Leaderboards.Speedrun)
+		isAscending = true
+		formatValue = function(val)
+			local timeSeconds = math.abs(val) / 1000
+			return string.format("%02d:%02d:%02d", 
+				math.floor(timeSeconds / 3600),
+				math.floor((timeSeconds % 3600) / 60),
+				math.floor(timeSeconds % 60)
+			)
+		end
+	elseif leaderboardType == "donate" then
+		leaderboard = DataStoreService:GetOrderedDataStore(DataStoreConfig.Leaderboards.Donation)
+		formatValue = function(val) return "R$" .. tostring(val) end
+	elseif leaderboardType == "playtime" then
+		leaderboard = DataStoreService:GetOrderedDataStore(DataStoreConfig.Leaderboards.Playtime)
+		formatValue = function(val)
+			return string.format("%dh %dm", math.floor(val / 3600), math.floor((val % 3600) / 60))
+		end
+	else
+		return {success = false, message = "Invalid leaderboard type"}
+	end
+	
+	local entries = {}
+	
+	local success, errorMsg = pcall(function()
+		local pages
+		if isAscending then
+			pages = leaderboard:GetSortedAsync(true, limit) -- Ascending for speedrun
+		else
+			pages = leaderboard:GetSortedAsync(false, limit) -- Descending for others
+		end
+		
+		local currentPage = pages:GetCurrentPage()
+		
+		for rank, entry in ipairs(currentPage) do
+			local userId = tonumber(entry.key)
+			local value = entry.value
+			
+			-- Get username
+			local username = "Unknown"
+			local nameSuccess, displayName = pcall(function()
+				return Players:GetNameFromUserIdAsync(userId)
+			end)
+			if nameSuccess then
+				username = displayName
+			end
+			
+			table.insert(entries, {
+				Rank = rank,
+				UserId = userId,
+				Username = username,
+				Value = value,
+				FormattedValue = formatValue(value)
+			})
+		end
+	end)
+	
+	if not success then
+		warn("[ADMIN] Failed to fetch leaderboard: " .. tostring(errorMsg))
+		return {success = false, message = "Failed to fetch data"}
+	end
+	
+	return {success = true, data = entries, type = leaderboardType}
+end

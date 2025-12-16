@@ -6,6 +6,7 @@
     - Donations
     - Money Packs
     - Premium Auras/Tools
+    - Skip Checkpoint
 ]]
 
 local Players = game:GetService("Players")
@@ -21,7 +22,33 @@ local DonateConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForCh
 
 local purchaseHistory = {}
 
+-- ✅ AUTO-CLEANUP: Bersihkan purchaseHistory setiap 10 menit untuk mencegah memory leak
+task.spawn(function()
+	while true do
+		task.wait(600) -- 10 menit
+		local count = 0
+		for _ in pairs(purchaseHistory) do 
+			count = count + 1 
+		end
+		if count > 0 then
+			purchaseHistory = {}
+			print(string.format("[MARKETPLACE] 🧹 Cleared %d purchase history entries (memory cleanup)", count))
+		end
+	end
+end)
+
 print("✅ [MARKETPLACE HANDLER] Initializing...")
+
+-- ✅ DEBUG: Log all valid ProductIds at startup
+print("📋 [MARKETPLACE] Valid Money Pack ProductIds:")
+for i, pack in ipairs(ShopConfig.MoneyPacks) do
+	print(string.format("   %d. %s = ProductId: %d, Reward: $%d", i, pack.Title, pack.ProductId, pack.MoneyReward))
+end
+
+print("📋 [MARKETPLACE] Valid Donation ProductIds:")
+for i, pkg in ipairs(DonateConfig.Packages) do
+	print(string.format("   %d. %s = ProductId: %d", i, pkg.Title, pkg.ProductId))
+end
 
 -- Helper: Send data update to client
 local function sendDataUpdate(player)
@@ -43,7 +70,11 @@ end
 -- NOTE: Donation Leaderboard display updates are now handled by LeaderboardServer.server.lua
 -- Leaderboards are in workspace.Leaderboards folder and support multiple copies
 local function updateDonationLeaderboard()
-	-- Handled by LeaderboardServer
+	-- Handled by LeaderboardServer via RefreshLeaderboardsEvent
+	local refreshEvent = game.ServerScriptService:FindFirstChild("RefreshLeaderboardsEvent")
+	if refreshEvent and refreshEvent:IsA("BindableEvent") then
+		refreshEvent:Fire("Donation")
+	end
 end
 
 -- Unified ProcessReceipt
@@ -93,12 +124,10 @@ MarketplaceService.ProcessReceipt = function(receiptInfo)
 				})
 			end
 
-			-- Update donation leaderboard
-			local DataStoreService = game:GetService("DataStoreService")
-			local DonationLeaderboard = DataStoreService:GetOrderedDataStore("DonationLeaderboard")
-			pcall(function()
-				DonationLeaderboard:SetAsync(tostring(userId), totalDonations)
-			end)
+			-- Update donation leaderboard via DataHandler
+			if DataHandler.UpdateLeaderboards then
+				DataHandler:UpdateLeaderboards(player)
+			end
 
 			task.spawn(function()
 				task.wait(1)
@@ -112,13 +141,23 @@ MarketplaceService.ProcessReceipt = function(receiptInfo)
 	end
 
 	-- ===== 2. CHECK MONEY PACKS =====
-	for _, pack in ipairs(ShopConfig.MoneyPacks) do
+	print(string.format("🔍 [MARKETPLACE] Checking %d money packs for ProductId: %d", #ShopConfig.MoneyPacks, productId))
+	for i, pack in ipairs(ShopConfig.MoneyPacks) do
+		print(string.format("   Pack %d: %s (ProductId: %d) - Match: %s", i, pack.Title, pack.ProductId, tostring(pack.ProductId == productId)))
 		if pack.ProductId == productId then
-			print(string.format("💰 [MARKETPLACE] Processing money pack: %s", pack.Title))
+			print(string.format("💰 [MARKETPLACE] ✅ MATCHED! Processing money pack: %s", pack.Title))
 
-			DataHandler:Increment(player, "Money", pack.MoneyReward)
+			local beforeMoney = DataHandler:Get(player, "Money") or 0
+			print(string.format("   Before: $%d, Adding: $%d", beforeMoney, pack.MoneyReward))
+			
+			local incrementSuccess = DataHandler:Increment(player, "Money", pack.MoneyReward)
+			print(string.format("   Increment success: %s", tostring(incrementSuccess)))
+			
 			DataHandler:Increment(player, "TotalDonations", pack.Price)
 			DataHandler:SavePlayer(player)
+			
+			local afterMoney = DataHandler:Get(player, "Money") or 0
+			print(string.format("   After: $%d", afterMoney))
 
 			local totalDonations = DataHandler:Get(player, "TotalDonations")
 			if totalDonations >= DonateConfig.DonationThreshold then
@@ -134,7 +173,7 @@ MarketplaceService.ProcessReceipt = function(receiptInfo)
 
 			sendDataUpdate(player)
 			purchaseHistory[purchaseId] = true
-			print(string.format("✅ [MARKETPLACE] Money pack purchased: %s bought $%d", player.Name, pack.MoneyReward))
+			print(string.format("✅ [MARKETPLACE] Money pack purchased: %s bought $%d (New balance: $%d)", player.Name, pack.MoneyReward, afterMoney))
 			return Enum.ProductPurchaseDecision.PurchaseGranted
 		end
 	end

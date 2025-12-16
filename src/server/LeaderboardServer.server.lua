@@ -12,6 +12,8 @@
     - Supports multiple copies of the same leaderboard type
     - Auto-updates all copies when data changes
     - Structure: Leaderboards > [Type]Leaderboard > Screen > SurfaceGui > ScrollingFrame > Sample
+    - Uses centralized DataStoreConfig for consistent datastore names
+    - External refresh trigger via BindableEvent
     
     NAMING CONVENTION:
     - SummitLeaderboard, SummitLeaderboard (1), SummitLeaderboard (2), etc.
@@ -20,12 +22,18 @@
 
 local Players = game:GetService("Players")
 local DataStoreService = game:GetService("DataStoreService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
--- DataStores
-local SummitLeaderboard = DataStoreService:GetOrderedDataStore("SummitLeaderboard")
-local SpeedrunLeaderboard = DataStoreService:GetOrderedDataStore("SpeedrunLeaderboard")
-local PlaytimeLeaderboard = DataStoreService:GetOrderedDataStore("PlaytimeLeaderboard")
-local DonationLeaderboard = DataStoreService:GetOrderedDataStore("DonationLeaderboard")
+-- ✅ USE CENTRALIZED CONFIG
+local DataStoreConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("DataStoreConfig"))
+
+-- DataStores (from centralized config)
+local SummitLeaderboard = DataStoreService:GetOrderedDataStore(DataStoreConfig.Leaderboards.Summit)
+local SpeedrunLeaderboard = DataStoreService:GetOrderedDataStore(DataStoreConfig.Leaderboards.Speedrun)
+local PlaytimeLeaderboard = DataStoreService:GetOrderedDataStore(DataStoreConfig.Leaderboards.Playtime)
+local DonationLeaderboard = DataStoreService:GetOrderedDataStore(DataStoreConfig.Leaderboards.Donation)
+
+print(string.format("📊 [LEADERBOARD SERVER] Using DataStores: Summit=%s", DataStoreConfig.Leaderboards.Summit))
 
 -- Config
 local CONFIG = {
@@ -439,4 +447,35 @@ task.defer(function()
 	print("[LEADERBOARD] ================================")
 end)
 
+--===========================================
+-- EXTERNAL REFRESH TRIGGER (BindableEvent)
+--===========================================
+local refreshEvent = game.ServerScriptService:FindFirstChild("RefreshLeaderboardsEvent")
+if not refreshEvent then
+	refreshEvent = Instance.new("BindableEvent")
+	refreshEvent.Name = "RefreshLeaderboardsEvent"
+	refreshEvent.Parent = game.ServerScriptService
+end
+
+-- Listen for external refresh requests
+refreshEvent.Event:Connect(function(leaderboardType)
+	if leaderboardType == "Summit" then
+		print("[LEADERBOARD] 📊 External refresh triggered: Summit")
+		updateSummitLeaderboards()
+	elseif leaderboardType == "Donation" then
+		print("[LEADERBOARD] 📊 External refresh triggered: Donation")
+		updateDonationLeaderboards()
+	elseif leaderboardType == "Playtime" then
+		print("[LEADERBOARD] 📊 External refresh triggered: Playtime")
+		updatePlaytimeLeaderboards()
+	elseif leaderboardType == "Speedrun" then
+		print("[LEADERBOARD] 📊 External refresh triggered: Speedrun")
+		updateSpeedrunLeaderboards()
+	elseif leaderboardType == "All" or leaderboardType == nil then
+		print("[LEADERBOARD] 📊 External refresh triggered: All leaderboards")
+		updateAllLeaderboards()
+	end
+end)
+
 print("[LEADERBOARD SERVER] ✅ Initialized - Waiting for leaderboards folder...")
+print("[LEADERBOARD SERVER] ✅ RefreshLeaderboardsEvent created for external triggers")
