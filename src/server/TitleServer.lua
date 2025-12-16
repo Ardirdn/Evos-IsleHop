@@ -596,8 +596,7 @@ function TitleServer:EquipTitle(player, titleName)
 	-- ✅ ADDED: Broadcast for chat titles
 	BroadcastTitle:FireAllClients(player.UserId, titleName)
 
-	-- ✅ Update player's team assignment
-	self:UpdatePlayerTeam(player, titleName)
+
 	
 	-- ✅ FIXED: Refresh zone access based on new title
 	if self.RefreshZoneAccess then
@@ -644,8 +643,7 @@ function TitleServer:UnequipTitle(player)
 	-- ✅ ADDED: Broadcast for chat titles
 	BroadcastTitle:FireAllClients(player.UserId, nil)
 
-	-- ✅ Update player's team assignment to default
-	self:UpdatePlayerTeam(player, nil)
+
 	
 	-- ✅ FIXED: Refresh zone access (revoke old title's access)
 	if self.RefreshZoneAccess then
@@ -753,94 +751,11 @@ function TitleServer:RemoveTool(player, toolName)
 	print(string.format("🗑️ [PRIVILEGES] Removed %s from %s", toolName, player.Name))
 end
 
--- ==================== ✅ TEAM ASSIGNMENT FOR PLAYERLIST ====================
+-- ==================== TEAM ASSIGNMENT REMOVED ====================
+-- Team system was removed - players appear in single list without categories
 
--- Team configuration for playerlist categorization
-local TEAM_CONFIG = {
-	{Name = "Owner", Titles = {"Owner"}, Priority = 101},
-	{Name = "Admin", Titles = {"Admin"}, Priority = 100},
-	{Name = "SahabatAdmin", Titles = {"SahabatAdmin"}, Priority = 92},
-	{Name = "EVOS", Titles = {"EVOS TEAM"}, Priority = 90},
-	{Name = "Akamsi", Titles = {"Akamsi"}, Priority = 89},
-	{Name = "Trimatra", Titles = {"Trimatra"}, Priority = 85},
-	{Name = "VVIP", Titles = {"VVIP"}, Priority = 80},
-	{Name = "VIP", Titles = {"VIP"}, Priority = 70},
-	{Name = "Donatur", Titles = {"Donatur"}, Priority = 60},
-	{Name = "Online", Titles = {"Pendaki", "Pendaki Fomo", "Pendaki Amatir", "Pendaki Pemula", "Pendaki Tektok", "Pendaki Handal", "Pendaki Berpengalaman", "Pendaki Muka Lama", "Pendaki Professional", "Penunggu Gunung", "Penjaga Gunung", "Dewa Gunung", "Raja Gunung", "Legenda Gunung", "Immortal"}, Priority = 0},
-}
-
--- Use dark/black color for all teams (blends with panel, not noticeable)
-local NEUTRAL_COLOR = BrickColor.new("Really black")
-local teamInstances = {}
-
-local function getTeamForTitle(titleName)
-	if not titleName or titleName == "" then
-		return "Online", 0
-	end
-	
-	for _, teamConfig in ipairs(TEAM_CONFIG) do
-		for _, title in ipairs(teamConfig.Titles) do
-			if title == titleName then
-				return teamConfig.Name, teamConfig.Priority
-			end
-		end
-	end
-	
-	return "Online", 0
-end
-
-local function getOrCreateTeam(teamName, priority)
-	local Teams = game:GetService("Teams")
-	
-	if teamInstances[teamName] then
-		return teamInstances[teamName]
-	end
-	
-	local existingTeam = Teams:FindFirstChild(teamName)
-	if existingTeam then
-		teamInstances[teamName] = existingTeam
-		return existingTeam
-	end
-	
-	local team = Instance.new("Team")
-	team.Name = teamName
-	team.TeamColor = NEUTRAL_COLOR
-	team.AutoAssignable = false
-	team.Parent = Teams
-	team:SetAttribute("Priority", priority)
-	
-	teamInstances[teamName] = team
-	return team
-end
-
-local function cleanupEmptyTeams()
-	for teamName, team in pairs(teamInstances) do
-		if team and team.Parent then
-			local players = team:GetPlayers()
-			if #players == 0 then
-				team:Destroy()
-				teamInstances[teamName] = nil
-			end
-		end
-	end
-end
-
-function TitleServer:UpdatePlayerTeam(player, titleName)
-	local teamName, priority = getTeamForTitle(titleName)
-	local team = getOrCreateTeam(teamName, priority)
-	
-	player.Team = team
-	player.Neutral = false
-	
-	print(string.format("👥 [TEAM] %s assigned to team '%s'", player.Name, teamName))
-	
-	-- ✅ FIX: Use task.delay instead of task.defer to give time for player assignments
-	task.delay(0.5, cleanupEmptyTeams)
-end
-
--- ✅ FIX: Also cleanup when player leaves
+-- ✅ Cleanup caches when player leaves
 Players.PlayerRemoving:Connect(function(player)
-	task.delay(0.1, cleanupEmptyTeams)
 	
 	-- ✅ OPTIMIZATION: Cleanup caches for this player to prevent memory leaks
 	local userId = player.UserId
@@ -1143,8 +1058,7 @@ function TitleServer:InitializePlayer(player)
 		self:ApplyPrivileges(player, data.EquippedTitle)
 	end
 
-	-- ✅ Assign player to team based on equipped title
-	self:UpdatePlayerTeam(player, data.EquippedTitle or title)
+
 
 	-- ✅ SIMPLIFIED: Only broadcast to own client (other clients fetch via GetTitle)
 	task.wait(2)
@@ -1185,7 +1099,7 @@ function TitleServer:InitializePlayerPostMigration(player)
 		if data.EquippedTitle ~= "Admin" then
 			DataHandler:Set(player, "EquippedTitle", "Admin")
 			DataHandler:SavePlayer(player)
-			self:UpdatePlayerTeam(player, "Admin")
+
 			print(string.format("👑 [TITLE] Auto-equipped Admin title for %s", player.Name))
 		end
 		
@@ -1208,8 +1122,7 @@ function TitleServer:InitializePlayerPostMigration(player)
 	-- ✅ SIMPLIFIED: Single broadcast, no spam
 	self:BroadcastTitle(player, data.EquippedTitle or title)
 	
-	-- Update team assignment in playerlist
-	self:UpdatePlayerTeam(player, data.EquippedTitle or title)
+
 	
 	print(string.format("✅ [TITLE] Post-migration complete for %s (Title: %s)", 
 		player.Name, data.EquippedTitle or title))

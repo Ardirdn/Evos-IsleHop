@@ -411,13 +411,13 @@ contentContainer.Parent = mainPanel
 
 -- Tab Creation Function (RESPONSIVE - EQUAL WIDTH) - FIXED
 local currentTab = nil
-local totalTabs = hasPrimaryAccess and 5 or 4  -- 5 tabs for primary admin (includes Log)
+local totalTabs = 4  -- 4 tabs: Notify, Events, Players, Settings (Log removed)
 
 local function createTab(name, order)
 	local tab = Instance.new("TextButton")
 
-	-- Scale-based width with gap (5 tabs for primary admin, 4 for secondary)
-	local tabWidth = hasPrimaryAccess and 0.19 or 0.24
+	-- Scale-based width with gap (4 tabs for all admins - Log removed)
+	local tabWidth = 0.24
 	tab.Size = UDim2.new(tabWidth, 0, 1, 0)
 	tab.BackgroundColor3 = COLORS.Button
 	tab.BorderSizePixel = 0
@@ -3747,149 +3747,9 @@ deleteAllButton.MouseButton1Click:Connect(function()
 	tweenSize(confirmDialog, UDim2.new(0, 380, 0, 200), 0.3)
 end)
 
--- ==================== LOG TAB (PRIMARY ADMIN ONLY) ====================
-local logTab, logTabBtn
-if hasPrimaryAccess then
-	logTab, logTabBtn = createTab("Log", 5)
-	
-	local logScroll = Instance.new("ScrollingFrame")
-	logScroll.Size = UDim2.new(1, 0, 1, 0)
-	logScroll.BackgroundTransparency = 1
-	logScroll.BorderSizePixel = 0
-	logScroll.ScrollBarThickness = 4
-	logScroll.ScrollBarImageColor3 = COLORS.Border
-	logScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-	logScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-	logScroll.Parent = logTab
-	
-	local logLayout = Instance.new("UIListLayout")
-	logLayout.Padding = UDim.new(0, 15)
-	logLayout.SortOrder = Enum.SortOrder.LayoutOrder
-	logLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	logLayout.Parent = logScroll
-	
-	-- Title
-	local logTitle = Instance.new("TextLabel")
-	logTitle.Size = UDim2.new(1, 0, 0, 40)
-	logTitle.BackgroundTransparency = 1
-	logTitle.Font = Enum.Font.GothamBold
-	logTitle.Text = "📝 Admin Activity Log"
-	logTitle.TextColor3 = COLORS.Text
-	logTitle.TextSize = 18
-	logTitle.TextScaled = false
-	logTitle.TextXAlignment = Enum.TextXAlignment.Center
-	logTitle.LayoutOrder = 1
-	logTitle.Parent = logScroll
-	
-	-- Description
-	local logDesc = Instance.new("TextLabel")
-	logDesc.Size = UDim2.new(0.9, 0, 0, 50)
-	logDesc.BackgroundTransparency = 1
-	logDesc.Font = Enum.Font.Gotham
-	logDesc.Text = "Monitor admin actions across all servers. Track kicks, bans, freezes, title changes, summit modifications, and notifications."
-	logDesc.TextColor3 = COLORS.TextSecondary
-	logDesc.TextSize = 12
-	logDesc.TextWrapped = true
-	logDesc.TextXAlignment = Enum.TextXAlignment.Center
-	logDesc.LayoutOrder = 2
-	logDesc.Parent = logScroll
-	
-	-- Open Logs Button
-	local openLogsBtn = Instance.new("TextButton")
-	openLogsBtn.Size = UDim2.new(0.7, 0, 0, 60)
-	openLogsBtn.BackgroundColor3 = COLORS.Accent
-	openLogsBtn.BorderSizePixel = 0
-	openLogsBtn.Font = Enum.Font.GothamBold
-	openLogsBtn.Text = "📂 Open Admin Logs"
-	openLogsBtn.TextColor3 = COLORS.Text
-	openLogsBtn.TextSize = 16
-	openLogsBtn.AutoButtonColor = false
-	openLogsBtn.LayoutOrder = 3
-	openLogsBtn.Parent = logScroll
-	
-	createCorner(10).Parent = openLogsBtn
-	
-	-- Button hover effect
-	openLogsBtn.MouseEnter:Connect(function()
-		TweenService:Create(openLogsBtn, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.AccentHover}):Play()
-	end)
-	
-	openLogsBtn.MouseLeave:Connect(function()
-		TweenService:Create(openLogsBtn, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.Accent}):Play()
-	end)
-	
-	-- Open Log UI
-	openLogsBtn.MouseButton1Click:Connect(function()
-		-- Wait for AdminLogClient to initialize
-		if _G.AdminLogUI then
-			_G.AdminLogUI:Open()
-		else
-			warn("[ADMIN CLIENT] AdminLogUI not initialized yet")
-			StarterGui:SetCore("SendNotification", {
-				Title = "Error",
-				Text = "Log UI is loading, please try again.",
-				Duration = 3
-			})
-		end
-	end)
-	
-	-- Info cards
-	local infoFrame = Instance.new("Frame")
-	infoFrame.Size = UDim2.new(0.9, 0, 0, 130)
-	infoFrame.BackgroundColor3 = COLORS.Panel
-	infoFrame.BorderSizePixel = 0
-	infoFrame.LayoutOrder = 4
-	infoFrame.Parent = logScroll
-	
-	createCorner(8).Parent = infoFrame
-	
-	local infoLayout = Instance.new("UIListLayout")
-	infoLayout.Padding = UDim.new(0, 8)
-	infoLayout.SortOrder = Enum.SortOrder.LayoutOrder
-	infoLayout.Parent = infoFrame
-	
-	local infoPadding = createPadding(12)
-	infoPadding.Parent = infoFrame
-	
-	local infoItems = {
-		{"📊 All Logs", "View all admin actions with filters"},
-		{"👥 Admin List", "See all admins and their activity"},
-		{"🔍 Filter", "Filter by action type: kick, ban, freeze, etc."},
-		{"🌐 Cross-Server", "Logs sync across all servers"}
-	}
-	
-	for i, item in ipairs(infoItems) do
-		local infoRow = Instance.new("Frame")
-		infoRow.Size = UDim2.new(1, 0, 0, 22)
-		infoRow.BackgroundTransparency = 1
-		infoRow.LayoutOrder = i
-		infoRow.Parent = infoFrame
-		
-		local infoIcon = Instance.new("TextLabel")
-		infoIcon.Size = UDim2.new(0, 25, 1, 0)
-		infoIcon.BackgroundTransparency = 1
-		infoIcon.Font = Enum.Font.Gotham
-		infoIcon.Text = item[1]:sub(1, 2)
-		infoIcon.TextColor3 = COLORS.Text
-		infoIcon.TextSize = 14
-		infoIcon.TextXAlignment = Enum.TextXAlignment.Left
-		infoIcon.Parent = infoRow
-		
-		local infoText = Instance.new("TextLabel")
-		infoText.Size = UDim2.new(1, -30, 1, 0)
-		infoText.Position = UDim2.new(0, 30, 0, 0)
-		infoText.BackgroundTransparency = 1
-		infoText.Font = Enum.Font.Gotham
-		infoText.Text = item[1]:sub(3) .. " - " .. item[2]
-		infoText.TextColor3 = COLORS.TextSecondary
-		infoText.TextSize = 11
-		infoText.TextXAlignment = Enum.TextXAlignment.Left
-		infoText.TextTruncate = Enum.TextTruncate.AtEnd
-		infoText.Parent = infoRow
-	end
-	
-	print("✅ [ADMIN CLIENT] Log tab created for Primary Admin")
-end
+-- ==================== LOG TAB - REMOVED ====================
+-- Log tab has been removed per user request
+-- AdminLogClient and AdminLogService are still available if needed later
 
 -- ==================== SECONDARY ADMIN ACCESS CONTROL ====================
 -- Hide and disable restricted tabs for Secondary Admins

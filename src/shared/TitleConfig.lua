@@ -180,11 +180,12 @@ TitleConfig.ZoneColors = {
 
 TitleConfig.PrimaryAdminIds = {
 	8714136305,
+	8970505309,
 	
 }
 
 TitleConfig.SecondaryAdminIds = {
-	8970505309,
+	
     4680144719,
     
 }
