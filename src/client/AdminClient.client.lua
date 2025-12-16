@@ -282,7 +282,7 @@ end
 -- Create Button
 local function createButton(text, color, hoverColor)
 	local button = Instance.new("TextButton")
-	button.Size = UDim2.new(1, 0, 0.1, 0)  -- ✅ Lebih besar (42px di layar 1080p)
+	button.Size = UDim2.new(1, 0, 0, 40)  -- ✅ FIXED: Use fixed height 40px instead of scale
 	button.BackgroundColor3 = color or COLORS.Button
 	button.BorderSizePixel = 0
 	button.Font = Enum.Font.GothamMedium
@@ -1643,9 +1643,9 @@ local function showModifySummitPopup(targetPlayer)
 	mainContainer.Visible = false
 	playerDetailPanel.Visible = false
 	
-	-- ✅ SCALE-BASED Modify Summit Popup
+	-- ✅ SCALE-BASED Modify Summit Popup (WIDER)
 	local popup = Instance.new("Frame")
-	popup.Size = UDim2.new(0.35, 0, 0.35, 0)  -- ✅ Scale-based
+	popup.Size = UDim2.new(0.45, 0, 0.4, 0)  -- ✅ WIDER: 0.45 x 0.4 (was 0.35 x 0.35)
 	popup.Position = UDim2.new(0.5, 0, 0.5, 0)
 	popup.AnchorPoint = Vector2.new(0.5, 0.5)
 	popup.BackgroundColor3 = COLORS.Background
@@ -1656,12 +1656,8 @@ local function showModifySummitPopup(targetPlayer)
 	createCorner(12).Parent = popup
 	createStroke(COLORS.Border, 2).Parent = popup
 	
-	-- Aspect ratio
-	local popupAspect = Instance.new("UIAspectRatioConstraint")
-	popupAspect.AspectRatio = 1.27
-	popupAspect.AspectType = Enum.AspectType.ScaleWithParentSize
-	popupAspect.DominantAxis = Enum.DominantAxis.Width
-	popupAspect.Parent = popup
+	-- Aspect ratio (REMOVED - let size control dimensions)
+	-- Using fixed scale size instead of aspect ratio for better control
 
 	-- ✅ DRAGGABLE
 	makeDraggable(popup)
@@ -2074,20 +2070,22 @@ local function createPlayerCard(targetPlayer)
 				end)
 			end)
 
-			-- Ban Button
-			local banBtn = createButton("Ban Player", COLORS.Button, COLORS.ButtonHover)
-			banBtn.LayoutOrder = 2
-			banBtn.Parent = actionsFrame
+			-- Ban Button (HIDDEN FOR THIRDPARTY - no ban permission)
+			if hasFullAccess then
+				local banBtn = createButton("Ban Player", COLORS.Danger, COLORS.DangerHover)
+				banBtn.LayoutOrder = 2
+				banBtn.Parent = actionsFrame
 
-			banBtn.MouseButton1Click:Connect(function()
-				showConfirmation("Ban Player", "Are you sure you want to ban " .. targetPlayer.Name .. "?", function()
-					if targetPlayer then
-						banPlayerEvent:FireServer(targetPlayer.UserId)
-					end
+				banBtn.MouseButton1Click:Connect(function()
+					showConfirmation("Ban Player", "Are you sure you want to ban " .. targetPlayer.Name .. "?", function()
+						if targetPlayer then
+							banPlayerEvent:FireServer(targetPlayer.UserId)
+						end
+					end)
 				end)
-			end)
+			end
 			
-			-- Teleport Button (NEW)
+			-- Teleport Button (AVAILABLE FOR ALL ADMINS INCLUDING THIRDPARTY)
 			local teleportBtn = createButton("Teleport", COLORS.Button, COLORS.ButtonHover)
 			teleportBtn.LayoutOrder = 3
 			teleportBtn.Parent = actionsFrame
@@ -2096,14 +2094,16 @@ local function createPlayerCard(targetPlayer)
 				createTeleportPopup(targetPlayer)
 			end)
 
-			-- Modify Player Button (NEW)
-			local modifyBtn = createButton("Modify Player", COLORS.Button, COLORS.ButtonHover)
-			modifyBtn.LayoutOrder = 4
-			modifyBtn.Parent = actionsFrame
-			modifyBtn.MouseButton1Click:Connect(function()
-				playerDetailPanel.Visible = false -- ✅ Hide detail panel
-				createModifyPlayerPopup(targetPlayer)
-			end)
+			-- Modify Player Button (HIDDEN FOR THIRDPARTY - no speed/gravity permission)
+			if hasFullAccess then
+				local modifyBtn = createButton("Modify Player", COLORS.Button, COLORS.ButtonHover)
+				modifyBtn.LayoutOrder = 4
+				modifyBtn.Parent = actionsFrame
+				modifyBtn.MouseButton1Click:Connect(function()
+					playerDetailPanel.Visible = false -- ✅ Hide detail panel
+					createModifyPlayerPopup(targetPlayer)
+				end)
+			end
 
 
 
@@ -2319,6 +2319,7 @@ local function createPlayerCard(targetPlayer)
 				toolTab.AutoButtonColor = false
 				toolTab.Parent = tabFrame
 				
+				-- Money Tab (HIDDEN FOR THIRDPARTY - cannot give money)
 				local moneyTab = Instance.new("TextButton")
 				moneyTab.Size = UDim2.new(0.3, 0, 1, 0) -- ✅ Scale
 				moneyTab.BackgroundColor3 = COLORS.Button
@@ -2328,6 +2329,7 @@ local function createPlayerCard(targetPlayer)
 				moneyTab.TextColor3 = COLORS.Text
 				moneyTab.TextScaled = true
 				moneyTab.AutoButtonColor = false
+				moneyTab.Visible = hasFullAccess -- ✅ HIDDEN FOR THIRDPARTY
 				moneyTab.Parent = tabFrame
 
 				createCorner(6).Parent = moneyTab
@@ -2458,84 +2460,7 @@ local function createPlayerCard(targetPlayer)
 					end)
 				end
 				
-				-- ✅ EXTRA AURAS: Crystal Event auras (HIDDEN FOR THIRDPARTY - only Full Admins)
-				if hasFullAccess then
-					local extraAuras = {
-						{AuraId = "Aura1", Title = "💎 Crystal Aura 1"},
-						{AuraId = "Aura2", Title = "💎 Crystal Aura 2"},
-						{AuraId = "Aura3", Title = "💎 Crystal Aura 3"},
-						{AuraId = "Aura4", Title = "💎 Crystal Aura 4"},
-						{AuraId = "Aura5", Title = "💎 Crystal Aura 5"},
-						{AuraId = "Aura6", Title = "💎 Crystal Aura 6"},
-						{AuraId = "Aura7", Title = "💎 Crystal Aura 7"},
-						{AuraId = "Aura8", Title = "💎 Crystal Aura 8"},
-					}
-					
-					-- Separator for extra auras
-					local extraAurasLabel = Instance.new("TextLabel")
-					extraAurasLabel.Size = UDim2.new(1, 0, 0, 25)
-					extraAurasLabel.BackgroundTransparency = 1
-					extraAurasLabel.Font = Enum.Font.GothamBold
-					extraAurasLabel.Text = "── Crystal Event Auras ──"
-					extraAurasLabel.TextColor3 = COLORS.TextSecondary
-					extraAurasLabel.TextSize = 11
-					extraAurasLabel.Parent = auraContent
-					
-					for _, aura in ipairs(extraAuras) do
-					local frame = Instance.new("Frame")
-					frame.Size = UDim2.new(1, 0, 0, 40)
-					frame.BackgroundColor3 = COLORS.Panel
-					frame.BorderSizePixel = 0
-					frame.Parent = auraContent
-
-					createCorner(6).Parent = frame
-
-					local checkbox = Instance.new("TextButton")
-					checkbox.Size = UDim2.new(0, 30, 0, 30)
-					checkbox.Position = UDim2.new(0, 5, 0, 5)
-					checkbox.BackgroundColor3 = COLORS.Button
-					checkbox.BorderSizePixel = 0
-					checkbox.Text = ""
-					checkbox.AutoButtonColor = false
-					checkbox.Parent = frame
-
-					createCorner(6).Parent = checkbox
-
-					local checkmark = Instance.new("TextLabel")
-					checkmark.Size = UDim2.new(1, 0, 1, 0)
-					checkmark.BackgroundTransparency = 1
-					checkmark.Font = Enum.Font.GothamBold
-					checkmark.Text = "✓"
-					checkmark.TextColor3 = COLORS.Success
-					checkmark.TextSize = 18
-					checkmark.Visible = false
-					checkmark.Parent = checkbox
-
-					local label = Instance.new("TextLabel")
-					label.Size = UDim2.new(1, -45, 1, 0)
-					label.Position = UDim2.new(0, 40, 0, 0)
-					label.BackgroundTransparency = 1
-					label.Font = Enum.Font.GothamMedium
-					label.Text = aura.Title
-					label.TextColor3 = COLORS.Text
-					label.TextSize = 13
-					label.TextXAlignment = Enum.TextXAlignment.Left
-					label.Parent = frame
-
-					checkbox.MouseButton1Click:Connect(function()
-						local isSelected = table.find(selectedAuras, aura.AuraId)
-						if isSelected then
-							table.remove(selectedAuras, isSelected)
-							checkmark.Visible = false
-							checkbox.BackgroundColor3 = COLORS.Button
-						else
-							table.insert(selectedAuras, aura.AuraId)
-							checkmark.Visible = true
-							checkbox.BackgroundColor3 = COLORS.Success
-						end
-					end)
-					end
-				end -- ✅ End hasFullAccess block for extra auras
+				-- ✅ REMOVED: Crystal Event Auras (Legacy from old game - no longer used)
 
 				-- Create Tool Checkboxes (✅ Filter premium for Thirdparty)
 				for _, tool in ipairs(ShopConfig.Tools) do
@@ -2597,83 +2522,8 @@ local function createPlayerCard(targetPlayer)
 					end)
 				end
 				
-				-- ✅ EXTRA TOOLS: Items not in ShopConfig (Event items, special tools)
-				local extraTools = {
-					{ToolId = "KudaLumping", Title = "🐴 Kuda Lumping"},
-					{ToolId = "FlyingSpeed1", Title = "✈️ Flying Speed 1"},
-					{ToolId = "FlyingSpeed2", Title = "✈️ Flying Speed 2"},
-					{ToolId = "FlyingSpeed3", Title = "✈️ Flying Speed 3"},
-					{ToolId = "FlyingSpeed4", Title = "✈️ Flying Speed 4"},
-					{ToolId = "FlyingSpeed5", Title = "✈️ Flying Speed 5"},
-					{ToolId = "FlyingSpeed6", Title = "✈️ Flying Speed 6"},
-					{ToolId = "FlyingSpeed7", Title = "✈️ Flying Speed 7"},
-					{ToolId = "FlyingSpeed8", Title = "✈️ Flying Speed 8"},
-				}
-				
-				-- Separator label for extra tools
-				local extraToolsLabel = Instance.new("TextLabel")
-				extraToolsLabel.Size = UDim2.new(1, 0, 0, 25)
-				extraToolsLabel.BackgroundTransparency = 1
-				extraToolsLabel.Font = Enum.Font.GothamBold
-				extraToolsLabel.Text = "── Event Items ──"
-				extraToolsLabel.TextColor3 = COLORS.TextSecondary
-				extraToolsLabel.TextSize = 11
-				extraToolsLabel.Parent = toolContent
-				
-				for _, tool in ipairs(extraTools) do
-					local frame = Instance.new("Frame")
-					frame.Size = UDim2.new(1, 0, 0, 40)
-					frame.BackgroundColor3 = COLORS.Panel
-					frame.BorderSizePixel = 0
-					frame.Parent = toolContent
-
-					createCorner(6).Parent = frame
-
-					local checkbox = Instance.new("TextButton")
-					checkbox.Size = UDim2.new(0, 30, 0, 30)
-					checkbox.Position = UDim2.new(0, 5, 0, 5)
-					checkbox.BackgroundColor3 = COLORS.Button
-					checkbox.BorderSizePixel = 0
-					checkbox.Text = ""
-					checkbox.AutoButtonColor = false
-					checkbox.Parent = frame
-
-					createCorner(6).Parent = checkbox
-
-					local checkmark = Instance.new("TextLabel")
-					checkmark.Size = UDim2.new(1, 0, 1, 0)
-					checkmark.BackgroundTransparency = 1
-					checkmark.Font = Enum.Font.GothamBold
-					checkmark.Text = "✓"
-					checkmark.TextColor3 = COLORS.Success
-					checkmark.TextSize = 18
-					checkmark.Visible = false
-					checkmark.Parent = checkbox
-
-					local label = Instance.new("TextLabel")
-					label.Size = UDim2.new(1, -45, 1, 0)
-					label.Position = UDim2.new(0, 40, 0, 0)
-					label.BackgroundTransparency = 1
-					label.Font = Enum.Font.GothamMedium
-					label.Text = tool.Title
-					label.TextColor3 = COLORS.Text
-					label.TextSize = 13
-					label.TextXAlignment = Enum.TextXAlignment.Left
-					label.Parent = frame
-
-					checkbox.MouseButton1Click:Connect(function()
-						local isSelected = table.find(selectedTools, tool.ToolId)
-						if isSelected then
-							table.remove(selectedTools, isSelected)
-							checkmark.Visible = false
-							checkbox.BackgroundColor3 = COLORS.Button
-						else
-							table.insert(selectedTools, tool.ToolId)
-							checkmark.Visible = true
-							checkbox.BackgroundColor3 = COLORS.Success
-						end
-					end)
-				end
+				-- ✅ REMOVED: Extra Tools (FlyingSpeed, KudaLumping, etc.)
+				-- User requested: Only ShopConfig.Tools are allowed to be given
 				
 				-- ✅ TAMBAHKAN: Create Money Options
 				for _, pack in ipairs(ShopConfig.MoneyPacks) do

@@ -29,8 +29,8 @@ local DataStoreConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitFo
 -- Admin Log Service
 local AdminLogServer = require(script.Parent.AdminLogService)
 
--- ✅ BAN SYSTEM DATASTORE (persistent)
-local BanDataStore = DataStoreService:GetDataStore("BannedPlayers_v1")
+-- ✅ FIXED: BAN SYSTEM DATASTORE (using centralized config)
+local BanDataStore = DataStoreService:GetDataStore(DataStoreConfig.BannedPlayers)
 local BannedUsersCache = {} -- In-memory cache for fast lookups
 
 -- ✅ Load ban status from DataStore

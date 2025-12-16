@@ -179,12 +179,13 @@ TitleConfig.ZoneColors = {
 -- Both have the same "Admin" title
 
 TitleConfig.PrimaryAdminIds = {
-	8714136305,
+	
 	8578879617,
 	8592664252,
 }
 
 TitleConfig.SecondaryAdminIds = {
+	
     4680144719,
     3539387444,
     5670874280,
@@ -196,6 +197,7 @@ TitleConfig.SecondaryAdminIds = {
 }
 
 -- Combine semua admin IDs (untuk compatibility dengan existing code)
+-- Note: ThirdpartyAdminIds ditambahkan di bawah setelah didefinisikan
 TitleConfig.AdminIds = {}
 for _, id in ipairs(TitleConfig.PrimaryAdminIds) do
 	table.insert(TitleConfig.AdminIds, id)
@@ -209,9 +211,15 @@ end
 -- Can ONLY do: Teleport, Freeze, Give Shop Items (non-premium), Kick (no ban), Delete Leaderboard Data
 
 TitleConfig.ThirdpartyAdminIds = {
+	8714136305,
 	-- Tambahkan User ID thirdparty admin di sini
 	-- Contoh: 1234567890,
 }
+
+-- Add ThirdpartyAdminIds to AdminIds for compatibility
+for _, id in ipairs(TitleConfig.ThirdpartyAdminIds) do
+	table.insert(TitleConfig.AdminIds, id)
+end
 
 -- Thirdparty Admin Permissions (untuk reference di AdminServer)
 TitleConfig.ThirdpartyPermissions = {

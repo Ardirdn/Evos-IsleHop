@@ -22,13 +22,13 @@ local DataStoreConfig = {}
 -- ============================================
 -- 🔧 MAIN VERSION - CHANGE THIS TO RESET ALL DATA
 -- ============================================
-DataStoreConfig.VERSION = "v211"
+DataStoreConfig.VERSION = "v1"
 
 -- ============================================
 -- 📦 DATASTORE NAMES (AUTO-GENERATED)
 -- ============================================
 
--- Main player data (PlayerData_v16)
+-- Main player data
 DataStoreConfig.PlayerData = "PlayersData_" .. DataStoreConfig.VERSION
 
 -- Leaderboard OrderedDataStores
@@ -38,6 +38,19 @@ DataStoreConfig.Leaderboards = {
     Playtime = "PlaytimeLeaderboard_" .. DataStoreConfig.VERSION,
     Donation = "DonationLeaderboard_" .. DataStoreConfig.VERSION,
 }
+
+-- ============================================
+-- 📦 SYSTEM DATASTORES (AUTO-VERSIONED)
+-- ============================================
+-- These are system datastores that should also be versioned
+
+DataStoreConfig.VIPStatus = "VIPStatus_" .. DataStoreConfig.VERSION
+DataStoreConfig.AuraData = "AuraData_" .. DataStoreConfig.VERSION
+DataStoreConfig.RedeemCodes = "RedeemCodes_" .. DataStoreConfig.VERSION
+DataStoreConfig.GlobalEvents = "GlobalEvents_" .. DataStoreConfig.VERSION
+DataStoreConfig.AdminLogs = "AdminLogs_" .. DataStoreConfig.VERSION
+DataStoreConfig.AdminList = "AdminList_" .. DataStoreConfig.VERSION
+DataStoreConfig.BannedPlayers = "BannedPlayers_" .. DataStoreConfig.VERSION
 
 -- ============================================
 -- 📦 LEGACY DATASTORES (FOR MIGRATION ONLY)
@@ -52,7 +65,7 @@ DataStoreConfig.Legacy = {
     
     -- Old data stores
     Wings = "FlyTogetherWingsStatus_V2",
-    CrystalAura = "AuraExchangeData_V2",
+    -- CrystalAura REMOVED - legacy from old game, no longer used
 }
 
 -- ============================================

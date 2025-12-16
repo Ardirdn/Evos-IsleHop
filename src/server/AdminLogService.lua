@@ -9,9 +9,12 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local DataStoreService = game:GetService("DataStoreService")
 local HttpService = game:GetService("HttpService")
 
--- DataStore untuk log
-local AdminLogStore = DataStoreService:GetDataStore("AdminLogs_v1")
-local AdminListStore = DataStoreService:GetDataStore("AdminList_v1")
+-- ✅ FIXED: Use centralized DataStoreConfig
+local DataStoreConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("DataStoreConfig"))
+
+-- ✅ FIXED: DataStore untuk log (using centralized config)
+local AdminLogStore = DataStoreService:GetDataStore(DataStoreConfig.AdminLogs)
+local AdminListStore = DataStoreService:GetDataStore(DataStoreConfig.AdminList)
 
 -- TitleConfig untuk cek admin
 local TitleConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("TitleConfig"))

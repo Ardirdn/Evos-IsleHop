@@ -12,6 +12,7 @@ local DataHandler = require(script.Parent.DataHandler)
 local NotificationService = require(script.Parent.NotificationServer)
 local TitleConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("TitleConfig"))
 local ShopConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("ShopConfig"))
+local DataStoreConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("DataStoreConfig"))
 
 -- ✅ DEBUG: Check ShopConfig
 print("🔍 [REDEEM DEBUG] ShopConfig:", ShopConfig)
@@ -20,8 +21,8 @@ if ShopConfig then
 	print("🔍 [REDEEM DEBUG] ShopConfig.Tools:", ShopConfig.Tools and #ShopConfig.Tools or "NIL")
 end
 
--- ✅ CROSS-SERVER DATASTORE
-local RedeemCodesStore = DataStoreService:GetDataStore("RedeemCodes_v1")
+-- ✅ FIXED: CROSS-SERVER DATASTORE (using centralized config)
+local RedeemCodesStore = DataStoreService:GetDataStore(DataStoreConfig.RedeemCodes)
 
 -- Create RemoteEvents
 local remoteFolder = ReplicatedStorage:FindFirstChild("RedeemRemotes")

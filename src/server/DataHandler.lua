@@ -12,24 +12,28 @@
 local DataStoreService = game:GetService("DataStoreService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+-- ✅ FIXED: Use centralized DataStoreConfig
+local DataStoreConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("DataStoreConfig"))
 
 local DataHandler = {}
 DataHandler.__index = DataHandler
 
--- Configuration
+-- ✅ FIXED: Configuration now uses DataStoreConfig
 local CONFIG = {
-	DataStoreName = "PlayerData_v5", -- Changed version for clean migration
-	AutoSaveInterval = 300, -- 5 minutes
-	MaxRetries = 3,
-	RetryDelay = 1,
+	AutoSaveInterval = DataStoreConfig.AutoSaveInterval or 300, -- 5 minutes
+	MaxRetries = DataStoreConfig.MaxRetries or 3,
+	RetryDelay = DataStoreConfig.RetryDelay or 1,
 }
 
 -- Data cache (in-memory)
 local PlayerDataCache = {}
 local SessionLocks = {}
 
--- Get DataStore
-local PlayerDataStore = DataStoreService:GetDataStore(CONFIG.DataStoreName)
+-- ✅ FIXED: Get DataStore using centralized config
+local PlayerDataStore = DataStoreService:GetDataStore(DataStoreConfig.PlayerData)
+print(string.format("✅ [DATA HANDLER] Using DataStore: %s", DataStoreConfig.PlayerData))
 
 -- Default data template
 -- Default data template

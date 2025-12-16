@@ -9,9 +9,10 @@ local Players = game:GetService("Players")
 
 local EventConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("EventConfig"))
 local NotificationService = require(script.Parent.NotificationServer)
+local DataStoreConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("DataStoreConfig"))
 
--- ✅ CROSS-SERVER DATASTORE
-local EventDataStore = DataStoreService:GetDataStore("GlobalEvents_v1")
+-- ✅ FIXED: CROSS-SERVER DATASTORE (using centralized config)
+local EventDataStore = DataStoreService:GetDataStore(DataStoreConfig.GlobalEvents)
 local EVENT_KEY = "ActiveEvent"
 
 -- Create RemoteEvents

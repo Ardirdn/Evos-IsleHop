@@ -7,7 +7,11 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local DataStoreService = game:GetService("DataStoreService")
 
-local VIPStore = DataStoreService:GetDataStore("VIPStatus_v1")
+-- ✅ FIXED: Use centralized DataStoreConfig
+local DataStoreConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("DataStoreConfig"))
+
+-- ✅ FIXED: DataStores using centralized config
+local VIPStore = DataStoreService:GetDataStore(DataStoreConfig.VIPStatus)
 
 -- Wait for remote folder
 local PlayerInfoRemotes = ReplicatedStorage:WaitForChild("PlayerInfoRemotes")
@@ -137,7 +141,7 @@ GiveItemEvent.OnServerEvent:Connect(function(buyerPlayer, targetUserId, rewardTy
 			print("🌟 [SERVER] Giving aura:", rewardId)
 
 			-- Save to DataStore (if you have AuraDataStore)
-			local AuraStore = DataStoreService:GetDataStore("AuraData_v1")
+			local AuraStore = DataStoreService:GetDataStore(DataStoreConfig.AuraData)
 			local saveSuccess = pcall(function()
 				local currentData = AuraStore:GetAsync(tostring(targetUserId)) or {UnlockedAuras = {}}
 
