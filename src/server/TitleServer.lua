@@ -103,16 +103,20 @@ local function getSummitTitle(totalSummits)
 	return highestTitle.Name
 end
 
--- Helper: Get Title Data (Summit atau Special)
+-- ✅ PERFORMANCE FIX: Pre-build dictionary for O(1) title lookups instead of O(n) loops
+local summitTitleCache = {}
+for _, titleData in ipairs(TitleConfig.SummitTitles) do
+	summitTitleCache[titleData.Name] = titleData
+end
+
+-- Helper: Get Title Data (Summit atau Special) - OPTIMIZED with dictionary lookup
 function TitleServer:GetTitleData(titleName)
-	-- Check Summit Titles
-	for _, titleData in ipairs(TitleConfig.SummitTitles) do
-		if titleData.Name == titleName then
-			return titleData
-		end
+	-- Check Summit Titles (O(1) lookup instead of O(n) loop)
+	if summitTitleCache[titleName] then
+		return summitTitleCache[titleName]
 	end
 
-	-- Check Special Titles
+	-- Check Special Titles (already O(1))
 	if TitleConfig.SpecialTitles[titleName] then
 		local data = TitleConfig.SpecialTitles[titleName]
 		return {

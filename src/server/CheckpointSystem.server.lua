@@ -97,6 +97,10 @@ local playerCooldowns = {}
 local playerCurrentCheckpoint = {}
 local playtimeSessions = {}
 
+-- ✅ GAMEPASS CACHE to avoid repeated MarketplaceService calls (PERFORMANCE FIX)
+local gamepassCache = {} -- { [userId] = { x2 = bool, x4 = bool, x16 = bool, timestamp = number } }
+local GAMEPASS_CACHE_DURATION = 300 -- Refresh cache every 5 minutes
+
 -- Remote Events untuk UI
 local remoteFolder = Instance.new("Folder")
 remoteFolder.Name = "CheckpointRemotes"
@@ -323,6 +327,75 @@ end
 local function updateLeaderboards()
 	-- All leaderboard display updates are now handled by LeaderboardServer.server.lua
 	-- This function is kept for backward compatibility
+end
+
+-- ✅ PERFORMANCE FIX: Cached gamepass lookup to avoid repeated MarketplaceService calls
+local function getGamepassMultiplier(player)
+	local userId = player.UserId
+	local cached = gamepassCache[userId]
+	local currentTime = tick()
+	
+	-- Check if cache is valid
+	if cached and (currentTime - cached.timestamp) < GAMEPASS_CACHE_DURATION then
+		return cached.multiplier
+	end
+	
+	-- Fetch fresh data
+	local multiplier = 1
+	
+	if ShopConfig.Gamepasses then
+		-- Check x16 first (highest priority)
+		for _, gp in ipairs(ShopConfig.Gamepasses) do
+			if gp.Name == "x16 Summit" then
+				local success, hasPass = pcall(function()
+					return MarketplaceService:UserOwnsGamePassAsync(userId, gp.GamepassId)
+				end)
+				if success and hasPass then
+					multiplier = 16
+					break
+				end
+			end
+		end
+		
+		-- Check x4 if x16 not owned
+		if multiplier == 1 then
+			for _, gp in ipairs(ShopConfig.Gamepasses) do
+				if gp.Name == "x4 Summit" then
+					local success, hasPass = pcall(function()
+						return MarketplaceService:UserOwnsGamePassAsync(userId, gp.GamepassId)
+					end)
+					if success and hasPass then
+						multiplier = 4
+						break
+					end
+				end
+			end
+		end
+		
+		-- Check x2 if x4 not owned
+		if multiplier == 1 then
+			for _, gp in ipairs(ShopConfig.Gamepasses) do
+				if gp.Name == "x2 Summit" then
+					local success, hasPass = pcall(function()
+						return MarketplaceService:UserOwnsGamePassAsync(userId, gp.GamepassId)
+					end)
+					if success and hasPass then
+						multiplier = 2
+						break
+					end
+				end
+			end
+		end
+	end
+	
+	-- Cache the result
+	gamepassCache[userId] = {
+		multiplier = multiplier,
+		timestamp = currentTime
+	}
+	
+	print(string.format("[GAMEPASS CACHE] Cached multiplier for %s: x%d", player.Name, multiplier))
+	return multiplier
 end
 
 
@@ -560,53 +633,8 @@ for checkpointNum, checkpoint in pairs(checkpoints) do
 				print("[SPEEDRUN] Timer not active")
 			end
 
-			-- ✅ CHECK GAMEPASS MULTIPLIER
-			local gamepassMultiplier = 1
-
-			-- Check x16 (highest priority)
-			if ShopConfig.Gamepasses then
-				for _, gp in ipairs(ShopConfig.Gamepasses) do
-					if gp.Name == "x16 Summit" then
-						local success, hasX16 = pcall(function()
-							return MarketplaceService:UserOwnsGamePassAsync(userId, gp.GamepassId)
-						end)
-						if success and hasX16 then
-							gamepassMultiplier = 16
-							break
-						end
-					end
-				end
-			end
-
-			-- Check x4 if x16 not owned
-			if gamepassMultiplier == 1 then
-				for _, gp in ipairs(ShopConfig.Gamepasses) do
-					if gp.Name == "x4 Summit" then
-						local success, hasX4 = pcall(function()
-							return MarketplaceService:UserOwnsGamePassAsync(userId, gp.GamepassId)
-						end)
-						if success and hasX4 then
-							gamepassMultiplier = 4
-							break
-						end
-					end
-				end
-			end
-
-			-- Check x2 if x4 not owned
-			if gamepassMultiplier == 1 then
-				for _, gp in ipairs(ShopConfig.Gamepasses) do
-					if gp.Name == "x2 Summit" then
-						local success, hasX2 = pcall(function()
-							return MarketplaceService:UserOwnsGamePassAsync(userId, gp.GamepassId)
-						end)
-						if success and hasX2 then
-							gamepassMultiplier = 2
-							break
-						end
-					end
-				end
-			end
+			-- ✅ PERFORMANCE FIX: Use cached gamepass lookup instead of repeated API calls
+			local gamepassMultiplier = getGamepassMultiplier(player)
 
 			local eventMultiplier = 1
 			if EventManager then
@@ -940,6 +968,7 @@ Players.PlayerRemoving:Connect(function(player)
 	playerCooldowns[userId] = nil
 	playerCurrentCheckpoint[userId] = nil
 	playtimeSessions[userId] = nil
+	gamepassCache[userId] = nil  -- ✅ Clear gamepass cache
 
 	print("[PLAYER LEAVE] Cleanup complete for:", player.Name)
 end)

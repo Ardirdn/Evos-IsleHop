@@ -669,7 +669,13 @@ end
 
 local function startKeepUi()
 	if keepUiConn then return end
-	keepUiConn = RunService.Heartbeat:Connect(function()
+	local lastUpdate = 0
+	local THROTTLE_INTERVAL = 0.5 -- Only update every 0.5 seconds instead of every frame
+	keepUiConn = RunService.Heartbeat:Connect(function(dt)
+		lastUpdate = lastUpdate + dt
+		if lastUpdate < THROTTLE_INTERVAL then return end
+		lastUpdate = 0
+		
 		if isCarried then
 			ensureStatusVisible()
 		else

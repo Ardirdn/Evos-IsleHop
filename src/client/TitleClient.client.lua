@@ -30,10 +30,9 @@ local playerTitles = {}
 local playerCountries = {}
 local billboardCache = {}
 
--- Config
+-- Config (Using Roblox default distance handling for better performance)
 local CONFIG = {
-	MAX_DISTANCE = 50,
-	FADE_START = 40,
+	MAX_DISTANCE = 100, -- Roblox default handles fade internally
 }
 
 -- Design
@@ -416,27 +415,8 @@ updateOtherPlayerTitleEvent.OnClientEvent:Connect(function(targetPlayer, titleNa
 	end
 end)
 
-RunService.RenderStepped:Connect(function()
-	local cameraPos = camera.CFrame.Position
-	for targetPlayer, billboard in pairs(billboardCache) do
-		if billboard and billboard.Parent then
-			local head = billboard.Parent
-			if head and head:IsA("BasePart") then
-				local distance = (head.Position - cameraPos).Magnitude
-				local mainFrame = billboard:FindFirstChild("MainFrame")
-				if mainFrame then
-					if distance >= CONFIG.FADE_START then
-						local fadeRange = CONFIG.MAX_DISTANCE - CONFIG.FADE_START
-						local fadeProgress = math.clamp((distance - CONFIG.FADE_START) / fadeRange, 0, 1)
-						mainFrame.BackgroundTransparency = DESIGN.BackgroundTransparency + (fadeProgress * (1 - DESIGN.BackgroundTransparency))
-					else
-						mainFrame.BackgroundTransparency = DESIGN.BackgroundTransparency
-					end
-				end
-			end
-		end
-	end
-end)
+-- NOTE: Removed RenderStepped fade loop - using Roblox's built-in MaxDistance for GPU-optimized fade
+-- This eliminates per-frame CPU calculations for all player billboards
 
 for _, targetPlayer in ipairs(Players:GetPlayers()) do
 	setupPlayerBillboard(targetPlayer)

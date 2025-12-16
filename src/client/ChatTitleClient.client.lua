@@ -33,6 +33,12 @@ local BroadcastTitle = titleRemotes:WaitForChild("BroadcastTitle", 10)
 -- Cache player titles
 local playerTitles = {}
 
+-- ✅ PERFORMANCE FIX: Pre-build summit title lookup dictionary for O(1) access
+local summitTitleLookup = {}
+for _, titleData in ipairs(TitleConfig.SummitTitles) do
+	summitTitleLookup[titleData.Name] = titleData
+end
+
 -- Listen for chat-specific title updates
 chatTitleUpdate.OnClientEvent:Connect(function(userId, titleName)
 	playerTitles[userId] = titleName
@@ -113,18 +119,14 @@ TextChatService.OnIncomingMessage = function(message: TextChatMessage)
 		return properties
 	end
 
-	-- Find title data
+	-- ✅ PERFORMANCE FIX: Build summit title cache once at startup (moved from inline loop)
+	-- This avoids O(n) search on every chat message
 	local titleData = nil
 
 	if TitleConfig.SpecialTitles[titleName] then
 		titleData = TitleConfig.SpecialTitles[titleName]
-	else
-		for _, summitTitle in ipairs(TitleConfig.SummitTitles) do
-			if summitTitle.Name == titleName then
-				titleData = summitTitle
-				break
-			end
-		end
+	elseif summitTitleLookup[titleName] then
+		titleData = summitTitleLookup[titleName]
 	end
 
 	if titleData then

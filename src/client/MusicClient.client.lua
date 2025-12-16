@@ -752,19 +752,28 @@ end
 local function loadPlaylists()
 	playlists = {}
 	allSongs = {}
+	
+	-- ✅ Create a folder in SoundService for organization
+	local SoundService = game:GetService("SoundService")
+	local musicFolder = SoundService:FindFirstChild("MusicPlayerSounds")
+	if not musicFolder then
+		musicFolder = Instance.new("Folder")
+		musicFolder.Name = "MusicPlayerSounds"
+		musicFolder.Parent = SoundService
+	end
 
 	-- Load from MusicConfig
 	for playlistName, playlistData in pairs(MusicConfig.Playlists) do
 		local songs = {}
 
 		for _, songData in ipairs(playlistData.Songs) do
-			-- Create Sound object
+			-- Create Sound object in SoundService (better than workspace)
 			local sound = Instance.new("Sound")
 			sound.Name = songData.Title
 			sound.SoundId = songData.AssetId
 			sound.Volume = MusicConfig.Settings.DefaultVolume
 			sound.Looped = false
-			sound.Parent = workspace
+			sound.Parent = musicFolder  -- ✅ Parent to SoundService folder
 
 			table.insert(songs, sound)
 			table.insert(allSongs, sound)

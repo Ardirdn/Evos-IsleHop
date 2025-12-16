@@ -501,41 +501,26 @@ function updateAnimList()
 	end
 end
 
--- ==================== DRAG ====================
-local function makeDraggable(frame, handle)
-	local dragging = false
-	local dragInput, mousePos, framePos
+-- ==================== DRAG (Optimized - uses shared global InputChanged) ====================
+local activeDragState = nil -- Store active drag info globally
 
+local function makeDraggable(frame, handle)
 	handle.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
-			dragging = true
-			mousePos = input.Position
-			framePos = frame.Position
+			activeDragState = {
+				frame = frame,
+				mousePos = input.Position,
+				framePos = frame.Position,
+				dragging = true
+			}
 
 			input.Changed:Connect(function()
 				if input.UserInputState == Enum.UserInputState.End then
-					dragging = false
+					if activeDragState and activeDragState.frame == frame then
+						activeDragState = nil
+					end
 				end
 			end)
-		end
-	end)
-
-	handle.InputChanged:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseMovement then
-			dragInput = input
-		end
-	end)
-
-	UserInputService.InputChanged:Connect(function(input)
-		if input == dragInput and dragging then
-			local delta = input.Position - mousePos
-			local viewport = workspace.CurrentCamera.ViewportSize
-			frame.Position = UDim2.new(
-				framePos.X.Scale + (delta.X / viewport.X),
-				0,
-				framePos.Y.Scale + (delta.Y / viewport.Y),
-				0
-			)
 		end
 	end)
 end
@@ -605,8 +590,12 @@ UserInputService.InputEnded:Connect(function(input)
 	end
 end)
 
+-- ✅ OPTIMIZED: Single global InputChanged handler for ALL drag/slider operations
 UserInputService.InputChanged:Connect(function(input)
-	if draggingSpeed and input.UserInputType == Enum.UserInputType.MouseMovement then
+	if input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
+	
+	-- Handle speed slider drag
+	if draggingSpeed then
 		local mouseX = UserInputService:GetMouseLocation().X
 		local posX = speedSliderBg.AbsolutePosition.X
 		local sizeX = speedSliderBg.AbsoluteSize.X
@@ -616,6 +605,18 @@ UserInputService.InputChanged:Connect(function(input)
 		speedHandle.Position = UDim2.new(rel, -6, 0.5, -6)
 
 		animationSpeed = 0.1 + (rel * 3.9)
+	end
+	
+	-- Handle frame drag (from makeDraggable)
+	if activeDragState and activeDragState.dragging then
+		local delta = input.Position - activeDragState.mousePos
+		local viewport = workspace.CurrentCamera.ViewportSize
+		activeDragState.frame.Position = UDim2.new(
+			activeDragState.framePos.X.Scale + (delta.X / viewport.X),
+			0,
+			activeDragState.framePos.Y.Scale + (delta.Y / viewport.Y),
+			0
+		)
 	end
 end)
 

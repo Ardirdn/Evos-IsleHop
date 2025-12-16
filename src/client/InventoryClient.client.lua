@@ -72,6 +72,12 @@ local titleData = {
 -- Colors
 local COLORS = InventoryConfig.Colors
 
+-- ✅ PERFORMANCE FIX: Pre-build summit title lookup for O(1) access
+local summitTitleCache = {}
+for _, titleData in ipairs(TitleConfig.SummitTitles) do
+	summitTitleCache[titleData.Name] = titleData
+end
+
 print("✅ [INVENTORY CLIENT v3] Starting initialization...")
 
 -- ==================== HELPER FUNCTIONS ====================
@@ -579,14 +585,8 @@ local function createToolItem(toolId, parentFrame)
 end
 
 local function createTitleItem(titleName)
-	local titleInfo = nil
-
-	for _, titleData in ipairs(TitleConfig.SummitTitles) do
-		if titleData.Name == titleName then
-			titleInfo = titleData
-			break
-		end
-	end
+	-- ✅ O(1) lookup instead of loop
+	local titleInfo = summitTitleCache[titleName]
 
 	if not titleInfo and TitleConfig.SpecialTitles[titleName] then
 		local data = TitleConfig.SpecialTitles[titleName]
@@ -741,14 +741,7 @@ function updateTitlesTab()
 
 	for _, titleName in ipairs(titleData.UnlockedTitles) do
 		local isSpecial = TitleConfig.SpecialTitles[titleName] ~= nil
-		local isSummit = false
-
-		for _, summitTitle in ipairs(TitleConfig.SummitTitles) do
-			if summitTitle.Name == titleName then
-				isSummit = true
-				break
-			end
-		end
+		local isSummit = summitTitleCache[titleName] ~= nil  -- ✅ O(1) lookup instead of loop
 
 		if currentTitleFilter == "All" then
 			table.insert(itemsToShow, titleName)
