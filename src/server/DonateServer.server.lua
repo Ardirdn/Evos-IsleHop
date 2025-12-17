@@ -30,8 +30,6 @@ if not purchaseDonationEvent then
 	purchaseDonationEvent.Parent = remoteFolder
 end
 
-print("✅ [DONATE SERVER] Initialized")
-
 getDonateDataFunc.OnServerInvoke = function(player)
 	local data = DataHandler:GetData(player)
 	if not data then
@@ -59,7 +57,6 @@ purchaseDonationEvent.OnServerEvent:Connect(function(player, productId)
 		return
 	end
 
-	print(string.format("💰 [DONATE] Purchase request: %s - Product %d", player.Name, productId))
 	MarketplaceService:PromptProductPurchase(player, productId)
 end)
 
@@ -74,5 +71,3 @@ end)
 
 task.wait(3)
 updateDonationLeaderboard()
-
-print("✅ [DONATE SERVER] System loaded")

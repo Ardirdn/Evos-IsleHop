@@ -37,8 +37,6 @@ if not eventChangedRemote then
 	eventChangedRemote.Parent = remoteFolder
 end
 
-print("✅ [EVENT MANAGER] Initialized")
-
 local CurrentActiveEvent = nil
 
 local TitleConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("TitleConfig"))
@@ -75,13 +73,11 @@ local function loadEventFromDataStore()
 					Icon = event.Icon,
 					Color = event.Color
 				}
-				print(string.format("📡 [EVENT MANAGER] Loaded event from DataStore: %s (x%d)", result.Id, result.Multiplier))
 				return
 			end
 		end
 	else
 		CurrentActiveEvent = nil
-		print("📡 [EVENT MANAGER] No active event")
 	end
 end
 
@@ -145,7 +141,6 @@ local function activateEvent(eventId)
 
 	broadcastEventChange()
 
-	print(string.format("🎉 [EVENT MANAGER] Event activated: %s (x%d)", eventData.Name, eventData.Multiplier))
 	return true
 end
 
@@ -155,7 +150,6 @@ local function deactivateEvent()
 
 	broadcastEventChange()
 
-	print("🎉 [EVENT MANAGER] Event deactivated")
 	return true
 end
 
@@ -237,7 +231,5 @@ end
 function EventManager:GetActiveEvent()
 	return CurrentActiveEvent
 end
-
-print("✅ [EVENT MANAGER] System loaded")
 
 return EventManager

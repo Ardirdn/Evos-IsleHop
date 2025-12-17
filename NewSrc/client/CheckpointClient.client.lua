@@ -1,9 +1,3 @@
---[[
-    CHECKPOINT CLIENT v3
-    Uses HUD template buttons instead of generated UI
-    Place in StarterPlayerScripts
-]]
-
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
@@ -11,17 +5,14 @@ local TweenService = game:GetService("TweenService")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- ✅ CONFIG
 local CONFIG = {
 	SHOW_CHECKPOINT_BUTTON = true,
 }
 
 if not CONFIG.SHOW_CHECKPOINT_BUTTON then
-	print("[CHECKPOINT CLIENT] Button hidden by config")
 	return
 end
 
--- Wait for CheckpointRemotes
 local checkpointRemotes = ReplicatedStorage:WaitForChild("CheckpointRemotes", 30)
 if not checkpointRemotes then
 	warn("[CHECKPOINT CLIENT] CheckpointRemotes not found!")
@@ -36,10 +27,8 @@ if not teleportToBasecamp or not skipCheckpoint then
 	return
 end
 
--- ✅ HUD BUTTON HELPER
 local HUDButtonHelper = require(script.Parent:WaitForChild("HUDButtonHelper"))
 
--- ✅ COLOR SCHEME
 local COLORS = {
 	Background = Color3.fromRGB(25, 25, 30),
 	Panel = Color3.fromRGB(30, 30, 35),
@@ -56,7 +45,6 @@ local COLORS = {
 	Border = Color3.fromRGB(50, 50, 55)
 }
 
--- ✅ UTILITY FUNCTIONS
 local function createCorner(radius)
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0, radius)
@@ -71,7 +59,6 @@ local function createStroke(color, thickness)
 	return stroke
 end
 
--- ✅ CREATE SCREENGUI FOR POPUP (Separate from HUD)
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "CheckpointGui"
 screenGui.ResetOnSpawn = false
@@ -79,7 +66,6 @@ screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 screenGui.DisplayOrder = 100
 screenGui.Parent = playerGui
 
--- ✅ CREATE POPUP PANEL
 local popupPanel = Instance.new("Frame")
 popupPanel.Name = "PopupPanel"
 popupPanel.Size = UDim2.new(0.25, 0, 0.35, 0)
@@ -93,7 +79,6 @@ popupPanel.Parent = screenGui
 createCorner(12).Parent = popupPanel
 createStroke(COLORS.Border, 2).Parent = popupPanel
 
--- Header
 local header = Instance.new("Frame")
 header.Size = UDim2.new(1, 0, 0, 50)
 header.BackgroundColor3 = COLORS.Header
@@ -120,7 +105,6 @@ title.TextSize = 16
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Parent = header
 
--- Close Button
 local closeButton = Instance.new("TextButton")
 closeButton.Size = UDim2.new(0, 30, 0, 30)
 closeButton.Position = UDim2.new(1, -40, 0, 10)
@@ -134,14 +118,12 @@ closeButton.Parent = header
 
 createCorner(6).Parent = closeButton
 
--- Content Container
 local contentContainer = Instance.new("Frame")
 contentContainer.Size = UDim2.new(1, -30, 1, -70)
 contentContainer.Position = UDim2.new(0, 15, 0, 60)
 contentContainer.BackgroundTransparency = 1
 contentContainer.Parent = popupPanel
 
--- Reset Button
 local resetButton = Instance.new("TextButton")
 resetButton.Name = "ResetButton"
 resetButton.Size = UDim2.new(1, 0, 0.4, 0)
@@ -184,7 +166,6 @@ resetTextConstraint.MaxTextSize = 14
 resetTextConstraint.MinTextSize = 10
 resetTextConstraint.Parent = resetText
 
--- Skip Button
 local skipButton = Instance.new("TextButton")
 skipButton.Name = "SkipButton"
 skipButton.Size = UDim2.new(1, 0, 0.4, 0)
@@ -227,12 +208,10 @@ skipTextConstraint.MaxTextSize = 14
 skipTextConstraint.MinTextSize = 10
 skipTextConstraint.Parent = skipText
 
--- ✅ COOLDOWN SYSTEM
 local resetCooldownActive = false
 local skipCooldownActive = false
 local COOLDOWN_TIME = 3
 
--- ✅ TOGGLE PANEL
 local panelOpen = false
 local cpButtonRef = nil
 
@@ -256,7 +235,6 @@ local function togglePanel()
 	end
 end
 
--- ✅ CREATE HUD BUTTON
 cpButtonRef = HUDButtonHelper.Create({
 	Side = "Right",
 	Name = "CheckpointButton",
@@ -265,10 +243,8 @@ cpButtonRef = HUDButtonHelper.Create({
 	OnClick = togglePanel
 })
 
--- ✅ CLOSE BUTTON CLICK
 closeButton.MouseButton1Click:Connect(togglePanel)
 
--- ✅ RESET BUTTON EVENTS
 resetButton.MouseEnter:Connect(function()
 	if resetCooldownActive then return end
 	TweenService:Create(resetButton, TweenInfo.new(0.2), {
@@ -283,7 +259,6 @@ resetButton.MouseLeave:Connect(function()
 	}):Play()
 end)
 
--- ✅ SKIP BUTTON EVENTS
 skipButton.MouseEnter:Connect(function()
 	if skipCooldownActive then return end
 	TweenService:Create(skipButton, TweenInfo.new(0.2), {
@@ -298,7 +273,6 @@ skipButton.MouseLeave:Connect(function()
 	}):Play()
 end)
 
--- ✅ RESET BUTTON CLICK
 resetButton.MouseButton1Click:Connect(function()
 	if resetCooldownActive then
 		warn("[CHECKPOINT CLIENT] Reset cooldown active")
@@ -313,7 +287,6 @@ resetButton.MouseButton1Click:Connect(function()
 	}):Play()
 
 	teleportToBasecamp:FireServer()
-	print("[CHECKPOINT CLIENT] Reset to basecamp requested")
 
 	for i = COOLDOWN_TIME, 1, -1 do
 		resetText.Text = string.format("⏳ %ds", i)
@@ -328,7 +301,6 @@ resetButton.MouseButton1Click:Connect(function()
 	}):Play()
 end)
 
--- ✅ SKIP BUTTON CLICK
 skipButton.MouseButton1Click:Connect(function()
 	if skipCooldownActive then
 		warn("[CHECKPOINT CLIENT] Skip cooldown active")
@@ -343,7 +315,6 @@ skipButton.MouseButton1Click:Connect(function()
 	}):Play()
 
 	skipCheckpoint:FireServer()
-	print("[CHECKPOINT CLIENT] Skip checkpoint requested")
 
 	togglePanel()
 
@@ -360,7 +331,6 @@ skipButton.MouseButton1Click:Connect(function()
 	}):Play()
 end)
 
--- ✅ ADAPTIVE SCALING FOR POPUP
 local function updateScale()
 	local viewportSize = workspace.CurrentCamera.ViewportSize
 
@@ -373,5 +343,3 @@ end
 
 workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateScale)
 updateScale()
-
-print("✅ [CHECKPOINT CLIENT] UI loaded (HUD Template style)")

@@ -171,7 +171,6 @@ local function addLog(adminUserId, adminName, actionType, targetInfo, details)
 		warn("[ADMIN LOG] Failed to update admin list:", err4)
 	end
 
-	print(string.format("[ADMIN LOG] ✅ %s performed %s on %s", adminName, actionType, targetInfo.Name or "N/A"))
 end
 
 getLogsFunc.OnServerInvoke = function(player, filter, adminFilter)
@@ -273,7 +272,5 @@ function AdminLogService:Log(adminUserId, adminName, actionType, targetInfo, det
 end
 
 _G.AdminLogService = AdminLogService
-
-print("✅ [ADMIN LOG SERVER] Initialized")
 
 return AdminLogService

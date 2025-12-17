@@ -417,12 +417,10 @@ local function hasPendingOutgoing(p: Player)
 end
 
 local function startCarry(carrier: Player, target: Player)
-	if DEBUG then print(string.format("[CARRY DEBUG] startCarry called: carrier=%s, target=%s", carrier.Name, target.Name)) end
 
 	local cChar, cHRP = getCharHRP(carrier)
 	local tChar, tHRP, tHum = getCharHRP(target)
 	if not (cChar and cHRP and tChar and tHRP and tHum) then
-		if DEBUG then print("[CARRY DEBUG] startCarry FAILED: missing character parts") end
 		return false, "character missing"
 	end
 
@@ -489,11 +487,9 @@ local function startCarry(carrier: Player, target: Player)
 		bindCleanupForCharacter(tChar, target, false)
 
 		sendStart(carrier, target)
-		if DEBUG then print(string.format("[CARRY DEBUG] startCarry SUCCESS: %s carrying %s", carrier.Name, target.Name)) end
 	end)
 	releaseLock(carrier.UserId)
 	if not ok then
-		if DEBUG then print(string.format("[CARRY DEBUG] startCarry FAILED: %s", tostring(err))) end
 		return false, tostring(err)
 	end
 
@@ -506,11 +502,6 @@ CarryRemote.OnServerEvent:Connect(function(player: Player, action: string, data)
 	if action == "Request" then
 		local targetId = data and data.targetId
 		local requestType = data and data.requestType or "carry"
-
-		if DEBUG then print(string.format("\n[CARRY DEBUG] === REQUEST START ===")) end
-		if DEBUG then print(string.format("[CARRY DEBUG] Requester: %s (ID: %d)", player.Name, player.UserId)) end
-		if DEBUG then print(string.format("[CARRY DEBUG] TargetId: %s", tostring(targetId))) end
-		if DEBUG then print(string.format("[CARRY DEBUG] RequestType: %s", requestType)) end
 
 		if type(targetId) ~= "number" then return end
 		local target = Players:GetPlayerByUserId(targetId)
@@ -525,11 +516,6 @@ CarryRemote.OnServerEvent:Connect(function(player: Player, action: string, data)
 			originator = player
 			promptMessage = string.format("%s wants you to carry them. Accept?", player.DisplayName)
 
-			if DEBUG then print(string.format("[CARRY DEBUG] Mode: BE_CARRIED")) end
-			if DEBUG then print(string.format("[CARRY DEBUG] Originator: %s (who clicked)", originator.Name)) end
-			if DEBUG then print(string.format("[CARRY DEBUG] ActualCarrier: %s (who will carry)", actualCarrier.Name)) end
-			if DEBUG then print(string.format("[CARRY DEBUG] ActualTarget: %s (who will be carried)", actualTarget.Name)) end
-			if DEBUG then print(string.format("[CARRY DEBUG] PromptReceiver: %s", promptReceiver.Name)) end
 		else
 			actualCarrier = player
 			actualTarget = target
@@ -537,41 +523,31 @@ CarryRemote.OnServerEvent:Connect(function(player: Player, action: string, data)
 			originator = player
 			promptMessage = string.format("%s wants to carry you. Accept?", player.DisplayName)
 
-			if DEBUG then print(string.format("[CARRY DEBUG] Mode: CARRY")) end
-			if DEBUG then print(string.format("[CARRY DEBUG] Originator: %s", originator.Name)) end
-			if DEBUG then print(string.format("[CARRY DEBUG] ActualCarrier: %s", actualCarrier.Name)) end
-			if DEBUG then print(string.format("[CARRY DEBUG] ActualTarget: %s", actualTarget.Name)) end
-			if DEBUG then print(string.format("[CARRY DEBUG] PromptReceiver: %s", promptReceiver.Name)) end
 		end
 
 		local _, cHRP = getCharHRP(actualCarrier)
 		local _, tHRP = getCharHRP(actualTarget)
 		if not (cHRP and tHRP) then
-			if DEBUG then print("[CARRY DEBUG] REJECTED: Missing HRP") end
 			return
 		end
 
 		if (cHRP.Position - tHRP.Position).Magnitude > MAX_DISTANCE then
-			if DEBUG then print("[CARRY DEBUG] REJECTED: Too far") end
 			CarryRemote:FireClient(player, "TooFar", {targetId=targetId})
 			return
 		end
 
 		local extra = countCarried(actualTarget)
 		if (countCarried(actualCarrier) + 1 + extra) > MAX_CARRY then
-			if DEBUG then print("[CARRY DEBUG] REJECTED: Limit exceeded") end
 			CarryRemote:FireClient(player, "Limit", {max = MAX_CARRY, reason = "transfer"})
 			return
 		end
 
 		if not canCarrierRequest(actualCarrier) or not targetAvailable(actualTarget) then
-			if DEBUG then print("[CARRY DEBUG] REJECTED: Busy") end
 			CarryRemote:FireClient(player, "Busy", {})
 			return
 		end
 
 		if hasPendingIncoming(promptReceiver) or hasPendingOutgoing(originator) then
-			if DEBUG then print("[CARRY DEBUG] REJECTED: Pending exists") end
 			CarryRemote:FireClient(player, "Busy", {})
 			return
 		end
@@ -584,80 +560,50 @@ CarryRemote.OnServerEvent:Connect(function(player: Player, action: string, data)
 			originator = originator
 		}
 
-		if DEBUG then print(string.format("[CARRY DEBUG] Pending stored: pending[%d (%s)]", promptReceiver.UserId, promptReceiver.Name)) end
-		if DEBUG then print(string.format("[CARRY DEBUG]   - requester (carrier): %s", actualCarrier.Name)) end
-		if DEBUG then print(string.format("[CARRY DEBUG]   - target (carried): %s", actualTarget.Name)) end
-		if DEBUG then print(string.format("[CARRY DEBUG]   - originator (clicked): %s", originator.Name)) end
-
 		CarryRemote:FireClient(promptReceiver, "Prompt", {
 			fromId = originator.UserId,
 			fromName = originator.DisplayName,
 			customMessage = promptMessage
 		})
 
-		if DEBUG then print(string.format("[CARRY DEBUG] Prompt sent to %s", promptReceiver.Name)) end
-		if DEBUG then print(string.format("[CARRY DEBUG] Avatar will show: %s (ID: %d)", originator.Name, originator.UserId)) end
-		if DEBUG then print(string.format("[CARRY DEBUG] === REQUEST END ===\n")) end
-
 	elseif action == "Response" then
 		local accept = data and data.accept == true
 		local requesterId = data and data.requesterId
 
-		if DEBUG then print(string.format("\n[CARRY DEBUG] === RESPONSE START ===")) end
-		if DEBUG then print(string.format("[CARRY DEBUG] Responder: %s (ID: %d)", player.Name, player.UserId)) end
-		if DEBUG then print(string.format("[CARRY DEBUG] RequesterId: %s", tostring(requesterId))) end
-		if DEBUG then print(string.format("[CARRY DEBUG] Accept: %s", tostring(accept))) end
-
 		if type(requesterId) ~= "number" then
-			if DEBUG then print("[CARRY DEBUG] FAILED: Invalid requesterId type") end
 			return
 		end
 
 		local pend = pending[player.UserId]
 
-		if DEBUG then print(string.format("[CARRY DEBUG] Checking pending[%d (%s)]", player.UserId, player.Name)) end
 		if DEBUG then
 			if pend then
-				print(string.format("[CARRY DEBUG] Pending found!"))
-				print(string.format("[CARRY DEBUG]   - requester: %s", pend.requester and pend.requester.Name or "nil"))
-				print(string.format("[CARRY DEBUG]   - target: %s", pend.target and pend.target.Name or "nil"))
-				print(string.format("[CARRY DEBUG]   - originator: %s", pend.originator and pend.originator.Name or "nil"))
 			else
-				print(string.format("[CARRY DEBUG] NO PENDING FOUND!"))
-				print(string.format("[CARRY DEBUG] Current pending table:"))
 				for uid, info in pairs(pending) do
 					local p = Players:GetPlayerByUserId(uid)
-					print(string.format("[CARRY DEBUG]   pending[%d] = %s", uid, p and p.Name or "unknown"))
 				end
 			end
 		end
 
 		if not pend then
-			if DEBUG then print("[CARRY DEBUG] FAILED: No pending request") end
 			return
 		end
 
 		if pend.originator and pend.originator.UserId ~= requesterId then
-			if DEBUG then print(string.format("[CARRY DEBUG] FAILED: RequesterId mismatch (expected %d, got %d)", pend.originator.UserId, requesterId)) end
 			return
 		end
 
 		pending[player.UserId] = nil
-		if DEBUG then print("[CARRY DEBUG] Pending cleared") end
 
 		if not accept then
-			if DEBUG then print("[CARRY DEBUG] Request declined") end
 			CarryRemote:FireClient(pend.originator, "Declined", {targetId = player.UserId})
 			CarryRemote:FireClient(player, "PromptClose", {})
-			if DEBUG then print(string.format("[CARRY DEBUG] === RESPONSE END ===\n")) end
 			return
 		end
 
-		if DEBUG then print(string.format("[CARRY DEBUG] Executing startCarry(%s, %s)", pend.requester.Name, pend.target.Name)) end
 		local ok2, err2 = startCarry(pend.requester, pend.target)
 
 		if not ok2 then
-			if DEBUG then print(string.format("[CARRY DEBUG] startCarry FAILED: %s", tostring(err2))) end
 			if tostring(err2) == "limit_transfer" then
 				CarryRemote:FireClient(pend.originator, "Limit", {max = MAX_CARRY, reason = "transfer"})
 				CarryRemote:FireClient(player, "Failed", {reason="limit_transfer"})
@@ -666,10 +612,7 @@ CarryRemote.OnServerEvent:Connect(function(player: Player, action: string, data)
 				CarryRemote:FireClient(player, "Failed", {reason=err2})
 			end
 		else
-			if DEBUG then print("[CARRY DEBUG] startCarry SUCCESS!") end
 		end
-
-		if DEBUG then print(string.format("[CARRY DEBUG] === RESPONSE END ===\n")) end
 
 	elseif action == "Stop" then
 		local targetId = data and data.targetId
@@ -723,5 +666,3 @@ Players.PlayerRemoving:Connect(function(p: Player)
 	end
 	detachIfAny(p, "left")
 end)
-
-print("✅ [CARRY SERVER] Loaded with FULL DEBUG + ALL FIXES")

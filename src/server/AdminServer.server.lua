@@ -206,12 +206,9 @@ if not unbanPlayerEvent then
 	unbanPlayerEvent.Parent = remoteFolder
 end
 
-print("✅ [ADMIN SERVER] Initialized")
-
 Players.PlayerAdded:Connect(function(player)
 	task.spawn(function()
 		if isPlayerBanned(player.UserId) then
-			print(string.format("🚫 [BAN SYSTEM] Kicking banned player: %s (%d)", player.Name, player.UserId))
 			player:Kick("You are permanently banned from this game.")
 		end
 	end)
@@ -230,8 +227,6 @@ if not inventoryUpdatedEvent then
 	inventoryUpdatedEvent.Name = "InventoryUpdated"
 	inventoryUpdatedEvent.Parent = inventoryRemotes
 end
-
-print("✅ [ADMIN SERVER] Ban system and inventory sync ready")
 
 local sendGlobalNotificationEvent = remoteFolder:FindFirstChild("SendGlobalNotification")
 if not sendGlobalNotificationEvent then
@@ -268,7 +263,6 @@ kickPlayerEvent.OnServerEvent:Connect(function(admin, targetUserId)
 
 		AdminLogServer:Log(admin.UserId, admin.Name, "kick", {UserId = targetUserId, Name = targetName}, "")
 
-		print(string.format("👮 [ADMIN SERVER] %s kicked %s", admin.Name, targetName))
 	end
 end)
 
@@ -306,7 +300,6 @@ banPlayerEvent.OnServerEvent:Connect(function(admin, targetUserId)
 
 		AdminLogServer:Log(admin.UserId, admin.Name, "ban", {UserId = targetUserId, Name = targetName}, "Permanent")
 
-		print(string.format("🚫 [ADMIN SERVER] %s PERMANENTLY banned %s (saved to DataStore)", admin.Name, targetName))
 	else
 		NotificationService:Send(admin, {
 			Message = "Failed to save ban to DataStore!",
@@ -341,7 +334,6 @@ unbanPlayerEvent.OnServerEvent:Connect(function(admin, targetUserId)
 
 		AdminLogServer:Log(admin.UserId, admin.Name, "unban", {UserId = targetUserId, Name = targetName}, "")
 
-		print(string.format("✅ [ADMIN SERVER] %s unbanned %s (removed from DataStore)", admin.Name, targetName))
 	else
 		NotificationService:Send(admin, {
 			Message = "Failed to unban player!",
@@ -377,7 +369,6 @@ teleportHereEvent.OnServerEvent:Connect(function(admin, targetUserId)
 				Duration = 3
 			})
 
-			print(string.format("📍 [ADMIN SERVER] %s teleported %s here", admin.Name, targetPlayer.Name))
 		end
 	end
 end)
@@ -408,7 +399,6 @@ teleportToEvent.OnServerEvent:Connect(function(admin, targetUserId)
 				Duration = 3
 			})
 
-			print(string.format("📍 [ADMIN SERVER] %s teleported to %s", admin.Name, targetPlayer.Name))
 		end
 	end
 end)
@@ -451,8 +441,6 @@ freezePlayerEvent.OnServerEvent:Connect(function(admin, targetUserId, shouldFree
 					Duration = 5
 				})
 
-				print(string.format("❄️ [ADMIN SERVER] %s froze %s", admin.Name, targetPlayer.Name))
-
 				AdminLogServer:Log(admin.UserId, admin.Name, "freeze", {UserId = targetUserId, Name = targetPlayer.Name}, "Frozen")
 
 				task.delay(180, function()
@@ -482,8 +470,6 @@ freezePlayerEvent.OnServerEvent:Connect(function(admin, targetUserId, shouldFree
 						Type = "info",
 						Duration = 3
 					})
-
-					print(string.format("🔥 [ADMIN SERVER] %s unfroze %s", admin.Name, targetPlayer.Name))
 
 					AdminLogServer:Log(admin.UserId, admin.Name, "freeze", {UserId = targetUserId, Name = targetPlayer.Name}, "Unfrozen")
 				end
@@ -516,7 +502,6 @@ setSpeedEvent.OnServerEvent:Connect(function(admin, targetUserId, speedMultiplie
 				Duration = 3
 			})
 
-			print(string.format("⚡ [ADMIN SERVER] %s set %s's speed to %dx", admin.Name, targetPlayer.Name, speedMultiplier))
 		end
 	end
 end)
@@ -560,7 +545,6 @@ setGravityEvent.OnServerEvent:Connect(function(admin, targetUserId, gravityValue
 				Duration = 3
 			})
 
-			print(string.format("🌍 [ADMIN SERVER] %s set %s's gravity to %d", admin.Name, targetPlayer.Name, gravityValue))
 		end
 	end
 end)
@@ -608,7 +592,6 @@ killPlayerEvent.OnServerEvent:Connect(function(admin, targetUserId)
 				Duration = 3
 			})
 
-			print(string.format("💀 [ADMIN SERVER] %s killed %s", admin.Name, targetPlayer.Name))
 		end
 	end
 end)
@@ -635,8 +618,6 @@ setPlayerTitleEvent.OnServerEvent:Connect(function(admin, targetUserId, titleNam
 		return
 	end
 
-	print(string.format("👑 [ADMIN SERVER] %s setting title for %s to %s", admin.Name, targetPlayer.Name, titleName))
-
 	local success = TitleServer:SetTitle(targetPlayer, titleName, "admin", true)
 
 	if success then
@@ -652,8 +633,6 @@ setPlayerTitleEvent.OnServerEvent:Connect(function(admin, targetUserId, titleNam
 			Type = "success",
 			Duration = 3
 		})
-
-		print(string.format("✅ [ADMIN SERVER] Title set successfully"))
 
 		AdminLogServer:Log(admin.UserId, admin.Name, "set_title", {UserId = targetUserId, Name = targetPlayer.Name}, "Title: " .. titleName)
 	else
@@ -707,8 +686,6 @@ giveTitleEvent.OnServerEvent:Connect(function(admin, targetUserId, titleName)
 		return
 	end
 
-	print(string.format("🎁 [ADMIN SERVER] %s giving title '%s' to %s", admin.Name, titleName, targetPlayer.Name))
-
 	local success = false
 
 	if TitleServer.UnlockTitle then
@@ -754,7 +731,6 @@ giveTitleEvent.OnServerEvent:Connect(function(admin, targetUserId, titleName)
 
 		AdminLogServer:Log(admin.UserId, admin.Name, "give_title", {UserId = targetUserId, Name = targetPlayer.Name}, "Title: " .. titleName)
 
-		print(string.format("✅ [ADMIN SERVER] Title '%s' given to %s (unlock only, no equip)", titleName, targetPlayer.Name))
 	else
 		NotificationService:Send(admin, {
 			Message = "Failed to give title!",
@@ -772,14 +748,11 @@ giveItemsEvent.OnServerEvent:Connect(function(admin, targetUserId, auras, tools,
 	local targetPlayer = Players:GetPlayerByUserId(targetUserId)
 	if not targetPlayer then return end
 
-	print(string.format("🎁 [ADMIN SERVER] %s giving items to %s", admin.Name, targetPlayer.Name))
-
 	local itemList = {}
 
 	if moneyAmount and moneyAmount > 0 then
 		DataHandler:Increment(targetPlayer, "Money", moneyAmount)
 		table.insert(itemList, string.format("$%d", moneyAmount))
-		print(string.format("💰 [ADMIN SERVER] Gave $%d to %s", moneyAmount, targetPlayer.Name))
 	end
 
 	if auras and #auras > 0 then
@@ -787,7 +760,6 @@ giveItemsEvent.OnServerEvent:Connect(function(admin, targetUserId, auras, tools,
 			DataHandler:AddToArray(targetPlayer, "OwnedAuras", auraId)
 		end
 		table.insert(itemList, string.format("%d Aura(s)", #auras))
-		print(string.format("✨ [ADMIN SERVER] Gave %d auras to %s", #auras, targetPlayer.Name))
 	end
 
 	if tools and #tools > 0 then
@@ -795,7 +767,6 @@ giveItemsEvent.OnServerEvent:Connect(function(admin, targetUserId, auras, tools,
 			DataHandler:AddToArray(targetPlayer, "OwnedTools", toolId)
 		end
 		table.insert(itemList, string.format("%d Tool(s)", #tools))
-		print(string.format("🔧 [ADMIN SERVER] Gave %d tools to %s", #tools, targetPlayer.Name))
 	end
 
 	DataHandler:SavePlayer(targetPlayer)
@@ -822,10 +793,8 @@ giveItemsEvent.OnServerEvent:Connect(function(admin, targetUserId, auras, tools,
 				EquippedTool = DataHandler:Get(targetPlayer, "EquippedTool"),
 			}
 			inventoryUpdatedEvent:FireClient(targetPlayer, updatedData)
-			print(string.format("📦 [ADMIN SERVER] Inventory update event fired to %s", targetPlayer.Name))
 		end
 
-		print(string.format("✅ [ADMIN SERVER] Items given successfully"))
 	end
 end)
 
@@ -838,9 +807,6 @@ sendGlobalNotificationEvent.OnServerEvent:Connect(function(admin, notifType, mes
 		})
 		return
 	end
-
-	print(string.format("📢 [ADMIN SERVER] %s sending %s notification: %s (type: %s, duration: %ds)",
-		admin.Name, notifType, message, notificationType or "SideTextOnly", duration or 5))
 
 	if notifType == "global" or notifType == "server" then
 		local colorData = textColor
@@ -867,8 +833,6 @@ sendGlobalNotificationEvent.OnServerEvent:Connect(function(admin, notifType, mes
 			NotificationType = "SideTextOnly",
 			Duration = 3
 		})
-
-		print("✅ [ADMIN SERVER] Global notification sent")
 
 		AdminLogServer:Log(admin.UserId, admin.Name, "notification", {UserId = 0, Name = "All Players"}, "Type: " .. notifType .. ", Msg: " .. string.sub(message, 1, 50))
 	end
@@ -905,15 +869,11 @@ modifySummitDataEvent.OnServerEvent:Connect(function(admin, targetUserId, newSum
 		return
 	end
 
-	print(string.format("[ADMIN] %s modifying summit for %s to %d", admin.Name, targetPlayer.Name, newSummitValue))
-
 	DataHandler:Set(targetPlayer, "TotalSummits", newSummitValue)
 	DataHandler:SavePlayer(targetPlayer)
-	print("[ADMIN] ✅ DataStore updated")
 
 	if DataHandler.UpdateLeaderboards then
 		DataHandler:UpdateLeaderboards(targetPlayer)
-		print("[ADMIN] ✅ Leaderboard OrderedDataStore updated")
 	end
 
 	task.spawn(function()
@@ -921,7 +881,6 @@ modifySummitDataEvent.OnServerEvent:Connect(function(admin, targetUserId, newSum
 		local refreshEvent = game.ServerScriptService:FindFirstChild("RefreshLeaderboardsEvent")
 		if refreshEvent and refreshEvent:IsA("BindableEvent") then
 			refreshEvent:Fire("Summit")
-			print("[ADMIN] ✅ Leaderboard display refreshed")
 		end
 	end)
 
@@ -929,14 +888,12 @@ modifySummitDataEvent.OnServerEvent:Connect(function(admin, targetUserId, newSum
 		local summitValue = targetPlayer.PlayerStats:FindFirstChild("Summit")
 		if summitValue then
 			summitValue.Value = newSummitValue
-			print("[ADMIN] ✅ PlayerStats updated")
 		end
 	end
 
 	task.spawn(function()
 		task.wait(0.5)
 
-		print("[ADMIN] Triggering sync via BindableEvent...")
 		local syncEvent = game.ServerScriptService:FindFirstChild("SyncPlayerDataEvent")
 
 		if syncEvent and syncEvent:IsA("BindableEvent") then
@@ -948,7 +905,6 @@ modifySummitDataEvent.OnServerEvent:Connect(function(admin, targetUserId, newSum
 				TotalPlaytime = DataHandler:Get(targetPlayer, "TotalPlaytime"),
 			}
 			syncEvent:Fire(targetPlayer, syncData)
-			print("[ADMIN] ✅ Sync event fired with data!")
 		else
 			warn("[ADMIN] ❌ Sync event not found!")
 		end
@@ -958,7 +914,6 @@ modifySummitDataEvent.OnServerEvent:Connect(function(admin, targetUserId, newSum
 		task.wait(1)
 		if TitleServer.SyncSummitTitles then
 			TitleServer:SyncSummitTitles(targetPlayer, newSummitValue)
-			print("[ADMIN] ✅ Title synced")
 		end
 	end)
 
@@ -974,8 +929,6 @@ modifySummitDataEvent.OnServerEvent:Connect(function(admin, targetUserId, newSum
 		Duration = 3
 	})
 
-	print(string.format("[ADMIN] ✅ DONE! %s summit = %d", targetPlayer.Name, newSummitValue))
-
 	AdminLogServer:Log(admin.UserId, admin.Name, "set_summit", {UserId = targetUserId, Name = targetPlayer.Name}, "New value: " .. newSummitValue)
 end)
 
@@ -983,8 +936,6 @@ searchLeaderboardEvent.OnServerInvoke = function(admin, username)
 	if not isAdmin(admin.UserId) then
 		return {success = false, message = "Not authorized"}
 	end
-
-	print(string.format("[ADMIN] %s searching for: %s", admin.Name, username))
 
 	local targetUserId = nil
 	local targetUsername = nil
@@ -1067,8 +1018,6 @@ deleteLeaderboardEvent.OnServerEvent:Connect(function(player, targetUserId, data
 		return
 	end
 
-	print("[ADMIN] " .. player.Name .. " deleting " .. dataType .. " data for UserID: " .. targetUserId)
-
 	local PlayerDataStore = DataStoreService:GetDataStore(DataStoreConfig.PlayerData)
 
 	local success, errorMsg = pcall(function()
@@ -1091,7 +1040,6 @@ deleteLeaderboardEvent.OnServerEvent:Connect(function(player, targetUserId, data
 				oldData.TotalDonation = 0
 			end
 
-			print("[ADMIN] ✅ UpdateAsync writing: TotalSummits = " .. (oldData.TotalSummits or 0))
 			return oldData
 		end)
 	end)
@@ -1105,8 +1053,6 @@ deleteLeaderboardEvent.OnServerEvent:Connect(function(player, targetUserId, data
 		})
 		return
 	end
-
-	print("[ADMIN] ✅ DataStore updated via UpdateAsync")
 
 	local SummitLeaderboard = DataStoreService:GetOrderedDataStore(DataStoreConfig.Leaderboards.Summit)
 	local SpeedrunLeaderboard = DataStoreService:GetOrderedDataStore(DataStoreConfig.Leaderboards.Speedrun)
@@ -1151,7 +1097,6 @@ deleteLeaderboardEvent.OnServerEvent:Connect(function(player, targetUserId, data
 					if dataType == "donate" or dataType == "all" then
 						cache.TotalDonation = 0
 					end
-					print("[ADMIN] ✅ Updated in-memory cache")
 				end
 
 				if targetPlayer:FindFirstChild("PlayerStats") then
@@ -1165,7 +1110,6 @@ deleteLeaderboardEvent.OnServerEvent:Connect(function(player, targetUserId, data
 					if dataType == "playtime" or dataType == "all" and playerStats:FindFirstChild("Playtime") then
 						playerStats.Playtime.Value = 0
 					end
-					print("[ADMIN] ✅ Updated PlayerStats")
 				end
 
 				local syncEvent = game.ServerScriptService:FindFirstChild("SyncPlayerDataEvent")
@@ -1178,7 +1122,6 @@ deleteLeaderboardEvent.OnServerEvent:Connect(function(player, targetUserId, data
 						TotalPlaytime = cache and cache.TotalPlaytime or 0,
 					}
 					syncEvent:Fire(targetPlayer, syncData)
-					print("[ADMIN] ✅ Sync event fired for CheckpointSystem cache update")
 				end
 			end
 		end)
@@ -1194,7 +1137,6 @@ deleteLeaderboardEvent.OnServerEvent:Connect(function(player, targetUserId, data
 		local refreshEvent = game.ServerScriptService:FindFirstChild("RefreshLeaderboardsEvent")
 		if refreshEvent and refreshEvent:IsA("BindableEvent") then
 			refreshEvent:Fire("All")
-			print("[ADMIN] ✅ Leaderboard display refresh triggered")
 		end
 	end)
 
@@ -1210,10 +1152,7 @@ deleteLeaderboardEvent.OnServerEvent:Connect(function(player, targetUserId, data
 	end)
 	AdminLogServer:Log(player.UserId, player.Name, "delete_data", {UserId = targetUserId, Name = targetUsername}, "Type: " .. dataType:upper())
 
-	print("[ADMIN] ✅ DONE! Data deleted via UpdateAsync")
 end)
-
-print("✅ [ADMIN SERVER] System loaded")
 
 getLeaderboardDataFunc.OnServerInvoke = function(admin, leaderboardType, limit)
 	if not isAdmin(admin.UserId) then
@@ -1222,8 +1161,6 @@ getLeaderboardDataFunc.OnServerInvoke = function(admin, leaderboardType, limit)
 
 	limit = limit or 50
 	if limit > 100 then limit = 100 end
-
-	print(string.format("[ADMIN] %s fetching %s leaderboard (limit: %d)", admin.Name, leaderboardType, limit))
 
 	local leaderboard = nil
 	local isAscending = false

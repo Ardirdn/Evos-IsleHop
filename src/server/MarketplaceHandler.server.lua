@@ -20,21 +20,14 @@ task.spawn(function()
 		end
 		if count > 0 then
 			purchaseHistory = {}
-			print(string.format("[MARKETPLACE] 🧹 Cleared %d purchase history entries (memory cleanup)", count))
 		end
 	end
 end)
 
-print("✅ [MARKETPLACE HANDLER] Initializing...")
-
-print("📋 [MARKETPLACE] Valid Money Pack ProductIds:")
 for i, pack in ipairs(ShopConfig.MoneyPacks) do
-	print(string.format("   %d. %s = ProductId: %d, Reward: $%d", i, pack.Title, pack.ProductId, pack.MoneyReward))
 end
 
-print("📋 [MARKETPLACE] Valid Donation ProductIds:")
 for i, pkg in ipairs(DonateConfig.Packages) do
-	print(string.format("   %d. %s = ProductId: %d", i, pkg.Title, pkg.ProductId))
 end
 
 local function sendDataUpdate(player)
@@ -65,22 +58,17 @@ MarketplaceService.ProcessReceipt = function(receiptInfo)
 	local productId = receiptInfo.ProductId
 	local purchaseId = receiptInfo.PurchaseId
 
-	print(string.format("💳 [MARKETPLACE] Processing: User %d, Product %d, Purchase %s", userId, productId, purchaseId))
-
 	if purchaseHistory[purchaseId] then
-		print(string.format("⚠️ [MARKETPLACE] Duplicate purchase detected: %s", purchaseId))
 		return Enum.ProductPurchaseDecision.PurchaseGranted
 	end
 
 	local player = Players:GetPlayerByUserId(userId)
 	if not player then
-		print(string.format("⚠️ [MARKETPLACE] Player not found: %d", userId))
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 
 	for _, package in ipairs(DonateConfig.Packages) do
 		if package.ProductId == productId then
-			print(string.format("💝 [MARKETPLACE] Processing donation: %s", package.Title))
 
 			local amount = package.Amount
 			DataHandler:Increment(player, "TotalDonations", amount)
@@ -114,28 +102,21 @@ MarketplaceService.ProcessReceipt = function(receiptInfo)
 			end)
 
 			purchaseHistory[purchaseId] = true
-			print(string.format("✅ [MARKETPLACE] Donation completed: %s donated R$%d (Total: R$%d)", player.Name, amount, totalDonations))
 			return Enum.ProductPurchaseDecision.PurchaseGranted
 		end
 	end
 
-	print(string.format("🔍 [MARKETPLACE] Checking %d money packs for ProductId: %d", #ShopConfig.MoneyPacks, productId))
 	for i, pack in ipairs(ShopConfig.MoneyPacks) do
-		print(string.format("   Pack %d: %s (ProductId: %d) - Match: %s", i, pack.Title, pack.ProductId, tostring(pack.ProductId == productId)))
 		if pack.ProductId == productId then
-			print(string.format("💰 [MARKETPLACE] ✅ MATCHED! Processing money pack: %s", pack.Title))
 
 			local beforeMoney = DataHandler:Get(player, "Money") or 0
-			print(string.format("   Before: $%d, Adding: $%d", beforeMoney, pack.MoneyReward))
 
 			local incrementSuccess = DataHandler:Increment(player, "Money", pack.MoneyReward)
-			print(string.format("   Increment success: %s", tostring(incrementSuccess)))
 
 			DataHandler:Increment(player, "TotalDonations", pack.Price)
 			DataHandler:SavePlayer(player)
 
 			local afterMoney = DataHandler:Get(player, "Money") or 0
-			print(string.format("   After: $%d", afterMoney))
 
 			local totalDonations = DataHandler:Get(player, "TotalDonations")
 			if totalDonations >= DonateConfig.DonationThreshold then
@@ -151,14 +132,12 @@ MarketplaceService.ProcessReceipt = function(receiptInfo)
 
 			sendDataUpdate(player)
 			purchaseHistory[purchaseId] = true
-			print(string.format("✅ [MARKETPLACE] Money pack purchased: %s bought $%d (New balance: $%d)", player.Name, pack.MoneyReward, afterMoney))
 			return Enum.ProductPurchaseDecision.PurchaseGranted
 		end
 	end
 
 	for _, aura in ipairs(ShopConfig.Auras) do
 		if aura.IsPremium and aura.ProductId == productId then
-			print(string.format("✨ [MARKETPLACE] Processing premium aura: %s", aura.Title))
 
 			if not DataHandler:ArrayContains(player, "OwnedAuras", aura.AuraId) then
 				DataHandler:AddToArray(player, "OwnedAuras", aura.AuraId)
@@ -174,14 +153,12 @@ MarketplaceService.ProcessReceipt = function(receiptInfo)
 			end
 
 			purchaseHistory[purchaseId] = true
-			print(string.format("✅ [MARKETPLACE] Premium aura purchased: %s", aura.Title))
 			return Enum.ProductPurchaseDecision.PurchaseGranted
 		end
 	end
 
 	for _, tool in ipairs(ShopConfig.Tools) do
 		if tool.IsPremium and tool.ProductId == productId then
-			print(string.format("🔧 [MARKETPLACE] Processing premium tool: %s", tool.Title))
 
 			if not DataHandler:ArrayContains(player, "OwnedTools", tool.ToolId) then
 				DataHandler:AddToArray(player, "OwnedTools", tool.ToolId)
@@ -197,13 +174,11 @@ MarketplaceService.ProcessReceipt = function(receiptInfo)
 			end
 
 			purchaseHistory[purchaseId] = true
-			print(string.format("✅ [MARKETPLACE] Premium tool purchased: %s", tool.Title))
 			return Enum.ProductPurchaseDecision.PurchaseGranted
 		end
 	end
 
 	if _G.SKIP_PRODUCT_ID and productId == _G.SKIP_PRODUCT_ID then
-		print(string.format("🚀 [MARKETPLACE] Processing skip checkpoint for %s", player.Name))
 
 		if _G.ExecuteSkipCheckpoint then
 			_G.ExecuteSkipCheckpoint(player)
@@ -218,5 +193,3 @@ MarketplaceService.ProcessReceipt = function(receiptInfo)
 	warn(string.format("⚠️ [MARKETPLACE] Unknown product ID: %d", productId))
 	return Enum.ProductPurchaseDecision.NotProcessedYet
 end
-
-print("✅ [MARKETPLACE HANDLER] System loaded")

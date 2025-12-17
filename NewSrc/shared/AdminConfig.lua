@@ -1,15 +1,10 @@
--- AdminConfig
--- Letakkan di ReplicatedStorage
-
 local AdminConfig = {}
 
--- Daftar User ID admin
 AdminConfig.Admins = {
-	8714136305, -- Ganti dengan User ID kamu
-	987654321, -- Tambahkan admin lain di sini
+	8714136305,
+	987654321,
 }
 
--- Fungsi untuk cek apakah player adalah admin
 function AdminConfig:IsAdmin(player)
 	for _, adminId in pairs(self.Admins) do
 		if player.UserId == adminId then
@@ -19,7 +14,6 @@ function AdminConfig:IsAdmin(player)
 	return false
 end
 
--- Daftar banned users (bisa dikembangkan dengan DataStore)
 AdminConfig.BannedUsers = {}
 
 function AdminConfig:IsBanned(userId)

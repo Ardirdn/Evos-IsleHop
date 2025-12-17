@@ -969,5 +969,3 @@ player.CharacterAdded:Connect(function()
 	btnCarry.AutoButtonColor = true
 	btnCarry.BackgroundColor3 = COLORS.Accent
 end)
-
-print("✅ [CARRY CLIENT] Loaded with draggable UI & dual request modes")

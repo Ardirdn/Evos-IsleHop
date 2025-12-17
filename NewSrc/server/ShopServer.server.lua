@@ -1,14 +1,3 @@
---[[
-    SHOP SERVER (SIMPLIFIED)
-    Place in ServerScriptService/ShopServer
-    
-    Handles:
-    - Shop UI data requests
-    - In-game money purchases
-    - Gamepass purchases
-    - Passive income
-]]
-
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local MarketplaceService = game:GetService("MarketplaceService")
@@ -19,7 +8,6 @@ local TitleServer = require(script.Parent.TitleServer)
 
 local ShopConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("ShopConfig"))
 
--- Create RemoteEvents
 local remoteFolder = ReplicatedStorage:FindFirstChild("ShopRemotes")
 if not remoteFolder then
 	remoteFolder = Instance.new("Folder")
@@ -62,9 +50,6 @@ if not updatePlayerDataEvent then
 	updatePlayerDataEvent.Parent = remoteFolder
 end
 
-print("✅ [SHOP SERVER] Initialized")
-
--- Helper: Check gamepass ownership
 local function hasGamepass(userId, gamepassId)
 	if not gamepassId or gamepassId == 0 then return false end
 
@@ -75,7 +60,6 @@ local function hasGamepass(userId, gamepassId)
 	return success and hasPass
 end
 
--- Helper: Send data update to client
 local function sendDataUpdate(player)
 	local data = DataHandler:GetData(player)
 	if not data then return end
@@ -89,7 +73,6 @@ local function sendDataUpdate(player)
 	end)
 end
 
--- Get Shop Data
 getShopDataEvent.OnServerInvoke = function(player)
 	local data = DataHandler:GetData(player)
 	if not data then
@@ -118,9 +101,7 @@ getShopDataEvent.OnServerInvoke = function(player)
 	}
 end
 
--- Purchase Item (Aura/Tool)
 purchaseItemEvent.OnServerEvent:Connect(function(player, itemType, itemId, price, isPremium, productId)
-	print(string.format("🛒 [SHOP] Purchase request: %s - %s %s", player.Name, itemType, itemId))
 
 	local arrayField = itemType == "Aura" and "OwnedAuras" or "OwnedTools"
 	if DataHandler:ArrayContains(player, arrayField, itemId) then
@@ -158,7 +139,6 @@ purchaseItemEvent.OnServerEvent:Connect(function(player, itemType, itemId, price
 			})
 
 			sendDataUpdate(player)
-			print(string.format("✅ [SHOP] %s purchased %s %s", player.Name, itemType, itemId))
 		else
 			NotificationService:Send(player, {
 				Message = "Not enough money!",
@@ -169,9 +149,7 @@ purchaseItemEvent.OnServerEvent:Connect(function(player, itemType, itemId, price
 	end
 end)
 
--- Purchase Gamepass
 purchaseGamepassEvent.OnServerEvent:Connect(function(player, gamepassName)
-	print(string.format("🛒 [SHOP] Gamepass request: %s - %s", player.Name, gamepassName))
 
 	local gamepassData = nil
 	for _, gp in ipairs(ShopConfig.Gamepasses) do
@@ -200,17 +178,13 @@ purchaseGamepassEvent.OnServerEvent:Connect(function(player, gamepassName)
 	MarketplaceService:PromptGamePassPurchase(player, gamepassData.GamepassId)
 end)
 
--- Handle Gamepass Purchase Success
 MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, gamepassId, wasPurchased)
 	if not wasPurchased then return end
-
-	print(string.format("🎉 [SHOP] Gamepass purchased: %s - ID %d", player.Name, gamepassId))
 
 	for _, gp in ipairs(ShopConfig.Gamepasses) do
 		if gp.GamepassId == gamepassId then
 			DataHandler:AddToArray(player, "OwnedGamepasses", gp.Name)
 
-			-- ✅ JANGAN SET TITLE UNTUK MULTIPLIER GAMEPASSES
 			if gp.Name ~= "x2 Summit" and gp.Name ~= "x4 Summit" then
 				TitleServer:SetTitle(player, gp.Name, "gamepass", true)
 			end
@@ -225,16 +199,12 @@ MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, gamep
 			})
 
 			sendDataUpdate(player)
-			print(string.format("✅ [SHOP] %s received %s", player.Name, gp.Name))
 			break
 		end
 	end
 end)
 
-
--- Purchase Money Pack
 purchaseMoneyPackEvent.OnServerEvent:Connect(function(player, productId)
-	print(string.format("💰 [SHOP] Money pack request: %s - Product %d", player.Name, productId))
 
 	if productId == 0 then
 		NotificationService:Send(player, {
@@ -247,7 +217,6 @@ purchaseMoneyPackEvent.OnServerEvent:Connect(function(player, productId)
 	MarketplaceService:PromptProductPurchase(player, productId)
 end)
 
--- Money passive income ($1 per second)
 Players.PlayerAdded:Connect(function(player)
 	task.spawn(function()
 		while player.Parent do
@@ -257,5 +226,3 @@ Players.PlayerAdded:Connect(function(player)
 		end
 	end)
 end)
-
-print("✅ [SHOP SERVER] System loaded")

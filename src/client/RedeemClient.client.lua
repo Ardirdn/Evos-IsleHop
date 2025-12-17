@@ -500,12 +500,10 @@ local function checkAdmin()
 			isAdmin = true
 			createTab.Visible = true
 			availableTab.Visible = true
-			print("✅ [REDEEM CLIENT] Admin access granted")
 		else
 			isAdmin = false
 			createTab.Visible = false
 			availableTab.Visible = false
-			print("⚠️ [REDEEM CLIENT] Not an admin")
 		end
 	end)
 end
@@ -568,14 +566,12 @@ local function createRewardCard(rewardData, rewardType)
 			}
 		end
 
-		print(string.format("✅ [REDEEM CLIENT] Selected: %s (%s)", rewardData.Name, rewardType))
 	end)
 
 	return card
 end
 
 local function updateRewardDisplay(rewardType)
-	print(string.format("🔍 [REDEEM CLIENT] updateRewardDisplay called: %s", rewardType))
 
 	for _, child in ipairs(rewardScrollFrame:GetChildren()) do
 		if child:IsA("Frame") then
@@ -586,14 +582,12 @@ local function updateRewardDisplay(rewardType)
 	selectedReward = nil
 
 	task.spawn(function()
-		print(string.format("🔍 [REDEEM CLIENT] Requesting %s from server...", rewardType))
 
 		local success, options = pcall(function()
 			return getRewardOptionsFunc:InvokeServer(rewardType)
 		end)
 
 		if success and options then
-			print(string.format("✅ [REDEEM CLIENT] Received %d %s options", #options, rewardType))
 			rewardOptions = options
 
 			for _, option in ipairs(options) do
@@ -657,8 +651,6 @@ end
 for rewardType, tab in pairs(rewardTabs) do
 	tab.MouseButton1Click:Connect(function()
 		currentRewardTab = rewardType
-
-		print(string.format("🔍 [REDEEM CLIENT] Switching to tab: %s", rewardType))
 
 		for type, t in pairs(rewardTabs) do
 			t.BackgroundColor3 = (type == rewardType) and COLORS.Accent or COLORS.Button
@@ -750,5 +742,3 @@ local redeemIcon = Icon.new()
 	end)
 
 checkAdmin()
-
-print("✅ [REDEEM CLIENT] System loaded")

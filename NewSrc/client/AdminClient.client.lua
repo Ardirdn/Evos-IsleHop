@@ -1,13 +1,3 @@
---[[
-    ROBLOX ADMIN PANEL SYSTEM - CLIENT
-    Modern admin panel with notification system and player management
-    
-    Installation:
-    1. Place this script in StarterPlayerScripts
-    2. Place the ServerScript in ServerScriptService
-    3. Make sure TopbarPlus module is available in ReplicatedStorage (optional)
-]]
-
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
@@ -18,30 +8,23 @@ local StarterGui = game:GetService("StarterGui")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- ✅ GANTI BAGIAN INI:
 local TitleConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("TitleConfig"))
 local PanelManager = require(script.Parent:WaitForChild("PanelManager"))
 
--- Check if player is admin
 local function isAdmin()
 	return TitleConfig.IsAdmin(player.UserId)
 end
 
--- Check if player is PRIMARY admin (full access)
 local function isPrimaryAdmin()
 	return TitleConfig.IsPrimaryAdmin(player.UserId)
 end
 
 if not isAdmin() then
-	return -- Exit if not admin
+	return
 end
 
--- Store admin access level for later use
 local hasPrimaryAccess = isPrimaryAdmin()
 
-
-
--- Wait for RemoteEvents
 local remoteFolder = ReplicatedStorage:WaitForChild("AdminRemotes", 10)
 if not remoteFolder then
 	warn("AdminRemotes folder not found! Server script may not be running.")
@@ -58,16 +41,13 @@ local setGravityEvent = remoteFolder:WaitForChild("SetGravity")
 local killPlayerEvent = remoteFolder:WaitForChild("KillPlayer")
 local sendNotificationEvent = remoteFolder:WaitForChild("SendGlobalNotification", 5)
 
-
-
--- Try to load TopbarPlus with error handling
 local Icon
 local topbarPlusLoaded = false
 
 local function loadTopbarPlus()
 	local success, result = pcall(function()
-		-- Try different possible locations
-		local iconModule = ReplicatedStorage:FindFirstChild("Icon") 
+
+		local iconModule = ReplicatedStorage:FindFirstChild("Icon")
 			or ReplicatedStorage:FindFirstChild("TopbarPlus")
 			or ReplicatedStorage:FindFirstChild("IconModule")
 
@@ -82,7 +62,6 @@ local function loadTopbarPlus()
 	if success and result then
 		Icon = result
 		topbarPlusLoaded = true
-		print("✓ TopbarPlus loaded successfully")
 		return true
 	else
 		warn("Failed to load TopbarPlus: " .. tostring(result))
@@ -90,29 +69,24 @@ local function loadTopbarPlus()
 	end
 end
 
--- Wait a bit for ReplicatedStorage to load
 task.wait(1)
 loadTopbarPlus()
 
--- If TopbarPlus fails, we'll create a fallback button
 if not topbarPlusLoaded then
 	warn("TopbarPlus not available, using fallback button")
 end
 
--- Create ScreenGui
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "AdminPanelGui"
 screenGui.ResetOnSpawn = false
 screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 screenGui.Parent = playerGui
 
--- Add padding to ScreenGui so panel doesn't touch screen edges
 local screenPadding = Instance.new("UIPadding")
 screenPadding.PaddingTop = UDim.new(0.05, 0)
 screenPadding.PaddingBottom = UDim.new(0.05, 0)
 screenPadding.Parent = screenGui
 
--- Color Scheme
 local COLORS = {
 	Background = Color3.fromRGB(25, 25, 30),
 	Panel = Color3.fromRGB(30, 30, 35),
@@ -129,24 +103,21 @@ local COLORS = {
 	Border = Color3.fromRGB(50, 50, 55)
 }
 
--- Accent Color Variations (for cards - like Donate panel style)
 local ACCENT_COLORS = {
-	Color3.fromRGB(88, 166, 255),   -- Sky Blue
-	Color3.fromRGB(139, 195, 74),   -- Light Green
-	Color3.fromRGB(255, 152, 0),    -- Orange
-	Color3.fromRGB(156, 39, 176),   -- Purple
-	Color3.fromRGB(233, 30, 99),    -- Pink
-	Color3.fromRGB(0, 188, 212),    -- Cyan
-	Color3.fromRGB(255, 193, 7),    -- Amber
-	Color3.fromRGB(76, 175, 80),    -- Green
+	Color3.fromRGB(88, 166, 255),
+	Color3.fromRGB(139, 195, 74),
+	Color3.fromRGB(255, 152, 0),
+	Color3.fromRGB(156, 39, 176),
+	Color3.fromRGB(233, 30, 99),
+	Color3.fromRGB(0, 188, 212),
+	Color3.fromRGB(255, 193, 7),
+	Color3.fromRGB(76, 175, 80),
 }
 
--- Get accent color by index (cycles through colors)
 local function getCardAccentColor(index)
 	return ACCENT_COLORS[((index - 1) % #ACCENT_COLORS) + 1]
 end
 
--- Utility Functions
 local function createCorner(radius)
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0, radius)
@@ -170,14 +141,12 @@ local function createStroke(color, thickness)
 	return stroke
 end
 
--- Scaled corner (for responsive design)
 local function createScaledCorner(scale)
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(scale, 0)
 	return corner
 end
 
--- Text size constraint
 local function createTextSizeConstraint(minSize, maxSize)
 	local constraint = Instance.new("UITextSizeConstraint")
 	constraint.MinTextSize = minSize or 8
@@ -185,7 +154,6 @@ local function createTextSizeConstraint(minSize, maxSize)
 	return constraint
 end
 
--- Scaled padding
 local function createScaledPadding(top, bottom, left, right)
 	local pad = Instance.new("UIPadding")
 	pad.PaddingTop = UDim.new(top or 0, 0)
@@ -217,8 +185,6 @@ local function tweenSize(object, endSize, time, callback)
 	return tween
 end
 
--- Make frame draggable
--- Make frame draggable (RESPONSIVE VERSION)
 local function makeDraggable(frame, dragHandle)
 	local dragging = false
 	local dragInput, mousePos, framePos
@@ -250,25 +216,22 @@ local function makeDraggable(frame, dragHandle)
 			local delta = input.Position - mousePos
 			local viewport = workspace.CurrentCamera.ViewportSize
 
-			-- ✅ Konversi delta pixel ke scale
 			local deltaScaleX = delta.X / viewport.X
 			local deltaScaleY = delta.Y / viewport.Y
 
 			frame.Position = UDim2.new(
 				framePos.X.Scale + deltaScaleX,
-				0,  -- ✅ Offset selalu 0
+				0,
 				framePos.Y.Scale + deltaScaleY,
-				0   -- ✅ Offset selalu 0
+				0
 			)
 		end
 	end)
 end
 
-
--- Create Button
 local function createButton(text, color, hoverColor)
 	local button = Instance.new("TextButton")
-	button.Size = UDim2.new(1, 0, 0.1, 0)  -- ✅ Lebih besar (42px di layar 1080p)
+	button.Size = UDim2.new(1, 0, 0.1, 0)
 	button.BackgroundColor3 = color or COLORS.Button
 	button.BorderSizePixel = 0
 	button.Font = Enum.Font.GothamMedium
@@ -292,7 +255,6 @@ end
 
 local showConfirmation
 
--- Main Container (for UIAspectRatioConstraint)
 local mainContainer = Instance.new("Frame")
 mainContainer.Name = "AdminPanelContainer"
 mainContainer.Size = UDim2.new(0.55, 0, 0.85, 0)
@@ -301,14 +263,12 @@ mainContainer.AnchorPoint = Vector2.new(0.5, 0.5)
 mainContainer.BackgroundTransparency = 1
 mainContainer.Parent = screenGui
 
--- Aspect Ratio Constraint
 local aspectRatio = Instance.new("UIAspectRatioConstraint")
 aspectRatio.AspectRatio = 0.7
 aspectRatio.AspectType = Enum.AspectType.ScaleWithParentSize
 aspectRatio.DominantAxis = Enum.DominantAxis.Width
 aspectRatio.Parent = mainContainer
 
--- Main Admin Panel
 local mainPanel = Instance.new("Frame")
 mainPanel.Name = "MainPanel"
 mainPanel.Size = UDim2.new(1, 0, 1, 0)
@@ -322,7 +282,6 @@ mainPanel.Parent = mainContainer
 createScaledCorner(0.02).Parent = mainPanel
 createStroke(COLORS.Border, 2).Parent = mainPanel
 
--- Main Panel Padding
 local mainPadding = Instance.new("UIPadding")
 mainPadding.PaddingLeft = UDim.new(0.02, 0)
 mainPadding.PaddingRight = UDim.new(0.02, 0)
@@ -330,7 +289,6 @@ mainPadding.PaddingTop = UDim.new(0.015, 0)
 mainPadding.PaddingBottom = UDim.new(0.02, 0)
 mainPadding.Parent = mainPanel
 
--- Panel Header
 local header = Instance.new("Frame")
 header.Name = "Header"
 header.Size = UDim2.new(1, 0, 0.09, 0)
@@ -340,7 +298,6 @@ header.Parent = mainPanel
 
 createScaledCorner(0.15).Parent = header
 
--- Header Padding
 local headerPadding = Instance.new("UIPadding")
 headerPadding.PaddingLeft = UDim.new(0.02, 0)
 headerPadding.PaddingRight = UDim.new(0.02, 0)
@@ -375,7 +332,6 @@ closeButton.Parent = header
 createScaledCorner(0.2).Parent = closeButton
 createTextSizeConstraint(14, 24).Parent = closeButton
 
--- Tab System
 local tabContainer = Instance.new("Frame")
 tabContainer.Size = UDim2.new(1, 0, 0.07, 0)
 tabContainer.Position = UDim2.new(0, 0, 0.11, 0)
@@ -384,25 +340,22 @@ tabContainer.Parent = mainPanel
 
 local tabLayout = Instance.new("UIListLayout")
 tabLayout.FillDirection = Enum.FillDirection.Horizontal
-tabLayout.Padding = UDim.new(0.01, 0) -- Scale-based padding
+tabLayout.Padding = UDim.new(0.01, 0)
 tabLayout.SortOrder = Enum.SortOrder.LayoutOrder
 tabLayout.Parent = tabContainer
 
--- Content Container
 local contentContainer = Instance.new("Frame")
 contentContainer.Size = UDim2.new(1, 0, 0.8, 0)
 contentContainer.Position = UDim2.new(0, 0, 0.19, 0)
 contentContainer.BackgroundTransparency = 1
 contentContainer.Parent = mainPanel
 
--- Tab Creation Function (RESPONSIVE - EQUAL WIDTH) - FIXED
 local currentTab = nil
-local totalTabs = hasPrimaryAccess and 5 or 4  -- 5 tabs for primary admin (includes Log)
+local totalTabs = hasPrimaryAccess and 5 or 4
 
 local function createTab(name, order)
 	local tab = Instance.new("TextButton")
 
-	-- Scale-based width with gap (5 tabs for primary admin, 4 for secondary)
 	local tabWidth = hasPrimaryAccess and 0.19 or 0.24
 	tab.Size = UDim2.new(tabWidth, 0, 1, 0)
 	tab.BackgroundColor3 = COLORS.Button
@@ -417,7 +370,6 @@ local function createTab(name, order)
 
 	createScaledCorner(0.15).Parent = tab
 
-	-- Text size constraint
 	local textSizeConstraint = Instance.new("UITextSizeConstraint")
 	textSizeConstraint.MaxTextSize = 14
 	textSizeConstraint.MinTextSize = 9
@@ -431,12 +383,11 @@ local function createTab(name, order)
 	content.Parent = contentContainer
 
 	tab.MouseButton1Click:Connect(function()
-		-- Hide all tabs
+
 		for _, child in ipairs(contentContainer:GetChildren()) do
 			child.Visible = false
 		end
 
-		-- Reset all tab colors
 		for _, tabBtn in ipairs(tabContainer:GetChildren()) do
 			if tabBtn:IsA("TextButton") then
 				tabBtn.BackgroundColor3 = COLORS.Button
@@ -444,7 +395,6 @@ local function createTab(name, order)
 			end
 		end
 
-		-- Show selected tab
 		content.Visible = true
 		tab.BackgroundColor3 = COLORS.Accent
 		tab.TextColor3 = COLORS.Text
@@ -454,9 +404,6 @@ local function createTab(name, order)
 	return content, tab
 end
 
-
-
--- Notification Tab
 local notifTab, notifTabBtn = createTab("Notifications", 1)
 
 local notifScroll = Instance.new("ScrollingFrame")
@@ -474,7 +421,6 @@ notifLayout.Padding = UDim.new(0, 6)
 notifLayout.SortOrder = Enum.SortOrder.LayoutOrder
 notifLayout.Parent = notifScroll
 
--- Notification Type Selection
 local typeFrame = Instance.new("Frame")
 typeFrame.Size = UDim2.new(1, 0, 0, 40)
 typeFrame.BackgroundTransparency = 1
@@ -534,7 +480,6 @@ end
 createTypeButton("Server")
 createTypeButton("Global")
 
--- ==================== NOTIFICATION UI TYPE SELECTION ====================
 local uiTypeFrame = Instance.new("Frame")
 uiTypeFrame.Size = UDim2.new(1, 0, 0, 70)
 uiTypeFrame.BackgroundTransparency = 1
@@ -551,7 +496,6 @@ uiTypeLabel.TextSize = 14
 uiTypeLabel.TextXAlignment = Enum.TextXAlignment.Left
 uiTypeLabel.Parent = uiTypeFrame
 
--- Row 1: Position (Middle / Side)
 local positionRow = Instance.new("Frame")
 positionRow.Size = UDim2.new(1, 0, 0, 25)
 positionRow.Position = UDim2.new(0, 0, 0, 22)
@@ -563,7 +507,7 @@ positionLayout.FillDirection = Enum.FillDirection.Horizontal
 positionLayout.Padding = UDim.new(0, 8)
 positionLayout.Parent = positionRow
 
-local selectedPosition = "Side" -- Default: Side
+local selectedPosition = "Side"
 
 local function createPositionButton(text, value)
 	local btn = Instance.new("TextButton")
@@ -596,7 +540,6 @@ end
 createPositionButton("📍 Middle", "Middle")
 createPositionButton("🔔 Side", "Side")
 
--- Row 2: Sender (Text Only / With Sender)
 local senderRow = Instance.new("Frame")
 senderRow.Size = UDim2.new(1, 0, 0, 25)
 senderRow.Position = UDim2.new(0, 0, 0, 48)
@@ -608,7 +551,7 @@ senderLayout.FillDirection = Enum.FillDirection.Horizontal
 senderLayout.Padding = UDim.new(0, 8)
 senderLayout.Parent = senderRow
 
-local selectedSenderType = "TextOnly" -- Default: Text Only
+local selectedSenderType = "TextOnly"
 
 local function createSenderButton(text, value)
 	local btn = Instance.new("TextButton")
@@ -641,14 +584,11 @@ end
 createSenderButton("📝 Text Only", "TextOnly")
 createSenderButton("👤 With Sender", "WithSender")
 
--- Function to get combined notification type
 local function getNotificationType()
 	return selectedPosition .. selectedSenderType
-	-- Results: "MiddleTextOnly", "MiddleWithSender", "SideTextOnly", "SideWithSender"
-end
--- ==================== END NOTIFICATION UI TYPE SELECTION ====================
 
--- Message Input
+end
+
 local messageFrame = Instance.new("Frame")
 messageFrame.Size = UDim2.new(1, 0, 0.4, 0)
 messageFrame.BackgroundTransparency = 1
@@ -685,7 +625,6 @@ messageBox.Parent = messageFrame
 createCorner(6).Parent = messageBox
 createPadding(8).Parent = messageBox
 
--- Duration Slider
 local durationFrame = Instance.new("Frame")
 durationFrame.Size = UDim2.new(1, 0, 0.15, 0)
 durationFrame.BackgroundTransparency = 1
@@ -750,7 +689,7 @@ UserInputService.InputChanged:Connect(function(input)
 		local sliderSize = sliderBg.AbsoluteSize.X
 		local relativePos = math.clamp((mousePos.X - sliderPos) / sliderSize, 0, 1)
 
-		selectedDuration = math.floor(relativePos * 120 + 1) -- 1 to 120 seconds
+		selectedDuration = math.floor(relativePos * 120 + 1)
 		durationLabel.Text = "Duration: " .. selectedDuration .. "s"
 
 		sliderFill.Size = UDim2.new(relativePos, 0, 1, 0)
@@ -758,7 +697,6 @@ UserInputService.InputChanged:Connect(function(input)
 	end
 end)
 
--- Text Color Picker
 local colorFrame = Instance.new("Frame")
 colorFrame.Size = UDim2.new(1, 0, 0.15, 0)
 colorFrame.BackgroundTransparency = 1
@@ -830,7 +768,6 @@ createColorButton(Color3.fromRGB(250, 166, 26))
 createColorButton(Color3.fromRGB(237, 66, 69))
 createColorButton(Color3.fromRGB(153, 170, 181))
 
--- Send Button
 local sendFrame = Instance.new("Frame")
 sendFrame.Size = UDim2.new(1, 0, 0.113, 0)
 sendFrame.BackgroundTransparency = 1
@@ -841,27 +778,21 @@ local sendButton = createButton("Send Notification", COLORS.Accent, COLORS.Accen
 sendButton.Size = UDim2.new(1, 0, 1, 0)
 sendButton.Parent = sendFrame
 
--- Update send button (line ~719)
 sendButton.MouseButton1Click:Connect(function()
 	if messageBox.Text ~= "" then
 		local notifText = messageBox.Text
 		local color = selectedColor or Color3.fromRGB(255, 255, 255)
-		local notificationType = getNotificationType() -- MiddleTextOnly, MiddleWithSender, SideTextOnly, SideWithSender
+		local notificationType = getNotificationType()
 		local duration = selectedDuration or 5
 
-		-- Fire with color, notification type, and duration parameters
 		sendNotificationEvent:FireServer(selectedType:lower(), notifText, color, notificationType, duration)
 
 		messageBox.Text = ""
 	end
 end)
 
-
-
--- Players Tab
 local playersTab, playersTabBtn = createTab("Players", 2)
 
--- ✅ Search Bar Container
 local searchContainer = Instance.new("Frame")
 searchContainer.Name = "SearchContainer"
 searchContainer.Size = UDim2.new(1, 0, 0, 40)
@@ -893,7 +824,7 @@ searchPadding.PaddingRight = UDim.new(0, 12)
 searchPadding.Parent = searchBox
 
 local playersScroll = Instance.new("ScrollingFrame")
-playersScroll.Size = UDim2.new(1, 0, 1, -50) -- Account for search bar
+playersScroll.Size = UDim2.new(1, 0, 1, -50)
 playersScroll.Position = UDim2.new(0, 0, 0, 45)
 playersScroll.BackgroundTransparency = 1
 playersScroll.BorderSizePixel = 0
@@ -903,7 +834,6 @@ playersScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 playersScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 playersScroll.Parent = playersTab
 
--- ✅ FIX: Add padding to ScrollingFrame so cards don't get cut off
 local playerScrollPadding = Instance.new("UIPadding")
 playerScrollPadding.PaddingLeft = UDim.new(0, 10)
 playerScrollPadding.PaddingRight = UDim.new(0, 10)
@@ -916,10 +846,8 @@ playersLayout.Padding = UDim.new(0, 8)
 playersLayout.SortOrder = Enum.SortOrder.LayoutOrder
 playersLayout.Parent = playersScroll
 
--- ✅ Search functionality variable (used later in updatePlayers)
 local currentSearchQuery = ""
 
--- Player Detail Panel
 local playerDetailPanel = Instance.new("Frame")
 playerDetailPanel.Name = "PlayerDetail"
 playerDetailPanel.Size = UDim2.new(0.208, 0, 0.509, 0)
@@ -970,7 +898,7 @@ detailCloseButton.MouseButton1Click:Connect(function()
 	tweenSize(playerDetailPanel, UDim2.new(0, 0, 0, 0), 0.3, function()
 		playerDetailPanel.Visible = false
 		playerDetailPanel.Size = UDim2.new(0.25, 0, 0.509, 0)
-		
+
 	end)
 end)
 
@@ -990,10 +918,9 @@ detailLayout.Padding = UDim.new(0, 10)
 detailLayout.SortOrder = Enum.SortOrder.LayoutOrder
 detailLayout.Parent = detailScroll
 
--- Confirmation Dialog (FIXED - Bigger & Proper Layout)
 local confirmDialog = Instance.new("Frame")
 confirmDialog.Name = "ConfirmDialog"
-confirmDialog.Size = UDim2.new(0, 380, 0, 200)  -- ✅ Lebih besar: 380x200px
+confirmDialog.Size = UDim2.new(0, 380, 0, 200)
 confirmDialog.Position = UDim2.new(0.5, 0, 0.5, 0)
 confirmDialog.AnchorPoint = Vector2.new(0.5, 0.5)
 confirmDialog.BackgroundColor3 = COLORS.Background
@@ -1005,7 +932,6 @@ confirmDialog.Parent = screenGui
 createCorner(12).Parent = confirmDialog
 createStroke(COLORS.Border, 2).Parent = confirmDialog
 
--- Header
 local confirmHeader = Instance.new("Frame")
 confirmHeader.Size = UDim2.new(1, 0, 0, 50)
 confirmHeader.BackgroundColor3 = COLORS.Header
@@ -1021,7 +947,6 @@ confirmHeaderBottom.BackgroundColor3 = COLORS.Header
 confirmHeaderBottom.BorderSizePixel = 0
 confirmHeaderBottom.Parent = confirmHeader
 
--- Title
 local confirmTitle = Instance.new("TextLabel")
 confirmTitle.Size = UDim2.new(1, -30, 1, 0)
 confirmTitle.Position = UDim2.new(0, 15, 0, 0)
@@ -1033,9 +958,8 @@ confirmTitle.TextSize = 16
 confirmTitle.TextXAlignment = Enum.TextXAlignment.Left
 confirmTitle.Parent = confirmHeader
 
--- Message (dengan padding proper)
 local confirmMessage = Instance.new("TextLabel")
-confirmMessage.Size = UDim2.new(1, -40, 0, 70)  -- ✅ Lebih tinggi untuk text wrapping
+confirmMessage.Size = UDim2.new(1, -40, 0, 70)
 confirmMessage.Position = UDim2.new(0, 20, 0, 65)
 confirmMessage.BackgroundTransparency = 1
 confirmMessage.Font = Enum.Font.Gotham
@@ -1043,27 +967,25 @@ confirmMessage.Text = ""
 confirmMessage.TextColor3 = COLORS.TextSecondary
 confirmMessage.TextSize = 14
 confirmMessage.TextWrapped = true
-confirmMessage.TextXAlignment = Enum.TextXAlignment.Center  -- ✅ Center text
+confirmMessage.TextXAlignment = Enum.TextXAlignment.Center
 confirmMessage.TextYAlignment = Enum.TextYAlignment.Top
 confirmMessage.Parent = confirmDialog
 
--- Buttons Container (untuk center alignment)
 local confirmButtons = Instance.new("Frame")
-confirmButtons.Size = UDim2.new(1, -40, 0, 50)  -- ✅ Button lebih tinggi
-confirmButtons.Position = UDim2.new(0, 20, 1, -65)  -- ✅ 15px from bottom
+confirmButtons.Size = UDim2.new(1, -40, 0, 50)
+confirmButtons.Position = UDim2.new(0, 20, 1, -65)
 confirmButtons.BackgroundTransparency = 1
 confirmButtons.Parent = confirmDialog
 
 local confirmButtonLayout = Instance.new("UIListLayout")
 confirmButtonLayout.FillDirection = Enum.FillDirection.Horizontal
-confirmButtonLayout.Padding = UDim.new(0, 15)  -- ✅ 15px spacing
+confirmButtonLayout.Padding = UDim.new(0, 15)
 confirmButtonLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 confirmButtonLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 confirmButtonLayout.Parent = confirmButtons
 
 local currentConfirmCallback = nil
 
--- ✅ Assign ke variable yang sudah di-declare sebelumnya
 showConfirmation = function(title, message, callback)
 	confirmTitle.Text = title
 	confirmMessage.Text = message
@@ -1073,10 +995,8 @@ showConfirmation = function(title, message, callback)
 	tweenSize(confirmDialog, UDim2.new(0, 380, 0, 200), 0.3)
 end
 
-
--- Cancel Button
 local cancelButton = createButton("Cancel", COLORS.Button, COLORS.ButtonHover)
-cancelButton.Size = UDim2.new(0, 150, 1, 0)  -- ✅ Fixed width 150px
+cancelButton.Size = UDim2.new(0, 150, 1, 0)
 cancelButton.LayoutOrder = 1
 cancelButton.Parent = confirmButtons
 
@@ -1087,9 +1007,8 @@ cancelButton.MouseButton1Click:Connect(function()
 	end)
 end)
 
--- Confirm Button
 local confirmButton = createButton("Confirm", COLORS.Danger, COLORS.DangerHover)
-confirmButton.Size = UDim2.new(0, 150, 1, 0)  -- ✅ Fixed width 150px
+confirmButton.Size = UDim2.new(0, 150, 1, 0)
 confirmButton.LayoutOrder = 2
 confirmButton.Parent = confirmButtons
 
@@ -1103,18 +1022,17 @@ confirmButton.MouseButton1Click:Connect(function()
 	end)
 end)
 
--- Player Actions
 local currentSpectatePlayer = nil
 local originalCamera = nil
 local spectateConnection = nil
 
 local function createTeleportPopup(targetPlayer)
-	-- ✅ HIDE ALL PANELS when popup opens
+
 	mainContainer.Visible = false
 	playerDetailPanel.Visible = false
-	
+
 	local popup = Instance.new("Frame")
-	popup.Size = UDim2.new(0, 280, 0, 180) -- ✅ Fixed pixel size for consistency
+	popup.Size = UDim2.new(0, 280, 0, 180)
 	popup.Position = UDim2.new(0.5, 0, 0.5, 0)
 	popup.AnchorPoint = Vector2.new(0.5, 0.5)
 	popup.BackgroundColor3 = COLORS.Background
@@ -1127,16 +1045,14 @@ local function createTeleportPopup(targetPlayer)
 	createCorner(12).Parent = popup
 	createStroke(COLORS.Border, 2).Parent = popup
 
-	-- ✅ FIX: Header with proper fixed size
 	local header = Instance.new("Frame")
-	header.Size = UDim2.new(1, 0, 0, 45) -- Fixed 45px height
+	header.Size = UDim2.new(1, 0, 0, 45)
 	header.BackgroundColor3 = COLORS.Header
 	header.BorderSizePixel = 0
 	header.Parent = popup
 
 	createCorner(12).Parent = header
 
-	-- Header bottom cover (for rounded corners)
 	local headerBottom = Instance.new("Frame")
 	headerBottom.Size = UDim2.new(1, 0, 0, 15)
 	headerBottom.Position = UDim2.new(0, 0, 1, -15)
@@ -1170,13 +1086,12 @@ local function createTeleportPopup(targetPlayer)
 
 	closeBtn.MouseButton1Click:Connect(function()
 		popup:Destroy()
-		mainContainer.Visible = true -- ✅ Show main panel
+		mainContainer.Visible = true
 	end)
 
-	-- ✅ FIX: Teleport Here Button with proper positioning
 	local tpHereBtn = Instance.new("TextButton")
 	tpHereBtn.Size = UDim2.new(1, -30, 0, 45)
-	tpHereBtn.Position = UDim2.new(0, 15, 0, 55) -- Below header
+	tpHereBtn.Position = UDim2.new(0, 15, 0, 55)
 	tpHereBtn.BackgroundColor3 = COLORS.Button
 	tpHereBtn.BorderSizePixel = 0
 	tpHereBtn.Font = Enum.Font.GothamBold
@@ -1199,13 +1114,12 @@ local function createTeleportPopup(targetPlayer)
 	tpHereBtn.MouseButton1Click:Connect(function()
 		teleportHereEvent:FireServer(targetPlayer.UserId)
 		popup:Destroy()
-		mainContainer.Visible = true -- ✅ Show main panel
+		mainContainer.Visible = true
 	end)
 
-	-- ✅ FIX: Teleport To Button with proper spacing
 	local tpToBtn = Instance.new("TextButton")
 	tpToBtn.Size = UDim2.new(1, -30, 0, 45)
-	tpToBtn.Position = UDim2.new(0, 15, 0, 110) -- 55 + 45 + 10 spacing
+	tpToBtn.Position = UDim2.new(0, 15, 0, 110)
 	tpToBtn.BackgroundColor3 = COLORS.Button
 	tpToBtn.BorderSizePixel = 0
 	tpToBtn.Font = Enum.Font.GothamBold
@@ -1228,20 +1142,19 @@ local function createTeleportPopup(targetPlayer)
 	tpToBtn.MouseButton1Click:Connect(function()
 		teleportToEvent:FireServer(targetPlayer.UserId)
 		popup:Destroy()
-		mainContainer.Visible = true -- ✅ Show main panel
+		mainContainer.Visible = true
 	end)
 
 	return popup
 end
 
 local function showGiveTitlePopup(targetPlayer)
-	-- ✅ HIDE ALL PANELS when popup opens
+
 	mainContainer.Visible = false
 	playerDetailPanel.Visible = false
-	
+
 	local TitleConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("TitleConfig"))
-	
-	-- Collect all givable titles
+
 	local givableTitles = {}
 	for titleName, titleData in pairs(TitleConfig.SpecialTitles) do
 		if titleData.Givable == true then
@@ -1254,19 +1167,17 @@ local function showGiveTitlePopup(targetPlayer)
 			})
 		end
 	end
-	
-	-- Sort by priority (highest first)
+
 	table.sort(givableTitles, function(a, b)
 		return a.Priority > b.Priority
 	end)
-	
-	-- Calculate popup height (dynamic based on title count)
-	local popupHeight = 110 + (#givableTitles * 50) -- Header + titles + button
-	if popupHeight > 500 then popupHeight = 500 end -- Max height
-	
+
+	local popupHeight = 110 + (#givableTitles * 50)
+	if popupHeight > 500 then popupHeight = 500 end
+
 	local popup = Instance.new("Frame")
 	popup.Name = "GiveTitlePopup"
-	popup.Size = UDim2.new(0, 350, 0, popupHeight) -- ✅ Slightly bigger
+	popup.Size = UDim2.new(0, 350, 0, popupHeight)
 	popup.Position = UDim2.new(0.5, 0, 0.5, 0)
 	popup.AnchorPoint = Vector2.new(0.5, 0.5)
 	popup.BackgroundColor3 = COLORS.Background
@@ -1279,7 +1190,6 @@ local function showGiveTitlePopup(targetPlayer)
 	createCorner(12).Parent = popup
 	createStroke(COLORS.Border, 2).Parent = popup
 
-	-- Header
 	local header = Instance.new("Frame")
 	header.Size = UDim2.new(1, 0, 0, 40)
 	header.BackgroundColor3 = COLORS.Header
@@ -1321,10 +1231,9 @@ local function showGiveTitlePopup(targetPlayer)
 
 	closeBtn.MouseButton1Click:Connect(function()
 		popup:Destroy()
-		mainContainer.Visible = true -- ✅ Show main panel
+		mainContainer.Visible = true
 	end)
 
-	-- Scroll container for titles
 	local scrollFrame = Instance.new("ScrollingFrame")
 	scrollFrame.Size = UDim2.new(1, -20, 1, -100)
 	scrollFrame.Position = UDim2.new(0, 10, 0, 50)
@@ -1344,7 +1253,6 @@ local function showGiveTitlePopup(targetPlayer)
 	local selectedTitle = nil
 	local selectedButton = nil
 
-	-- Create button for each givable title
 	for i, titleInfo in ipairs(givableTitles) do
 		local titleBtn = Instance.new("TextButton")
 		titleBtn.Size = UDim2.new(1, 0, 0, 42)
@@ -1357,7 +1265,6 @@ local function showGiveTitlePopup(targetPlayer)
 
 		createCorner(8).Parent = titleBtn
 
-		-- Accent bar
 		local accentBar = Instance.new("Frame")
 		accentBar.Size = UDim2.new(0, 4, 1, 0)
 		accentBar.BackgroundColor3 = titleInfo.Color
@@ -1368,7 +1275,6 @@ local function showGiveTitlePopup(targetPlayer)
 		accentCorner.CornerRadius = UDim.new(0, 8)
 		accentCorner.Parent = accentBar
 
-		-- Icon
 		local iconLabel = Instance.new("TextLabel")
 		iconLabel.Size = UDim2.new(0, 30, 0, 30)
 		iconLabel.Position = UDim2.new(0, 15, 0.5, 0)
@@ -1379,7 +1285,6 @@ local function showGiveTitlePopup(targetPlayer)
 		iconLabel.TextSize = 18
 		iconLabel.Parent = titleBtn
 
-		-- Title name
 		local nameLabel = Instance.new("TextLabel")
 		nameLabel.Size = UDim2.new(1, -60, 1, 0)
 		nameLabel.Position = UDim2.new(0, 50, 0, 0)
@@ -1391,7 +1296,6 @@ local function showGiveTitlePopup(targetPlayer)
 		nameLabel.TextXAlignment = Enum.TextXAlignment.Left
 		nameLabel.Parent = titleBtn
 
-		-- Hover effect
 		titleBtn.MouseEnter:Connect(function()
 			if selectedButton ~= titleBtn then
 				TweenService:Create(titleBtn, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.Button}):Play()
@@ -1404,21 +1308,18 @@ local function showGiveTitlePopup(targetPlayer)
 			end
 		end)
 
-		-- Select title
 		titleBtn.MouseButton1Click:Connect(function()
-			-- Deselect previous
+
 			if selectedButton then
 				selectedButton.BackgroundColor3 = COLORS.Panel
 			end
 
-			-- Select new
 			selectedTitle = titleInfo.Name
 			selectedButton = titleBtn
 			titleBtn.BackgroundColor3 = COLORS.Accent
 		end)
 	end
 
-	-- Give button
 	local giveBtn = Instance.new("TextButton")
 	giveBtn.Size = UDim2.new(1, -20, 0, 40)
 	giveBtn.Position = UDim2.new(0, 10, 1, -50)
@@ -1457,10 +1358,9 @@ local function showGiveTitlePopup(targetPlayer)
 				local giveTitleEvent = remoteFolder:FindFirstChild("GiveTitle")
 				if giveTitleEvent then
 					giveTitleEvent:FireServer(targetPlayer.UserId, selectedTitle)
-					print(string.format("[ADMIN CLIENT] Gave title '%s' to %s", selectedTitle, targetPlayer.Name))
 				end
 				popup:Destroy()
-				mainContainer.Visible = true -- ✅ Show main panel
+				mainContainer.Visible = true
 			end
 		)
 	end)
@@ -1468,28 +1368,25 @@ local function showGiveTitlePopup(targetPlayer)
 	return popup
 end
 
-
-
 local function createModifyPlayerPopup(targetPlayer)
-	-- ✅ HIDE ALL PANELS when popup opens
+
 	mainContainer.Visible = false
 	playerDetailPanel.Visible = false
-	
+
 	local popup = Instance.new("Frame")
-	popup.Size = UDim2.new(0, 320, 0, 350) -- ✅ Fixed pixel size
+	popup.Size = UDim2.new(0, 320, 0, 350)
 	popup.Position = UDim2.new(0.5, 0, 0.5, 0)
 	popup.AnchorPoint = Vector2.new(0.5, 0.5)
 	popup.BackgroundColor3 = COLORS.Background
 	popup.BorderSizePixel = 0
 	popup.ZIndex = 100
-	popup.Active = true -- Make draggable
-	popup.Draggable = true -- Enable drag
+	popup.Active = true
+	popup.Draggable = true
 	popup.Parent = screenGui
 
 	createCorner(12).Parent = popup
 	createStroke(COLORS.Border, 2).Parent = popup
 
-	-- Header
 	local header = Instance.new("Frame")
 	header.Size = UDim2.new(1, 0, 0, 40)
 	header.BackgroundColor3 = COLORS.Header
@@ -1531,12 +1428,11 @@ local function createModifyPlayerPopup(targetPlayer)
 
 	closeBtn.MouseButton1Click:Connect(function()
 		popup:Destroy()
-		mainContainer.Visible = true -- ✅ Show main panel
+		mainContainer.Visible = true
 	end)
 
 	local contentY = 60
 
-	-- Freeze Button (WITH TOGGLE STATE)
 	local isFrozen = false
 	local freezeBtn = Instance.new("TextButton")
 	freezeBtn.Size = UDim2.new(1, -30, 0, 45)
@@ -1556,12 +1452,12 @@ local function createModifyPlayerPopup(targetPlayer)
 		isFrozen = not isFrozen
 
 		if isFrozen then
-			-- Frozen state (green)
+
 			freezeBtn.BackgroundColor3 = COLORS.Success
 			freezeBtn.Text = "Unfreeze Player"
 			freezePlayerEvent:FireServer(targetPlayer.UserId, true)
 		else
-			-- Unfrozen state (gray)
+
 			freezeBtn.BackgroundColor3 = COLORS.Button
 			freezeBtn.Text = "Freeze Player"
 			freezePlayerEvent:FireServer(targetPlayer.UserId, false)
@@ -1570,7 +1466,6 @@ local function createModifyPlayerPopup(targetPlayer)
 
 	contentY = contentY + 55
 
-	-- Speed Label
 	local speedLabel = Instance.new("TextLabel")
 	speedLabel.Size = UDim2.new(1, -30, 0, 20)
 	speedLabel.Position = UDim2.new(0, 15, 0, contentY)
@@ -1584,7 +1479,6 @@ local function createModifyPlayerPopup(targetPlayer)
 
 	contentY = contentY + 25
 
-	-- Speed Slider
 	local speedSliderBg = Instance.new("Frame")
 	speedSliderBg.Size = UDim2.new(1, -30, 0, 8)
 	speedSliderBg.Position = UDim2.new(0, 15, 0, contentY)
@@ -1611,7 +1505,6 @@ local function createModifyPlayerPopup(targetPlayer)
 
 	createCorner(8).Parent = speedHandle
 
-	-- Speed slider interaction
 	local draggingSpeed = false
 
 	speedSliderBg.InputBegan:Connect(function(input)
@@ -1644,7 +1537,6 @@ local function createModifyPlayerPopup(targetPlayer)
 
 	contentY = contentY + 30
 
-	-- Gravity Label
 	local gravityLabel = Instance.new("TextLabel")
 	gravityLabel.Size = UDim2.new(1, -30, 0, 20)
 	gravityLabel.Position = UDim2.new(0, 15, 0, contentY)
@@ -1658,12 +1550,11 @@ local function createModifyPlayerPopup(targetPlayer)
 
 	contentY = contentY + 25
 
-	-- Gravity Buttons (CENTERED with equal spacing)
 	local gravityTypes = {"Normal", "Low", "Zero", "High"}
 	local currentGravity = "Normal"
 	local buttonWidth = 0.23
 	local totalGap = 1 - (buttonWidth * 4)
-	local spacing = totalGap / 5 -- Equal spacing left, right, and between
+	local spacing = totalGap / 5
 
 	for i, gType in ipairs(gravityTypes) do
 		local xPosition = spacing * i + buttonWidth * (i - 1)
@@ -1693,7 +1584,6 @@ local function createModifyPlayerPopup(targetPlayer)
 
 			setGravityEvent:FireServer(targetPlayer.UserId, gravValue)
 
-			-- Update colors
 			for _, btn in ipairs(popup:GetChildren()) do
 				if btn:IsA("TextButton") and table.find(gravityTypes, btn.Text) then
 					btn.BackgroundColor3 = (btn.Text == gType) and COLORS.Accent or COLORS.Button
@@ -1702,18 +1592,16 @@ local function createModifyPlayerPopup(targetPlayer)
 		end)
 	end
 
-
 	return popup
 end
 
--- ✅ FUNCTION BARU: Show Modify Summit Popup (FIXED - Bigger & Draggable)
 local function showModifySummitPopup(targetPlayer)
-	-- ✅ HIDE ALL PANELS when popup opens
+
 	mainContainer.Visible = false
 	playerDetailPanel.Visible = false
-	
+
 	local popup = Instance.new("Frame")
-	popup.Size = UDim2.new(0, 380, 0, 300)  -- ✅ Fixed pixel size
+	popup.Size = UDim2.new(0, 380, 0, 300)
 	popup.Position = UDim2.new(0.5, 0, 0.5, 0)
 	popup.AnchorPoint = Vector2.new(0.5, 0.5)
 	popup.BackgroundColor3 = COLORS.Background
@@ -1724,10 +1612,8 @@ local function showModifySummitPopup(targetPlayer)
 	createCorner(12).Parent = popup
 	createStroke(COLORS.Border, 2).Parent = popup
 
-	-- ✅ DRAGGABLE
 	makeDraggable(popup)
 
-	-- Header (Draggable handle)
 	local header = Instance.new("Frame")
 	header.Name = "Header"
 	header.Size = UDim2.new(1, 0, 0, 50)
@@ -1737,7 +1623,6 @@ local function showModifySummitPopup(targetPlayer)
 
 	createCorner(12).Parent = header
 
-	-- Header bottom filler (rounded corner fix)
 	local headerBottom = Instance.new("Frame")
 	headerBottom.Size = UDim2.new(1, 0, 0, 15)
 	headerBottom.Position = UDim2.new(0, 0, 1, -15)
@@ -1745,7 +1630,6 @@ local function showModifySummitPopup(targetPlayer)
 	headerBottom.BorderSizePixel = 0
 	headerBottom.Parent = header
 
-	-- Title
 	local title = Instance.new("TextLabel")
 	title.Size = UDim2.new(1, -50, 1, 0)
 	title.Position = UDim2.new(0, 15, 0, 0)
@@ -1757,7 +1641,6 @@ local function showModifySummitPopup(targetPlayer)
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.Parent = header
 
-	-- Close Button
 	local closeBtn = Instance.new("TextButton")
 	closeBtn.Size = UDim2.new(0, 30, 0, 30)
 	closeBtn.Position = UDim2.new(1, -40, 0, 10)
@@ -1773,17 +1656,15 @@ local function showModifySummitPopup(targetPlayer)
 
 	closeBtn.MouseButton1Click:Connect(function()
 		popup:Destroy()
-		mainContainer.Visible = true -- ✅ Show main panel
+		mainContainer.Visible = true
 	end)
 
-	-- ✅ CONTENT CONTAINER (untuk spacing proper)
 	local contentContainer = Instance.new("Frame")
-	contentContainer.Size = UDim2.new(1, -30, 1, -65)  -- Leave space for header & bottom
+	contentContainer.Size = UDim2.new(1, -30, 1, -65)
 	contentContainer.Position = UDim2.new(0, 15, 0, 60)
 	contentContainer.BackgroundTransparency = 1
 	contentContainer.Parent = popup
 
-	-- Current Summit Display
 	local currentLabel = Instance.new("TextLabel")
 	currentLabel.Size = UDim2.new(1, 0, 0, 25)
 	currentLabel.Position = UDim2.new(0, 0, 0, 0)
@@ -1795,7 +1676,6 @@ local function showModifySummitPopup(targetPlayer)
 	currentLabel.TextXAlignment = Enum.TextXAlignment.Left
 	currentLabel.Parent = contentContainer
 
-	-- Get current summit value
 	task.spawn(function()
 		local playerStats = targetPlayer:FindFirstChild("PlayerStats")
 		if playerStats then
@@ -1806,7 +1686,6 @@ local function showModifySummitPopup(targetPlayer)
 		end
 	end)
 
-	-- Input Label
 	local inputLabel = Instance.new("TextLabel")
 	inputLabel.Size = UDim2.new(1, 0, 0, 25)
 	inputLabel.Position = UDim2.new(0, 0, 0, 35)
@@ -1818,9 +1697,8 @@ local function showModifySummitPopup(targetPlayer)
 	inputLabel.TextXAlignment = Enum.TextXAlignment.Left
 	inputLabel.Parent = contentContainer
 
-	-- Input Box
 	local inputBox = Instance.new("TextBox")
-	inputBox.Size = UDim2.new(1, 0, 0, 50)  -- ✅ Lebih tinggi
+	inputBox.Size = UDim2.new(1, 0, 0, 50)
 	inputBox.Position = UDim2.new(0, 0, 0, 70)
 	inputBox.BackgroundColor3 = COLORS.Panel
 	inputBox.BorderSizePixel = 0
@@ -1835,17 +1713,16 @@ local function showModifySummitPopup(targetPlayer)
 	createCorner(8).Parent = inputBox
 	createPadding(12).Parent = inputBox
 
-	-- Set Button
 	local setBtn = createButton("Set Summit", COLORS.Success, Color3.fromRGB(77, 191, 139))
-	setBtn.Size = UDim2.new(1, 0, 0, 50)  -- ✅ Lebih tinggi
-	setBtn.Position = UDim2.new(0, 0, 0, 135)  -- ✅ Proper spacing
+	setBtn.Size = UDim2.new(1, 0, 0, 50)
+	setBtn.Position = UDim2.new(0, 0, 0, 135)
 	setBtn.Parent = contentContainer
 
 	setBtn.MouseButton1Click:Connect(function()
 		local newValue = tonumber(inputBox.Text)
 
 		if not newValue or newValue < 0 then
-			-- Show error notification
+
 			StarterGui:SetCore("SendNotification", {
 				Title = "❌ Invalid Input",
 				Text = "Please enter a valid number (0 or greater)",
@@ -1854,7 +1731,6 @@ local function showModifySummitPopup(targetPlayer)
 			return
 		end
 
-		-- Show confirmation dialog
 		showConfirmation(
 			"Modify Summit Data",
 			string.format("Set %s's summit to %d?", targetPlayer.Name, newValue),
@@ -1862,10 +1738,9 @@ local function showModifySummitPopup(targetPlayer)
 				local modifySummitEvent = remoteFolder:FindFirstChild("ModifySummitData")
 				if modifySummitEvent then
 					modifySummitEvent:FireServer(targetPlayer.UserId, newValue)
-					print(string.format("[ADMIN CLIENT] Set %s's summit to %d", targetPlayer.Name, newValue))
 				end
 				popup:Destroy()
-				mainContainer.Visible = true -- ✅ Show main panel
+				mainContainer.Visible = true
 			end
 		)
 	end)
@@ -1873,9 +1748,6 @@ local function showModifySummitPopup(targetPlayer)
 	return popup
 end
 
-
-
--- Player card index counter for accent colors
 local playerCardIndex = 0
 
 local function createPlayerCard(targetPlayer)
@@ -1893,28 +1765,24 @@ local function createPlayerCard(targetPlayer)
 	card.Parent = playersScroll
 
 	createCorner(8).Parent = card
-	
-	-- Colored outline stroke (accent color)
+
 	local cardStroke = Instance.new("UIStroke")
 	cardStroke.Color = accentColor
 	cardStroke.Thickness = 1.5
 	cardStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 	cardStroke.Parent = card
-	
-	-- Left accent bar (like Donate panel)
+
 	local accentBar = Instance.new("Frame")
 	accentBar.Size = UDim2.new(0, 4, 1, 0)
 	accentBar.Position = UDim2.new(0, 0, 0, 0)
 	accentBar.BackgroundColor3 = accentColor
 	accentBar.BorderSizePixel = 0
 	accentBar.Parent = card
-	
-	-- Accent bar corner (only left side rounded)
+
 	local accentCorner = Instance.new("UICorner")
 	accentCorner.CornerRadius = UDim.new(0, 8)
 	accentCorner.Parent = accentBar
 
-	-- Avatar - more square with subtle rounding
 	local avatar = Instance.new("ImageLabel")
 	avatar.Size = UDim2.new(0, 45, 0, 45)
 	avatar.Position = UDim2.new(0, 15, 0.5, 0)
@@ -1924,7 +1792,7 @@ local function createPlayerCard(targetPlayer)
 	avatar.Image = "rbxthumb://type=AvatarHeadShot&id=" .. targetPlayer.UserId .. "&w=150&h=150"
 	avatar.Parent = card
 
-	createCorner(6).Parent = avatar  -- Square with subtle rounding
+	createCorner(6).Parent = avatar
 
 	local nameLabel = Instance.new("TextLabel")
 	nameLabel.Size = UDim2.new(0.5, 0, 0, 20)
@@ -1937,7 +1805,7 @@ local function createPlayerCard(targetPlayer)
 	nameLabel.TextXAlignment = Enum.TextXAlignment.Left
 	nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	nameLabel.Parent = card
-	
+
 	createTextSizeConstraint(10, 14).Parent = nameLabel
 
 	local displayLabel = Instance.new("TextLabel")
@@ -1946,21 +1814,18 @@ local function createPlayerCard(targetPlayer)
 	displayLabel.BackgroundTransparency = 1
 	displayLabel.Font = Enum.Font.Gotham
 	displayLabel.Text = "@" .. targetPlayer.DisplayName
-	displayLabel.TextColor3 = accentColor  -- Use accent color for display name
+	displayLabel.TextColor3 = accentColor
 	displayLabel.TextScaled = true
 	displayLabel.TextXAlignment = Enum.TextXAlignment.Left
 	displayLabel.Parent = card
-	
+
 	createTextSizeConstraint(9, 12).Parent = displayLabel
 
-
-
-	-- ✅ TAMBAHKAN: Title Label di sebelah kanan
 	local TitleConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("TitleConfig"))
 
 	local function updateTitleLabel()
-		-- ✅ REQUEST TITLE DARI SERVER via ShopRemotes
-		local titleText = "Pengunjung" -- Default
+
+		local titleText = "Pengunjung"
 		local titleColor = COLORS.TextSecondary
 
 		local shopRemotes = ReplicatedStorage:FindFirstChild("ShopRemotes")
@@ -1973,9 +1838,7 @@ local function createPlayerCard(targetPlayer)
 
 				if success and serverTitle then
 					titleText = serverTitle
-					print("📥 [ADMIN CLIENT] Got title for", targetPlayer.Name, ":", titleText) -- DEBUG
 
-					-- Set color based on title
 					local TitleConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("TitleConfig"))
 					if TitleConfig.Titles[titleText] then
 						titleColor = TitleConfig.Titles[titleText].Color
@@ -1986,7 +1849,6 @@ local function createPlayerCard(targetPlayer)
 			end
 		end
 
-		-- Create/Update title label UI
 		local titleLabel = card:FindFirstChild("TitleLabel")
 		if not titleLabel then
 			titleLabel = Instance.new("TextLabel")
@@ -2000,7 +1862,6 @@ local function createPlayerCard(targetPlayer)
 			titleLabel.Parent = card
 		end
 
-		-- Update text
 		if titleText == "Pengunjung" then
 			titleLabel.Text = ""
 		else
@@ -2011,21 +1872,20 @@ local function createPlayerCard(targetPlayer)
 
 	updateTitleLabel()
 
-	-- Listen for changes (with debounce to prevent spam)
 	local titleRemotes = ReplicatedStorage:FindFirstChild("TitleRemotes")
 	local lastTitleUpdate = 0
-	local TITLE_DEBOUNCE = 2  -- Minimum 2 seconds between updates
-	
+	local TITLE_DEBOUNCE = 2
+
 	if titleRemotes then
 		local updateOther = titleRemotes:FindFirstChild("UpdateOtherPlayerTitle")
 		if updateOther then
 			updateOther.OnClientEvent:Connect(function(changedPlayer, newTitle)
 				if changedPlayer == targetPlayer then
-					-- Debounce to prevent spam
+
 					local now = tick()
 					if now - lastTitleUpdate < TITLE_DEBOUNCE then return end
 					lastTitleUpdate = now
-					
+
 					task.wait(0.5)
 					updateTitleLabel()
 				end
@@ -2033,7 +1893,6 @@ local function createPlayerCard(targetPlayer)
 		end
 	end
 
-	-- Allow hover effect and click functionality for ALL players (including self)
 	card.MouseEnter:Connect(function()
 		TweenService:Create(card, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.Button}):Play()
 	end)
@@ -2043,14 +1902,13 @@ local function createPlayerCard(targetPlayer)
 	end)
 
 	card.MouseButton1Click:Connect(function()
-		-- Clear previous detail content
+
 		for _, child in ipairs(detailScroll:GetChildren()) do
 			if child:IsA("Frame") then
 				child:Destroy()
 			end
 		end
 
-			-- Player Info Section
 			local infoSection = Instance.new("Frame")
 			infoSection.Size = UDim2.new(1, 0, 0, 120)
 			infoSection.BackgroundColor3 = COLORS.Panel
@@ -2103,7 +1961,6 @@ local function createPlayerCard(targetPlayer)
 			detailUserId.TextXAlignment = Enum.TextXAlignment.Left
 			detailUserId.Parent = infoSection
 
-			-- Action Buttons Grid
 			local actionsFrame = Instance.new("Frame")
 			actionsFrame.Size = UDim2.new(1, 0, 0, 0)
 			actionsFrame.BackgroundTransparency = 1
@@ -2119,7 +1976,6 @@ local function createPlayerCard(targetPlayer)
 				actionsFrame.Size = UDim2.new(1, 0, 0, actionsLayout.AbsoluteContentSize.Y)
 			end)
 
-			-- Kick Button
 			local kickBtn = createButton("Kick Player", COLORS.Button, COLORS.ButtonHover)
 			kickBtn.LayoutOrder = 1
 			kickBtn.Parent = actionsFrame
@@ -2132,7 +1988,6 @@ local function createPlayerCard(targetPlayer)
 				end)
 			end)
 
-			-- Ban Button
 			local banBtn = createButton("Ban Player", COLORS.Button, COLORS.ButtonHover)
 			banBtn.LayoutOrder = 2
 			banBtn.Parent = actionsFrame
@@ -2144,35 +1999,30 @@ local function createPlayerCard(targetPlayer)
 					end
 				end)
 			end)
-			
-			-- Teleport Button (NEW)
+
 			local teleportBtn = createButton("Teleport", COLORS.Button, COLORS.ButtonHover)
 			teleportBtn.LayoutOrder = 3
 			teleportBtn.Parent = actionsFrame
 			teleportBtn.MouseButton1Click:Connect(function()
-				playerDetailPanel.Visible = false -- ✅ Hide detail panel
+				playerDetailPanel.Visible = false
 				createTeleportPopup(targetPlayer)
 			end)
 
-			-- Modify Player Button (NEW)
 			local modifyBtn = createButton("Modify Player", COLORS.Button, COLORS.ButtonHover)
 			modifyBtn.LayoutOrder = 4
 			modifyBtn.Parent = actionsFrame
 			modifyBtn.MouseButton1Click:Connect(function()
-				playerDetailPanel.Visible = false -- ✅ Hide detail panel
+				playerDetailPanel.Visible = false
 				createModifyPlayerPopup(targetPlayer)
 			end)
 
-
-
-			-- Spectate Button
 			local spectateBtn = createButton("Spectate Player", COLORS.Accent, COLORS.AccentHover)
 			spectateBtn.LayoutOrder = 5
 			spectateBtn.Parent = actionsFrame
 
 			spectateBtn.MouseButton1Click:Connect(function()
 				if currentSpectatePlayer then
-					-- Stop spectating
+
 					if spectateConnection then
 						spectateConnection:Disconnect()
 					end
@@ -2183,7 +2033,7 @@ local function createPlayerCard(targetPlayer)
 					spectateBtn.Text = "Spectate Player"
 					spectateBtn.BackgroundColor3 = COLORS.Accent
 				else
-					-- Start spectating
+
 					if targetPlayer and targetPlayer.Character then
 						currentSpectatePlayer = targetPlayer
 						local targetHumanoid = targetPlayer.Character:FindFirstChild("Humanoid")
@@ -2193,7 +2043,6 @@ local function createPlayerCard(targetPlayer)
 							spectateBtn.Text = "Stop Spectating"
 							spectateBtn.BackgroundColor3 = COLORS.Success
 
-							-- Monitor if player leaves or dies
 							spectateConnection = targetPlayer.CharacterRemoving:Connect(function()
 								if spectateConnection then
 									spectateConnection:Disconnect()
@@ -2209,7 +2058,6 @@ local function createPlayerCard(targetPlayer)
 				end
 			end)
 
-			-- Kill Button
 			local killBtn = createButton("Kill Player", COLORS.Danger, COLORS.DangerHover)
 			killBtn.LayoutOrder = 6
 			killBtn.Parent = actionsFrame
@@ -2221,32 +2069,27 @@ local function createPlayerCard(targetPlayer)
 					end
 				end)
 			end)
-			
-			-- Give Title Button
+
 			local giveTitleBtn = createButton("Give Title", COLORS.Accent, COLORS.AccentHover)
 			giveTitleBtn.LayoutOrder = 7
 			giveTitleBtn.Parent = actionsFrame
 			giveTitleBtn.MouseButton1Click:Connect(function()
 				if targetPlayer then
-					playerDetailPanel.Visible = false -- ✅ Hide detail panel
+					playerDetailPanel.Visible = false
 					showGiveTitlePopup(targetPlayer)
 				end
 			end)
-			
-			-- ✅ Modify Summit Data Button (BARU)
+
 			local modifySummitBtn = createButton("Modify Summit Data", COLORS.Accent, Color3.fromRGB(128, 141, 255))
-			modifySummitBtn.LayoutOrder = 8  -- Setelah Set Title
+			modifySummitBtn.LayoutOrder = 8
 			modifySummitBtn.Parent = actionsFrame
 			modifySummitBtn.MouseButton1Click:Connect(function()
 				if targetPlayer then
-					playerDetailPanel.Visible = false -- ✅ Hide detail panel
+					playerDetailPanel.Visible = false
 					showModifySummitPopup(targetPlayer)
 				end
 			end)
 
-
-			
-		-- Give Items Button (TAMBAHKAN SETELAH setTitleBtn)
 			local giveItemsBtn = createButton("Give Items", COLORS.Success, COLORS.Success)
 			giveItemsBtn.LayoutOrder = 8
 			giveItemsBtn.Parent = actionsFrame
@@ -2254,38 +2097,33 @@ local function createPlayerCard(targetPlayer)
 			giveItemsBtn.MouseButton1Click:Connect(function()
 				if not targetPlayer then return end
 
-				-- Load ShopConfig
 				local ShopConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("ShopConfig"))
 
-				-- ✅ HIDE ALL PANELS when popup opens
 				mainContainer.Visible = false
 				playerDetailPanel.Visible = false
 
-				-- Create Give Items Popup (LARGER SIZE)
 				local giveItemsPopup = Instance.new("Frame")
 				giveItemsPopup.Name = "GiveItemsPopup"
-				giveItemsPopup.Size = UDim2.new(0, 450, 0, 550) -- ✅ Fixed pixel size: 450x550
+				giveItemsPopup.Size = UDim2.new(0, 450, 0, 550)
 				giveItemsPopup.Position = UDim2.new(0.5, 0, 0.5, 0)
 				giveItemsPopup.AnchorPoint = Vector2.new(0.5, 0.5)
 				giveItemsPopup.BackgroundColor3 = COLORS.Background
 				giveItemsPopup.BorderSizePixel = 0
 				giveItemsPopup.ZIndex = 30
-				giveItemsPopup.ClipsDescendants = true -- ✅ Prevent overflow
+				giveItemsPopup.ClipsDescendants = true
 				giveItemsPopup.Parent = screenGui
 
 				createCorner(12).Parent = giveItemsPopup
 				createStroke(COLORS.Border, 2).Parent = giveItemsPopup
 
-				-- Header
 				local popupHeader = Instance.new("Frame")
 				popupHeader.Size = UDim2.new(1, 0, 0, 50)
 				popupHeader.BackgroundColor3 = COLORS.Header
 				popupHeader.BorderSizePixel = 0
 				popupHeader.Parent = giveItemsPopup
-				
+
 				createCorner(12).Parent = popupHeader
-				
-				-- Header bottom filler
+
 				local headerBottom = Instance.new("Frame")
 				headerBottom.Size = UDim2.new(1, 0, 0, 15)
 				headerBottom.Position = UDim2.new(0, 0, 1, -15)
@@ -2317,13 +2155,11 @@ local function createPlayerCard(targetPlayer)
 
 				createCorner(6).Parent = closePopupBtn
 
-				-- ✅ Close popup and SHOW MAIN PANEL again
 				closePopupBtn.MouseButton1Click:Connect(function()
 					giveItemsPopup:Destroy()
-					mainContainer.Visible = true -- ✅ Show main panel
+					mainContainer.Visible = true
 				end)
 
-				-- Tab Frame (FIXED - proper sizing)
 				local tabFrame = Instance.new("Frame")
 				tabFrame.Size = UDim2.new(1, -40, 0, 40)
 				tabFrame.Position = UDim2.new(0, 20, 0, 60)
@@ -2336,7 +2172,6 @@ local function createPlayerCard(targetPlayer)
 				tabLayout.Padding = UDim.new(0, 10)
 				tabLayout.Parent = tabFrame
 
-				-- ✅ FIX: Tab buttons with proper width (fit in 450-40 = 410px)
 				local auraTab = Instance.new("TextButton")
 				auraTab.Size = UDim2.new(0, 125, 0, 35)
 				auraTab.BackgroundColor3 = COLORS.Accent
@@ -2360,7 +2195,7 @@ local function createPlayerCard(targetPlayer)
 				toolTab.TextSize = 13
 				toolTab.AutoButtonColor = false
 				toolTab.Parent = tabFrame
-				
+
 				local moneyTab = Instance.new("TextButton")
 				moneyTab.Size = UDim2.new(0, 125, 0, 35)
 				moneyTab.BackgroundColor3 = COLORS.Button
@@ -2375,15 +2210,13 @@ local function createPlayerCard(targetPlayer)
 				createCorner(6).Parent = moneyTab
 				createCorner(6).Parent = toolTab
 
-				-- Content Frame (FIXED - more space for items)
 				local contentFrame = Instance.new("Frame")
-				contentFrame.Size = UDim2.new(1, -40, 0, 360) -- Fixed height
+				contentFrame.Size = UDim2.new(1, -40, 0, 360)
 				contentFrame.Position = UDim2.new(0, 20, 0, 110)
 				contentFrame.BackgroundTransparency = 1
 				contentFrame.ClipsDescendants = true
 				contentFrame.Parent = giveItemsPopup
 
-				-- Aura Content
 				local auraContent = Instance.new("ScrollingFrame")
 				auraContent.Size = UDim2.new(1, 0, 1, 0)
 				auraContent.BackgroundTransparency = 1
@@ -2400,7 +2233,6 @@ local function createPlayerCard(targetPlayer)
 				auraLayout.SortOrder = Enum.SortOrder.LayoutOrder
 				auraLayout.Parent = auraContent
 
-				-- Tool Content
 				local toolContent = Instance.new("ScrollingFrame")
 				toolContent.Size = UDim2.new(1, 0, 1, 0)
 				toolContent.BackgroundTransparency = 1
@@ -2416,8 +2248,7 @@ local function createPlayerCard(targetPlayer)
 				toolLayout.Padding = UDim.new(0, 6)
 				toolLayout.SortOrder = Enum.SortOrder.LayoutOrder
 				toolLayout.Parent = toolContent
-				
-				-- ✅ TAMBAHKAN MONEY CONTENT
+
 				local moneyContent = Instance.new("ScrollingFrame")
 				moneyContent.Size = UDim2.new(1, 0, 1, 0)
 				moneyContent.BackgroundTransparency = 1
@@ -2434,11 +2265,9 @@ local function createPlayerCard(targetPlayer)
 				moneyLayout.SortOrder = Enum.SortOrder.LayoutOrder
 				moneyLayout.Parent = moneyContent
 
-				-- Selected Items Storage
 				local selectedAuras = {}
 				local selectedTools = {}
 
-				-- Create Aura Checkboxes
 				for _, aura in ipairs(ShopConfig.Auras) do
 					local frame = Instance.new("Frame")
 					frame.Size = UDim2.new(1, 0, 0, 40)
@@ -2493,8 +2322,7 @@ local function createPlayerCard(targetPlayer)
 						end
 					end)
 				end
-				
-				-- ✅ EXTRA AURAS: Crystal Event auras (not in shop)
+
 				local extraAuras = {
 					{AuraId = "Aura1", Title = "💎 Crystal Aura 1"},
 					{AuraId = "Aura2", Title = "💎 Crystal Aura 2"},
@@ -2505,8 +2333,7 @@ local function createPlayerCard(targetPlayer)
 					{AuraId = "Aura7", Title = "💎 Crystal Aura 7"},
 					{AuraId = "Aura8", Title = "💎 Crystal Aura 8"},
 				}
-				
-				-- Separator for extra auras
+
 				local extraAurasLabel = Instance.new("TextLabel")
 				extraAurasLabel.Size = UDim2.new(1, 0, 0, 25)
 				extraAurasLabel.BackgroundTransparency = 1
@@ -2515,7 +2342,7 @@ local function createPlayerCard(targetPlayer)
 				extraAurasLabel.TextColor3 = COLORS.TextSecondary
 				extraAurasLabel.TextSize = 11
 				extraAurasLabel.Parent = auraContent
-				
+
 				for _, aura in ipairs(extraAuras) do
 					local frame = Instance.new("Frame")
 					frame.Size = UDim2.new(1, 0, 0, 40)
@@ -2571,7 +2398,6 @@ local function createPlayerCard(targetPlayer)
 					end)
 				end
 
-				-- Create Tool Checkboxes
 				for _, tool in ipairs(ShopConfig.Tools) do
 					local frame = Instance.new("Frame")
 					frame.Size = UDim2.new(1, 0, 0, 40)
@@ -2626,8 +2452,7 @@ local function createPlayerCard(targetPlayer)
 						end
 					end)
 				end
-				
-				-- ✅ EXTRA TOOLS: Items not in ShopConfig (Event items, special tools)
+
 				local extraTools = {
 					{ToolId = "KudaLumping", Title = "🐴 Kuda Lumping"},
 					{ToolId = "FlyingSpeed1", Title = "✈️ Flying Speed 1"},
@@ -2639,8 +2464,7 @@ local function createPlayerCard(targetPlayer)
 					{ToolId = "FlyingSpeed7", Title = "✈️ Flying Speed 7"},
 					{ToolId = "FlyingSpeed8", Title = "✈️ Flying Speed 8"},
 				}
-				
-				-- Separator label for extra tools
+
 				local extraToolsLabel = Instance.new("TextLabel")
 				extraToolsLabel.Size = UDim2.new(1, 0, 0, 25)
 				extraToolsLabel.BackgroundTransparency = 1
@@ -2649,7 +2473,7 @@ local function createPlayerCard(targetPlayer)
 				extraToolsLabel.TextColor3 = COLORS.TextSecondary
 				extraToolsLabel.TextSize = 11
 				extraToolsLabel.Parent = toolContent
-				
+
 				for _, tool in ipairs(extraTools) do
 					local frame = Instance.new("Frame")
 					frame.Size = UDim2.new(1, 0, 0, 40)
@@ -2704,8 +2528,7 @@ local function createPlayerCard(targetPlayer)
 						end
 					end)
 				end
-				
-				-- ✅ TAMBAHKAN: Create Money Options
+
 				for _, pack in ipairs(ShopConfig.MoneyPacks) do
 					local frame = Instance.new("Frame")
 					frame.Size = UDim2.new(1, 0, 0, 50)
@@ -2754,7 +2577,6 @@ local function createPlayerCard(targetPlayer)
 					selectBtn.MouseButton1Click:Connect(function()
 						selectedMoneyAmount = pack.MoneyReward
 
-						-- Reset all buttons
 						for _, child in ipairs(moneyContent:GetChildren()) do
 							if child:IsA("Frame") then
 								local btn = child:FindFirstChildWhichIsA("TextButton")
@@ -2765,13 +2587,11 @@ local function createPlayerCard(targetPlayer)
 							end
 						end
 
-						-- Highlight selected
 						selectBtn.BackgroundColor3 = COLORS.Success
 						selectBtn.Text = "Selected"
 					end)
 				end
 
-				-- Tab Switching
 				auraTab.MouseButton1Click:Connect(function()
 					auraTab.BackgroundColor3 = COLORS.Accent
 					toolTab.BackgroundColor3 = COLORS.Button
@@ -2789,7 +2609,7 @@ local function createPlayerCard(targetPlayer)
 					auraContent.Visible = false
 					moneyContent.Visible = false
 				end)
-				
+
 				moneyTab.MouseButton1Click:Connect(function()
 					moneyTab.BackgroundColor3 = COLORS.Accent
 					auraTab.BackgroundColor3 = COLORS.Button
@@ -2798,12 +2618,10 @@ local function createPlayerCard(targetPlayer)
 					auraContent.Visible = false
 					toolContent.Visible = false
 				end)
-				
 
-			-- Give Button (FIXED POSITION for 550px popup)
 				local giveBtn = createButton("Give Selected Items", COLORS.Success, COLORS.Success)
 				giveBtn.Size = UDim2.new(1, -40, 0, 50)
-				giveBtn.Position = UDim2.new(0, 20, 0, 485) -- Fixed Y position
+				giveBtn.Position = UDim2.new(0, 20, 0, 485)
 				giveBtn.Parent = giveItemsPopup
 
 				giveBtn.MouseButton1Click:Connect(function()
@@ -2815,13 +2633,11 @@ local function createPlayerCard(targetPlayer)
 						end
 					end
 					giveItemsPopup:Destroy()
-					mainContainer.Visible = true -- ✅ Show main panel after giving items
+					mainContainer.Visible = true
 				end)
-				
-				-- Note: Popup is already draggable via popup.Draggable = true (not popup header)
+
 			end)
 
-			-- Show panel with animation
 			playerDetailPanel.Size = UDim2.new(0, 0, 0, 0)
 			playerDetailPanel.Visible = true
 			tweenSize(playerDetailPanel, UDim2.new(0.208, 0, 0.7, 0), 0.3)
@@ -2831,12 +2647,7 @@ local function createPlayerCard(targetPlayer)
 	return card
 end
 
-
-
-
--- Update player list
--- ✅ PERFORMANCE FIX: Store card references for incremental updates
-local playerCards = {}  -- [userId] = card UI element
+local playerCards = {}
 
 local function removePlayerCard(targetPlayer)
 	local userId = targetPlayer.UserId
@@ -2847,37 +2658,34 @@ local function removePlayerCard(targetPlayer)
 end
 
 local function addPlayerCard(targetPlayer)
-	if playerCards[targetPlayer.UserId] then return end  -- Already exists
+	if playerCards[targetPlayer.UserId] then return end
 	createPlayerCard(targetPlayer)
-	-- Note: createPlayerCard adds to playersScroll, we track by userId separately
+
 end
 
 local function updatePlayerList()
-	playerCardIndex = 0 -- Reset counter for consistent accent colors
-	
+	playerCardIndex = 0
+
 	for _, card in ipairs(playersScroll:GetChildren()) do
 		if card:IsA("TextButton") then
 			card:Destroy()
 		end
 	end
-	playerCards = {}  -- Clear tracking
+	playerCards = {}
 
-	-- Add all players including the local player (admin)
 	for _, targetPlayer in ipairs(Players:GetPlayers()) do
 		createPlayerCard(targetPlayer)
-		-- Store reference by UserId for incremental updates
+
 		local cards = playersScroll:GetChildren()
 		for _, card in ipairs(cards) do
 			if card:IsA("TextButton") then
-				-- The last added card is for this player
+
 				playerCards[targetPlayer.UserId] = card
 			end
 		end
 	end
 end
 
--- ✅ PERFORMANCE FIX: Incremental player list updates instead of full rebuild
--- Only add the new player's card, don't recreate everything
 Players.PlayerAdded:Connect(function(newPlayer)
 	task.wait(0.5)
 	if not playerCards[newPlayer.UserId] then
@@ -2887,7 +2695,6 @@ Players.PlayerAdded:Connect(function(newPlayer)
 	end
 end)
 
--- Only remove the leaving player's card
 Players.PlayerRemoving:Connect(function(leavingPlayer)
 	task.wait(0.1)
 	if playerCards[leavingPlayer.UserId] then
@@ -2896,14 +2703,12 @@ Players.PlayerRemoving:Connect(function(leavingPlayer)
 	end
 end)
 
--- Initial player list (only once on load)
 updatePlayerList()
 
--- ✅ SEARCH FUNCTIONALITY: Filter player cards when typing
 searchBox:GetPropertyChangedSignal("Text"):Connect(function()
 	local query = string.lower(searchBox.Text)
 	currentSearchQuery = query
-	
+
 	for _, card in ipairs(playersScroll:GetChildren()) do
 		if card:IsA("TextButton") then
 			local nameLabel = card:FindFirstChild("TextLabel")
@@ -2919,16 +2724,14 @@ searchBox:GetPropertyChangedSignal("Text"):Connect(function()
 	end
 end)
 
--- Make panels draggable
 makeDraggable(mainPanel, header)
 makeDraggable(playerDetailPanel, detailHeader)
 
--- Set default tab
 notifTabBtn.BackgroundColor3 = COLORS.Accent
 notifTabBtn.TextColor3 = COLORS.Text
 notifTab.Visible = true
 currentTab = notifTab
--- ✅✅✅ EVENT MANAGER TAB (FULLY RESPONSIVE)
+
 local eventsTab, eventsTabBtn = createTab("Events", 3)
 
 local eventsScroll = Instance.new("ScrollingFrame")
@@ -2946,7 +2749,6 @@ eventsLayout.Padding = UDim.new(0, 10)
 eventsLayout.SortOrder = Enum.SortOrder.LayoutOrder
 eventsLayout.Parent = eventsScroll
 
--- Title
 local eventsTitle = Instance.new("TextLabel")
 eventsTitle.Size = UDim2.new(1, 0, 0, 30)
 eventsTitle.BackgroundTransparency = 1
@@ -2971,10 +2773,8 @@ eventsDesc.TextXAlignment = Enum.TextXAlignment.Left
 eventsDesc.LayoutOrder = 2
 eventsDesc.Parent = eventsScroll
 
--- Load EventConfig
 local EventConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("EventConfig"))
 
--- Get active event from server
 local eventRemotes = ReplicatedStorage:WaitForChild("EventRemotes")
 local getActiveEventFunc = eventRemotes:WaitForChild("GetActiveEvent")
 local setEventRemote = eventRemotes:WaitForChild("SetEvent")
@@ -2982,7 +2782,6 @@ local eventChangedRemote = eventRemotes:WaitForChild("EventChanged")
 
 local currentActiveEventId = nil
 
--- Function to request current active event
 task.spawn(function()
 	local success, activeEvent = pcall(function()
 		return getActiveEventFunc:InvokeServer()
@@ -2990,14 +2789,12 @@ task.spawn(function()
 
 	if success and activeEvent then
 		currentActiveEventId = activeEvent.Id
-		print("[ADMIN CLIENT] Current active event:", activeEvent.Name)
 	end
 end)
 
--- ✅ RESPONSIVE EVENT CARDS
 for i, event in ipairs(EventConfig.AvailableEvents) do
 	local eventCard = Instance.new("Frame")
-	eventCard.Size = UDim2.new(1, 0, 0, 120)  -- Fixed height OK untuk list
+	eventCard.Size = UDim2.new(1, 0, 0, 120)
 	eventCard.BackgroundColor3 = COLORS.Panel
 	eventCard.BorderSizePixel = 0
 	eventCard.LayoutOrder = 2 + i
@@ -3005,10 +2802,9 @@ for i, event in ipairs(EventConfig.AvailableEvents) do
 
 	createCorner(8).Parent = eventCard
 
-	-- ✅ Icon (LEFT - SCALE)
 	local iconLabel = Instance.new("TextLabel")
-	iconLabel.Size = UDim2.new(0.1, 0, 0, 50)  -- 10% width, 50px height
-	iconLabel.Position = UDim2.new(0.02, 0, 0.5, -25)  -- 2% dari kiri, centered vertically
+	iconLabel.Size = UDim2.new(0.1, 0, 0, 50)
+	iconLabel.Position = UDim2.new(0.02, 0, 0.5, -25)
 	iconLabel.AnchorPoint = Vector2.new(0, 0.5)
 	iconLabel.BackgroundTransparency = 1
 	iconLabel.Font = Enum.Font.GothamBold
@@ -3017,10 +2813,9 @@ for i, event in ipairs(EventConfig.AvailableEvents) do
 	iconLabel.TextScaled = false
 	iconLabel.Parent = eventCard
 
-	-- ✅ Event Name (SCALE)
 	local nameLabel = Instance.new("TextLabel")
-	nameLabel.Size = UDim2.new(0.5, 0, 0, 30)  -- 50% width
-	nameLabel.Position = UDim2.new(0.13, 0, 0.15, 0)  -- 13% from left, 15% from top
+	nameLabel.Size = UDim2.new(0.5, 0, 0, 30)
+	nameLabel.Position = UDim2.new(0.13, 0, 0.15, 0)
 	nameLabel.BackgroundTransparency = 1
 	nameLabel.Font = Enum.Font.GothamBold
 	nameLabel.Text = event.Name
@@ -3031,10 +2826,9 @@ for i, event in ipairs(EventConfig.AvailableEvents) do
 	nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	nameLabel.Parent = eventCard
 
-	-- ✅ Event Description (SCALE)
 	local descLabel = Instance.new("TextLabel")
-	descLabel.Size = UDim2.new(0.5, 0, 0, 25)  -- 50% width
-	descLabel.Position = UDim2.new(0.13, 0, 0.45, 0)  -- 13% from left, 45% from top
+	descLabel.Size = UDim2.new(0.5, 0, 0, 25)
+	descLabel.Position = UDim2.new(0.13, 0, 0.45, 0)
 	descLabel.BackgroundTransparency = 1
 	descLabel.Font = Enum.Font.Gotham
 	descLabel.Text = event.Description
@@ -3046,10 +2840,9 @@ for i, event in ipairs(EventConfig.AvailableEvents) do
 	descLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	descLabel.Parent = eventCard
 
-	-- ✅ Multiplier Badge (SCALE)
 	local badgeLabel = Instance.new("TextLabel")
-	badgeLabel.Size = UDim2.new(0.12, 0, 0, 30)  -- 12% width, 30px height
-	badgeLabel.Position = UDim2.new(0.13, 0, 0.7, 0)  -- 13% from left, 70% from top
+	badgeLabel.Size = UDim2.new(0.12, 0, 0, 30)
+	badgeLabel.Position = UDim2.new(0.13, 0, 0.7, 0)
 	badgeLabel.BackgroundColor3 = event.Color
 	badgeLabel.Font = Enum.Font.GothamBold
 	badgeLabel.Text = "x" .. event.Multiplier
@@ -3060,29 +2853,26 @@ for i, event in ipairs(EventConfig.AvailableEvents) do
 
 	createCorner(6).Parent = badgeLabel
 
-	-- ✅ Toggle Button (SCALE - RESPONSIVE!)
 	local toggleBtn = Instance.new("TextButton")
-	toggleBtn.Size = UDim2.new(0.28, 0, 0.42, 0)  -- 28% width, 42% height
-	toggleBtn.Position = UDim2.new(0.7, 0, 0.29, 0)  -- 70% from left, 29% from top (centered)
+	toggleBtn.Size = UDim2.new(0.28, 0, 0.42, 0)
+	toggleBtn.Position = UDim2.new(0.7, 0, 0.29, 0)
 	toggleBtn.BackgroundColor3 = COLORS.Button
 	toggleBtn.BorderSizePixel = 0
 	toggleBtn.Font = Enum.Font.GothamBold
 	toggleBtn.Text = "Activate"
 	toggleBtn.TextColor3 = COLORS.Text
 	toggleBtn.TextSize = 14
-	toggleBtn.TextScaled = true  -- ✅ Auto-scale text
+	toggleBtn.TextScaled = true
 	toggleBtn.AutoButtonColor = false
 	toggleBtn.Parent = eventCard
 
 	createCorner(8).Parent = toggleBtn
 
-	-- ✅ TextScaled constraint untuk button
 	local textSizeConstraint = Instance.new("UITextSizeConstraint")
 	textSizeConstraint.MaxTextSize = 14
 	textSizeConstraint.MinTextSize = 10
 	textSizeConstraint.Parent = toggleBtn
 
-	-- Update button state based on active event
 	local function updateButtonState()
 		if currentActiveEventId == event.Id then
 			toggleBtn.BackgroundColor3 = COLORS.Success
@@ -3095,10 +2885,9 @@ for i, event in ipairs(EventConfig.AvailableEvents) do
 
 	updateButtonState()
 
-	-- Toggle Button Click
 	toggleBtn.MouseButton1Click:Connect(function()
 		if currentActiveEventId == event.Id then
-			-- Deactivate current event
+
 			showConfirmation(
 				"Deactivate Event?",
 				"Deactivate " .. event.Name .. "?\nSummit rewards will return to normal.",
@@ -3106,7 +2895,6 @@ for i, event in ipairs(EventConfig.AvailableEvents) do
 					setEventRemote:FireServer("deactivate")
 					currentActiveEventId = nil
 
-					-- Update all buttons
 					for _, card in pairs(eventsScroll:GetChildren()) do
 						if card:IsA("Frame") and card ~= eventsTitle and card ~= eventsDesc then
 							local btn = card:FindFirstChildWhichIsA("TextButton")
@@ -3119,7 +2907,7 @@ for i, event in ipairs(EventConfig.AvailableEvents) do
 				end
 			)
 		else
-			-- Activate this event
+
 			showConfirmation(
 				"Activate Event?",
 				string.format("Activate %s?\nAll players on ALL servers will get x%d Summit rewards!", event.Name, event.Multiplier),
@@ -3127,7 +2915,6 @@ for i, event in ipairs(EventConfig.AvailableEvents) do
 					setEventRemote:FireServer("activate", event.Id)
 					currentActiveEventId = event.Id
 
-					-- Update all buttons
 					for _, card in pairs(eventsScroll:GetChildren()) do
 						if card:IsA("Frame") and card ~= eventsTitle and card ~= eventsDesc then
 							local btn = card:FindFirstChildWhichIsA("TextButton")
@@ -3144,7 +2931,6 @@ for i, event in ipairs(EventConfig.AvailableEvents) do
 		end
 	end)
 
-	-- Hover effects
 	toggleBtn.MouseEnter:Connect(function()
 		if currentActiveEventId ~= event.Id then
 			toggleBtn.BackgroundColor3 = COLORS.ButtonHover
@@ -3156,22 +2942,18 @@ for i, event in ipairs(EventConfig.AvailableEvents) do
 	end)
 end
 
--- Listen for event changes from server
 eventChangedRemote.OnClientEvent:Connect(function(newActiveEvent)
 	if newActiveEvent then
 		currentActiveEventId = newActiveEvent.Id
-		print("[ADMIN CLIENT] Event changed to:", newActiveEvent.Name)
 	else
 		currentActiveEventId = nil
-		print("[ADMIN CLIENT] Event deactivated")
 	end
 
-	-- Update all buttons
 	for _, card in pairs(eventsScroll:GetChildren()) do
 		if card:IsA("Frame") then
 			local toggleBtn = card:FindFirstChildWhichIsA("TextButton")
 			if toggleBtn then
-				-- Check if this card matches active event
+
 				for _, ev in ipairs(EventConfig.AvailableEvents) do
 					local nameLabel = card:FindFirstChild("TextLabel")
 					if nameLabel and nameLabel.Text == ev.Name then
@@ -3190,11 +2972,6 @@ eventChangedRemote.OnClientEvent:Connect(function(newActiveEvent)
 	end
 end)
 
--- ✅✅✅ AKHIR EVENT MANAGER TAB
-
-
-
--- Leaderboard Tab
 local leaderboardTab, leaderboardTabBtn = createTab("Leaderboard", 4)
 
 local leaderboardScroll = Instance.new("ScrollingFrame")
@@ -3212,7 +2989,6 @@ leaderboardLayout.Padding = UDim.new(0, 10)
 leaderboardLayout.SortOrder = Enum.SortOrder.LayoutOrder
 leaderboardLayout.Parent = leaderboardScroll
 
--- Search Input
 local searchFrame = Instance.new("Frame")
 searchFrame.Size = UDim2.new(1, 0, 0, 50)
 searchFrame.BackgroundTransparency = 1
@@ -3259,7 +3035,6 @@ searchButton.Parent = searchFrame
 
 createCorner(6).Parent = searchButton
 
--- Search Results Container
 local resultsContainer = Instance.new("Frame")
 resultsContainer.Size = UDim2.new(1, 0, 0, 0)
 resultsContainer.BackgroundTransparency = 1
@@ -3275,7 +3050,6 @@ resultsLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
 	resultsContainer.Size = UDim2.new(1, 0, 0, resultsLayout.AbsoluteContentSize.Y)
 end)
 
--- Delete All Button (Hidden by default)
 local deleteAllFrame = Instance.new("Frame")
 deleteAllFrame.Size = UDim2.new(1, 0, 0, 50)
 deleteAllFrame.BackgroundTransparency = 1
@@ -3287,8 +3061,6 @@ local deleteAllButton = createButton("🗑️ Delete All Selected Players", COLO
 deleteAllButton.Size = UDim2.new(1, 0, 1, 0)
 deleteAllButton.Parent = deleteAllFrame
 
--- ==================== LEADERBOARD VIEWER ====================
--- Sub-category tabs for viewing leaderboards
 local viewerSeparator = Instance.new("Frame")
 viewerSeparator.Size = UDim2.new(1, 0, 0, 1)
 viewerSeparator.BackgroundColor3 = COLORS.Border
@@ -3311,7 +3083,6 @@ viewerTitle.TextSize = 14
 viewerTitle.TextXAlignment = Enum.TextXAlignment.Left
 viewerTitle.Parent = viewerTitleFrame
 
--- Sub-category buttons container
 local subCategoryFrame = Instance.new("Frame")
 subCategoryFrame.Size = UDim2.new(1, 0, 0, 35)
 subCategoryFrame.BackgroundTransparency = 1
@@ -3338,14 +3109,14 @@ local function createSubCategoryButton(text, leaderboardType, icon)
 	btn.TextScaled = true
 	btn.AutoButtonColor = false
 	btn.Parent = subCategoryFrame
-	
+
 	createCorner(6).Parent = btn
-	
+
 	local textConstraint = Instance.new("UITextSizeConstraint")
 	textConstraint.MaxTextSize = 12
 	textConstraint.MinTextSize = 8
 	textConstraint.Parent = btn
-	
+
 	leaderboardSubButtons[leaderboardType] = btn
 	return btn, leaderboardType
 end
@@ -3355,7 +3126,6 @@ local speedrunBtn = createSubCategoryButton("Speedrun", "speedrun", "⏱️")
 local donateBtn = createSubCategoryButton("Donate", "donate", "💎")
 local playtimeBtn = createSubCategoryButton("Playtime", "playtime", "⌚")
 
--- Leaderboard viewer container
 local viewerContainer = Instance.new("Frame")
 viewerContainer.Size = UDim2.new(1, 0, 0, 300)
 viewerContainer.BackgroundColor3 = COLORS.Panel
@@ -3381,7 +3151,6 @@ viewerLayout.Padding = UDim.new(0, 4)
 viewerLayout.SortOrder = Enum.SortOrder.LayoutOrder
 viewerLayout.Parent = viewerScroll
 
--- Loading indicator
 local loadingLabel = Instance.new("TextLabel")
 loadingLabel.Size = UDim2.new(1, 0, 0, 40)
 loadingLabel.BackgroundTransparency = 1
@@ -3391,7 +3160,6 @@ loadingLabel.TextColor3 = COLORS.TextSecondary
 loadingLabel.TextSize = 12
 loadingLabel.Parent = viewerScroll
 
--- Function to create leaderboard entry row
 local function createLeaderboardRow(data, leaderboardType)
 	local row = Instance.new("Frame")
 	row.Size = UDim2.new(1, 0, 0, 35)
@@ -3399,10 +3167,9 @@ local function createLeaderboardRow(data, leaderboardType)
 	row.BorderSizePixel = 0
 	row.LayoutOrder = data.Rank
 	row.Parent = viewerScroll
-	
+
 	createCorner(6).Parent = row
-	
-	-- Rank
+
 	local rankLabel = Instance.new("TextLabel")
 	rankLabel.Size = UDim2.new(0.08, 0, 1, 0)
 	rankLabel.Position = UDim2.new(0.02, 0, 0, 0)
@@ -3413,13 +3180,12 @@ local function createLeaderboardRow(data, leaderboardType)
 	rankLabel.TextSize = 12
 	rankLabel.TextScaled = true
 	rankLabel.Parent = row
-	
+
 	local rankConstraint = Instance.new("UITextSizeConstraint")
 	rankConstraint.MaxTextSize = 14
 	rankConstraint.MinTextSize = 10
 	rankConstraint.Parent = rankLabel
-	
-	-- Username
+
 	local nameLabel = Instance.new("TextLabel")
 	nameLabel.Size = UDim2.new(0.4, 0, 1, 0)
 	nameLabel.Position = UDim2.new(0.1, 0, 0, 0)
@@ -3431,13 +3197,12 @@ local function createLeaderboardRow(data, leaderboardType)
 	nameLabel.TextScaled = true
 	nameLabel.TextXAlignment = Enum.TextXAlignment.Left
 	nameLabel.Parent = row
-	
+
 	local nameConstraint = Instance.new("UITextSizeConstraint")
 	nameConstraint.MaxTextSize = 13
 	nameConstraint.MinTextSize = 9
 	nameConstraint.Parent = nameLabel
-	
-	-- Value
+
 	local valueLabel = Instance.new("TextLabel")
 	valueLabel.Size = UDim2.new(0.25, 0, 1, 0)
 	valueLabel.Position = UDim2.new(0.5, 0, 0, 0)
@@ -3448,13 +3213,12 @@ local function createLeaderboardRow(data, leaderboardType)
 	valueLabel.TextSize = 12
 	valueLabel.TextScaled = true
 	valueLabel.Parent = row
-	
+
 	local valueConstraint = Instance.new("UITextSizeConstraint")
 	valueConstraint.MaxTextSize = 13
 	valueConstraint.MinTextSize = 9
 	valueConstraint.Parent = valueLabel
-	
-	-- Delete button
+
 	local deleteBtn = Instance.new("TextButton")
 	deleteBtn.Size = UDim2.new(0.15, 0, 0.7, 0)
 	deleteBtn.Position = UDim2.new(0.82, 0, 0.15, 0)
@@ -3466,15 +3230,15 @@ local function createLeaderboardRow(data, leaderboardType)
 	deleteBtn.TextSize = 14
 	deleteBtn.AutoButtonColor = false
 	deleteBtn.Parent = row
-	
+
 	createCorner(4).Parent = deleteBtn
-	
+
 	deleteBtn.MouseButton1Click:Connect(function()
 		local deleteLeaderboardEvent = remoteFolder:FindFirstChild("DeleteLeaderboard")
 		if deleteLeaderboardEvent then
 			deleteLeaderboardEvent:FireServer(data.UserId, leaderboardType)
 			row:Destroy()
-			
+
 			game.StarterGui:SetCore("SendNotification", {
 				Title = "Deleted",
 				Text = string.format("Deleted %s from %s leaderboard", data.Username, leaderboardType),
@@ -3482,31 +3246,28 @@ local function createLeaderboardRow(data, leaderboardType)
 			})
 		end
 	end)
-	
-	-- Hover effects
+
 	deleteBtn.MouseEnter:Connect(function()
 		TweenService:Create(deleteBtn, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.DangerHover or Color3.fromRGB(255, 80, 80)}):Play()
 	end)
 	deleteBtn.MouseLeave:Connect(function()
 		TweenService:Create(deleteBtn, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.Danger}):Play()
 	end)
-	
+
 	return row
 end
 
--- Function to load leaderboard data
 local function loadLeaderboard(leaderboardType)
-	-- Clear existing entries
+
 	for _, child in ipairs(viewerScroll:GetChildren()) do
 		if child:IsA("Frame") then
 			child:Destroy()
 		end
 	end
-	
+
 	loadingLabel.Text = "⏳ Loading " .. leaderboardType .. " leaderboard..."
 	loadingLabel.Visible = true
-	
-	-- Update button states
+
 	for type, btn in pairs(leaderboardSubButtons) do
 		if type == leaderboardType then
 			btn.BackgroundColor3 = COLORS.Accent
@@ -3516,29 +3277,28 @@ local function loadLeaderboard(leaderboardType)
 			btn.TextColor3 = COLORS.TextSecondary
 		end
 	end
-	
+
 	currentLeaderboardType = leaderboardType
-	
-	-- Fetch data from server
+
 	local getLeaderboardFunc = remoteFolder:FindFirstChild("GetLeaderboardData")
 	if not getLeaderboardFunc then
 		loadingLabel.Text = "❌ Leaderboard function not available!"
 		return
 	end
-	
+
 	local success, result = pcall(function()
 		return getLeaderboardFunc:InvokeServer(leaderboardType, 50)
 	end)
-	
+
 	if success and result and result.success then
 		loadingLabel.Visible = false
-		
+
 		if #result.data == 0 then
 			loadingLabel.Text = "📭 No entries found in " .. leaderboardType .. " leaderboard"
 			loadingLabel.Visible = true
 			return
 		end
-		
+
 		for _, entry in ipairs(result.data) do
 			createLeaderboardRow(entry, leaderboardType)
 		end
@@ -3548,13 +3308,11 @@ local function loadLeaderboard(leaderboardType)
 	end
 end
 
--- Connect sub-category buttons
 for leaderboardType, btn in pairs(leaderboardSubButtons) do
 	btn.MouseButton1Click:Connect(function()
 		loadLeaderboard(leaderboardType)
 	end)
-	
-	-- Hover effects
+
 	btn.MouseEnter:Connect(function()
 		if currentLeaderboardType ~= leaderboardType then
 			TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.ButtonHover or COLORS.Border}):Play()
@@ -3567,10 +3325,7 @@ for leaderboardType, btn in pairs(leaderboardSubButtons) do
 	end)
 end
 
--- ==================== END LEADERBOARD VIEWER ====================
-
--- Function to create player result card
-local searchResults = {} -- Store search results
+local searchResults = {}
 
 local function createLeaderboardCard(data)
 	local card = Instance.new("Frame")
@@ -3581,7 +3336,6 @@ local function createLeaderboardCard(data)
 
 	createCorner(8).Parent = card
 
-	-- Avatar
 	local avatar = Instance.new("ImageLabel")
 	avatar.Size = UDim2.new(0, 60, 0, 60)
 	avatar.Position = UDim2.new(0, 10, 0, 10)
@@ -3592,7 +3346,6 @@ local function createLeaderboardCard(data)
 
 	createCorner(30).Parent = avatar
 
-	-- Username
 	local nameLabel = Instance.new("TextLabel")
 	nameLabel.Size = UDim2.new(1, -85, 0, 25)
 	nameLabel.Position = UDim2.new(0, 75, 0, 10)
@@ -3604,7 +3357,6 @@ local function createLeaderboardCard(data)
 	nameLabel.TextXAlignment = Enum.TextXAlignment.Left
 	nameLabel.Parent = card
 
-	-- User ID
 	local idLabel = Instance.new("TextLabel")
 	idLabel.Size = UDim2.new(1, -85, 0, 20)
 	idLabel.Position = UDim2.new(0, 75, 0, 35)
@@ -3616,7 +3368,6 @@ local function createLeaderboardCard(data)
 	idLabel.TextXAlignment = Enum.TextXAlignment.Left
 	idLabel.Parent = card
 
-	-- Stats Display
 	local statsY = 75
 	local stats = {
 		{icon = "🏔️", label = "Summit", value = tostring(data.Summit)},
@@ -3643,7 +3394,6 @@ local function createLeaderboardCard(data)
 		statLabel.Parent = statFrame
 	end
 
-	-- Delete Button
 	local deleteBtn = Instance.new("TextButton")
 	deleteBtn.Size = UDim2.new(0.96, 0, 0, 35)
 	deleteBtn.Position = UDim2.new(0.02, 0, 1, -45)
@@ -3667,7 +3417,7 @@ local function createLeaderboardCard(data)
 	end)
 
 	deleteBtn.MouseButton1Click:Connect(function()
-		-- Show delete options popup
+
 		local deletePopup = Instance.new("Frame")
 		deletePopup.Size = UDim2.new(0, 320, 0, 280)
 		deletePopup.Position = UDim2.new(0.5, 0, 0.5, 0)
@@ -3680,7 +3430,6 @@ local function createLeaderboardCard(data)
 		createCorner(12).Parent = deletePopup
 		createStroke(COLORS.Border, 2).Parent = deletePopup
 
-		-- Header
 		local popupHeader = Instance.new("Frame")
 		popupHeader.Size = UDim2.new(1, 0, 0, 50)
 		popupHeader.BackgroundColor3 = COLORS.Header
@@ -3724,7 +3473,6 @@ local function createLeaderboardCard(data)
 			deletePopup:Destroy()
 		end)
 
-		-- Delete options
 		local yPos = 65
 		local deleteOptions = {
 			{text = "Delete Summit Data", type = "summit"},
@@ -3750,10 +3498,10 @@ local function createLeaderboardCard(data)
 			createCorner(6).Parent = optionBtn
 
 			optionBtn.MouseButton1Click:Connect(function()
-				-- Langsung pakai confirmDialog yang sudah ada
+
 				confirmTitle.Text = "Confirm Delete"
-				confirmMessage.Text = string.format("Are you sure you want to delete %s data from %s?", 
-					option.type == "all" and "ALL" or option.type, 
+				confirmMessage.Text = string.format("Are you sure you want to delete %s data from %s?",
+					option.type == "all" and "ALL" or option.type,
 					data.Username
 				)
 				currentConfirmCallback = function()
@@ -3783,7 +3531,6 @@ local function createLeaderboardCard(data)
 				tweenSize(confirmDialog, UDim2.new(0, 380, 0, 200), 0.3)
 			end)
 
-
 			yPos = yPos + 43
 		end
 	end)
@@ -3791,7 +3538,6 @@ local function createLeaderboardCard(data)
 	return card
 end
 
--- Search Button Handler
 searchButton.MouseButton1Click:Connect(function()
 	if searchBox.Text == "" then
 		game.StarterGui:SetCore("SendNotification", {
@@ -3802,7 +3548,6 @@ searchButton.MouseButton1Click:Connect(function()
 		return
 	end
 
-	-- Clear previous results
 	for _, child in pairs(resultsContainer:GetChildren()) do
 		if child:IsA("Frame") then
 			child:Destroy()
@@ -3811,10 +3556,9 @@ searchButton.MouseButton1Click:Connect(function()
 
 	searchResults = {}
 
-	-- Parse usernames (split by comma)
 	local usernames = {}
 	for username in string.gmatch(searchBox.Text, "[^,]+") do
-		local trimmed = string.match(username, "^%s*(.-)%s*$") -- Trim whitespace
+		local trimmed = string.match(username, "^%s*(.-)%s*$")
 		if trimmed ~= "" then
 			table.insert(usernames, trimmed)
 		end
@@ -3838,7 +3582,6 @@ searchButton.MouseButton1Click:Connect(function()
 		return
 	end
 
-	-- Search each player
 	local searchLeaderboardFunc = remoteFolder:FindFirstChild("SearchLeaderboard")
 	if not searchLeaderboardFunc then
 		game.StarterGui:SetCore("SendNotification", {
@@ -3869,7 +3612,6 @@ searchButton.MouseButton1Click:Connect(function()
 		end
 	end
 
-	-- Show delete all button if results found
 	if foundCount > 0 then
 		deleteAllFrame.Visible = true
 		game.StarterGui:SetCore("SendNotification", {
@@ -3890,9 +3632,8 @@ deleteAllButton.MouseButton1Click:Connect(function()
 		table.insert(playerNames, data.Username)
 	end
 
-	-- Langsung pakai confirmDialog
 	confirmTitle.Text = "Delete All Data"
-	confirmMessage.Text = string.format("Delete ALL leaderboard data from %d player(s)?\n%s", 
+	confirmMessage.Text = string.format("Delete ALL leaderboard data from %d player(s)?\n%s",
 		#searchResults,
 		table.concat(playerNames, ", ")
 	)
@@ -3904,7 +3645,6 @@ deleteAllButton.MouseButton1Click:Connect(function()
 			end
 		end
 
-		-- Clear results
 		for _, child in pairs(resultsContainer:GetChildren()) do
 			if child:IsA("Frame") then
 				child:Destroy()
@@ -3927,11 +3667,10 @@ deleteAllButton.MouseButton1Click:Connect(function()
 	tweenSize(confirmDialog, UDim2.new(0, 380, 0, 200), 0.3)
 end)
 
--- ==================== LOG TAB (PRIMARY ADMIN ONLY) ====================
 local logTab, logTabBtn
 if hasPrimaryAccess then
 	logTab, logTabBtn = createTab("Log", 5)
-	
+
 	local logScroll = Instance.new("ScrollingFrame")
 	logScroll.Size = UDim2.new(1, 0, 1, 0)
 	logScroll.BackgroundTransparency = 1
@@ -3941,14 +3680,13 @@ if hasPrimaryAccess then
 	logScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 	logScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	logScroll.Parent = logTab
-	
+
 	local logLayout = Instance.new("UIListLayout")
 	logLayout.Padding = UDim.new(0, 15)
 	logLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	logLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	logLayout.Parent = logScroll
-	
-	-- Title
+
 	local logTitle = Instance.new("TextLabel")
 	logTitle.Size = UDim2.new(1, 0, 0, 40)
 	logTitle.BackgroundTransparency = 1
@@ -3960,8 +3698,7 @@ if hasPrimaryAccess then
 	logTitle.TextXAlignment = Enum.TextXAlignment.Center
 	logTitle.LayoutOrder = 1
 	logTitle.Parent = logScroll
-	
-	-- Description
+
 	local logDesc = Instance.new("TextLabel")
 	logDesc.Size = UDim2.new(0.9, 0, 0, 50)
 	logDesc.BackgroundTransparency = 1
@@ -3973,8 +3710,7 @@ if hasPrimaryAccess then
 	logDesc.TextXAlignment = Enum.TextXAlignment.Center
 	logDesc.LayoutOrder = 2
 	logDesc.Parent = logScroll
-	
-	-- Open Logs Button
+
 	local openLogsBtn = Instance.new("TextButton")
 	openLogsBtn.Size = UDim2.new(0.7, 0, 0, 60)
 	openLogsBtn.BackgroundColor3 = COLORS.Accent
@@ -3986,21 +3722,19 @@ if hasPrimaryAccess then
 	openLogsBtn.AutoButtonColor = false
 	openLogsBtn.LayoutOrder = 3
 	openLogsBtn.Parent = logScroll
-	
+
 	createCorner(10).Parent = openLogsBtn
-	
-	-- Button hover effect
+
 	openLogsBtn.MouseEnter:Connect(function()
 		TweenService:Create(openLogsBtn, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.AccentHover}):Play()
 	end)
-	
+
 	openLogsBtn.MouseLeave:Connect(function()
 		TweenService:Create(openLogsBtn, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.Accent}):Play()
 	end)
-	
-	-- Open Log UI
+
 	openLogsBtn.MouseButton1Click:Connect(function()
-		-- Wait for AdminLogClient to initialize
+
 		if _G.AdminLogUI then
 			_G.AdminLogUI:Open()
 		else
@@ -4012,39 +3746,38 @@ if hasPrimaryAccess then
 			})
 		end
 	end)
-	
-	-- Info cards
+
 	local infoFrame = Instance.new("Frame")
 	infoFrame.Size = UDim2.new(0.9, 0, 0, 130)
 	infoFrame.BackgroundColor3 = COLORS.Panel
 	infoFrame.BorderSizePixel = 0
 	infoFrame.LayoutOrder = 4
 	infoFrame.Parent = logScroll
-	
+
 	createCorner(8).Parent = infoFrame
-	
+
 	local infoLayout = Instance.new("UIListLayout")
 	infoLayout.Padding = UDim.new(0, 8)
 	infoLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	infoLayout.Parent = infoFrame
-	
+
 	local infoPadding = createPadding(12)
 	infoPadding.Parent = infoFrame
-	
+
 	local infoItems = {
 		{"📊 All Logs", "View all admin actions with filters"},
 		{"👥 Admin List", "See all admins and their activity"},
 		{"🔍 Filter", "Filter by action type: kick, ban, freeze, etc."},
 		{"🌐 Cross-Server", "Logs sync across all servers"}
 	}
-	
+
 	for i, item in ipairs(infoItems) do
 		local infoRow = Instance.new("Frame")
 		infoRow.Size = UDim2.new(1, 0, 0, 22)
 		infoRow.BackgroundTransparency = 1
 		infoRow.LayoutOrder = i
 		infoRow.Parent = infoFrame
-		
+
 		local infoIcon = Instance.new("TextLabel")
 		infoIcon.Size = UDim2.new(0, 25, 1, 0)
 		infoIcon.BackgroundTransparency = 1
@@ -4054,7 +3787,7 @@ if hasPrimaryAccess then
 		infoIcon.TextSize = 14
 		infoIcon.TextXAlignment = Enum.TextXAlignment.Left
 		infoIcon.Parent = infoRow
-		
+
 		local infoText = Instance.new("TextLabel")
 		infoText.Size = UDim2.new(1, -30, 1, 0)
 		infoText.Position = UDim2.new(0, 30, 0, 0)
@@ -4067,14 +3800,11 @@ if hasPrimaryAccess then
 		infoText.TextTruncate = Enum.TextTruncate.AtEnd
 		infoText.Parent = infoRow
 	end
-	
-	print("✅ [ADMIN CLIENT] Log tab created for Primary Admin")
+
 end
 
--- ==================== SECONDARY ADMIN ACCESS CONTROL ====================
--- Hide and disable restricted tabs for Secondary Admins
 if not hasPrimaryAccess then
-	-- Hide Notifications tab
+
 	if notifTabBtn then
 		notifTabBtn.Visible = false
 		notifTabBtn.Active = false
@@ -4082,8 +3812,7 @@ if not hasPrimaryAccess then
 	if notifTab then
 		notifTab.Visible = false
 	end
-	
-	-- Hide Events tab
+
 	if eventsTabBtn then
 		eventsTabBtn.Visible = false
 		eventsTabBtn.Active = false
@@ -4091,55 +3820,48 @@ if not hasPrimaryAccess then
 	if eventsTab then
 		eventsTab.Visible = false
 	end
-	
-	-- Show Players tab by default for Secondary Admin
+
 	if playersTab and playersTabBtn then
 		playersTab.Visible = true
 		playersTabBtn.BackgroundColor3 = COLORS.Accent
 		playersTabBtn.TextColor3 = COLORS.Text
 		currentTab = playersTab
 	end
-	
-	-- Update tab sizes (only 2 tabs: Players, Leaderboard)
+
 	for _, tabBtn in ipairs(tabContainer:GetChildren()) do
 		if tabBtn:IsA("TextButton") and tabBtn.Visible then
-			tabBtn.Size = UDim2.new(0.49, 0, 1, 0) -- ~50% width each
+			tabBtn.Size = UDim2.new(0.49, 0, 1, 0)
 		end
 	end
-	
-	print("✅ [ADMIN CLIENT] Secondary Admin mode - restricted access applied")
+
 else
-	-- Show Notifications tab by default for Primary Admin
+
 	if notifTab and notifTabBtn then
 		notifTab.Visible = true
 		notifTabBtn.BackgroundColor3 = COLORS.Accent
 		notifTabBtn.TextColor3 = COLORS.Text
 		currentTab = notifTab
 	end
-	
-	print("✅ [ADMIN CLIENT] Primary Admin mode - full access")
+
 end
 
--- Create Admin Button
-local isOpen = false -- Pindahkan ke scope global
+local isOpen = false
 
--- Forward declarations for admin panel functions
 local closeAdminPanel
 local openAdminPanel
 
--- Function to close admin panel (for PanelManager)
 closeAdminPanel = function()
 	if not isOpen then return end
 	isOpen = false
-	-- Sembunyikan konten sebelum animasi
+
 	for _, child in ipairs(contentContainer:GetChildren()) do
 		child.Visible = false
 	end
 
 	tweenSize(mainPanel, UDim2.new(0, 0, 0, 0), 0.3, function()
 		mainPanel.Visible = false
-		mainPanel.Size = UDim2.new(1, 0, 1, 0) -- Full size of container
-		-- Kembalikan visibility tab yang aktif
+		mainPanel.Size = UDim2.new(1, 0, 1, 0)
+
 		if currentTab then
 			currentTab.Visible = true
 		end
@@ -4147,26 +3869,21 @@ closeAdminPanel = function()
 	PanelManager:Close("AdminPanel")
 end
 
--- Function to open admin panel (for PanelManager)
 openAdminPanel = function()
-	PanelManager:Open("AdminPanel") -- This closes other panels first
+	PanelManager:Open("AdminPanel")
 	isOpen = true
 	mainPanel.Size = UDim2.new(0, 0, 0, 0)
 	mainPanel.Visible = true
-	tweenSize(mainPanel, UDim2.new(1, 0, 1, 0), 0.3) -- Full size of container
+	tweenSize(mainPanel, UDim2.new(1, 0, 1, 0), 0.3)
 end
 
--- Register with PanelManager
 PanelManager:Register("AdminPanel", closeAdminPanel)
 
 if topbarPlusLoaded and Icon then
-	-- Use TopbarPlus
-	print("Creating TopbarPlus icon...")
+
 	local adminIcon = Icon.new()
 	adminIcon:setLabel("Admin")
 	adminIcon:setImage("rbxassetid://128692376033664")
-
-	-- Removed setTip() since it's not available in all TopbarPlus versions
 
 	adminIcon.selected:Connect(function()
 		openAdminPanel()
@@ -4176,17 +3893,14 @@ if topbarPlusLoaded and Icon then
 		closeAdminPanel()
 	end)
 
-	-- Connect close button to deselect icon
 	closeButton.MouseButton1Click:Connect(function()
 		adminIcon:deselect()
 	end)
 
-	print("✓ TopbarPlus icon created")
 else
-	-- Fallback: Create custom button
+
 	warn("Using fallback admin button")
 
-	-- Hide default topbar to prevent conflicts
 	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.All, true)
 
 	local fallbackButton = Instance.new("ScreenGui")
@@ -4250,13 +3964,9 @@ else
 		end
 	end)
 
-	-- Close panel when close button is clicked
 	closeButton.MouseButton1Click:Connect(function()
 		closeAdminPanel()
 		buttonFrame.BackgroundColor3 = COLORS.Panel
 	end)
 
-	print("✓ Fallback admin button created")
 end
-
-print("Admin Panel System Loaded Successfully")

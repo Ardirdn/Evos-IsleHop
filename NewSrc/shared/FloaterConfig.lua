@@ -1,29 +1,5 @@
---[[
-    FLOATER CONFIG
-    Place in ReplicatedStorage/Modules/FloaterConfig.lua
-    
-    SINGLE SOURCE OF TRUTH untuk semua data floater.
-    Semua script lain (shop, fishing, client) harus ambil data dari sini.
-    
-    Setiap floater memiliki:
-    - FloaterId: ID unik floater (harus sama dengan nama model di FishingRods/Floaters)
-    - DisplayName: Nama yang ditampilkan di UI
-    - Description: Deskripsi item
-    - Price: Harga dalam game currency (0 = gratis)
-    - Category: Kategori floater (Basic, Epic, Legendary)
-    - Rarity: Rarity floater (Common, Uncommon, Rare, Epic, Legendary)
-    - LuckBonus: Bonus luck dalam persen
-    - ImageId: Asset ID untuk thumbnail
-    - IsPremium: Apakah item premium (beli dengan Robux)
-    - ProductId: Developer Product ID jika premium
-    
-    NOTE: Rod dan Floater adalah INDEPENDENT - player bebas mix-and-match!
-    Equipment disimpan terpisah di DataHandler (EquippedRod & EquippedFloater)
-]]
-
 local FloaterConfig = {}
 
--- Rarity colors (untuk reference)
 FloaterConfig.RarityColors = {
 	Common = Color3.fromRGB(200, 200, 200),
 	Uncommon = Color3.fromRGB(100, 255, 100),
@@ -32,17 +8,15 @@ FloaterConfig.RarityColors = {
 	Legendary = Color3.fromRGB(255, 170, 0)
 }
 
--- Default floater ID (gratis untuk semua pemain baru)
 FloaterConfig.DefaultFloater = "FloaterDoll"
 
--- ==================== FLOATER DATA ====================
 FloaterConfig.Floaters = {
-	-- ==================== BASIC FLOATERS ====================
+
 	["FloaterDoll"] = {
 		FloaterId = "FloaterDoll",
 		DisplayName = "Doll Floater",
 		Description = "Cute doll-shaped floater. Perfect for beginners!",
-		Price = 0, -- Free starter
+		Price = 0,
 		Category = "Basic",
 		Rarity = "Common",
 		LuckBonus = 0,
@@ -51,7 +25,6 @@ FloaterConfig.Floaters = {
 		ProductId = nil
 	},
 
-	-- ==================== EPIC FLOATERS ====================
 	["BoneFloater"] = {
 		FloaterId = "BoneFloater",
 		DisplayName = "Bone Floater",
@@ -130,7 +103,6 @@ FloaterConfig.Floaters = {
 		ProductId = nil
 	},
 
-	-- ==================== LEGENDARY FLOATERS ====================
 	["ReaperFloater"] = {
 		FloaterId = "ReaperFloater",
 		DisplayName = "Reaper Floater",
@@ -145,18 +117,14 @@ FloaterConfig.Floaters = {
 	},
 }
 
--- ==================== HELPER FUNCTIONS ====================
-
--- Get floater by ID
 function FloaterConfig.GetFloaterById(floaterId)
 	return FloaterConfig.Floaters[floaterId]
 end
 
--- Get all floaters as array (for shop display, ordered by price)
 function FloaterConfig.GetFloatersArray()
 	local floatersArray = {}
 	for floaterId, floaterData in pairs(FloaterConfig.Floaters) do
-		-- Add FloaterId field for consistency
+
 		local floaterWithId = {}
 		for k, v in pairs(floaterData) do
 			floaterWithId[k] = v
@@ -164,16 +132,14 @@ function FloaterConfig.GetFloatersArray()
 		floaterWithId.FloaterId = floaterId
 		table.insert(floatersArray, floaterWithId)
 	end
-	
-	-- Sort by price
+
 	table.sort(floatersArray, function(a, b)
 		return a.Price < b.Price
 	end)
-	
+
 	return floatersArray
 end
 
--- Get floaters by category
 function FloaterConfig.GetFloatersByCategory(category)
 	local result = {}
 	for floaterId, floaterData in pairs(FloaterConfig.Floaters) do
@@ -189,24 +155,20 @@ function FloaterConfig.GetFloatersByCategory(category)
 	return result
 end
 
--- Get floater price
 function FloaterConfig.GetPrice(floaterId)
 	local floater = FloaterConfig.Floaters[floaterId]
 	return floater and floater.Price or 0
 end
 
--- Get floater luck bonus
 function FloaterConfig.GetLuckBonus(floaterId)
 	local floater = FloaterConfig.Floaters[floaterId]
 	return floater and floater.LuckBonus or 0
 end
 
--- Check if floater exists
 function FloaterConfig.Exists(floaterId)
 	return FloaterConfig.Floaters[floaterId] ~= nil
 end
 
--- Get rarity color
 function FloaterConfig.GetRarityColor(floaterId)
 	local floater = FloaterConfig.Floaters[floaterId]
 	if floater then

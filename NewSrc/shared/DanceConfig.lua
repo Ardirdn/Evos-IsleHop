@@ -1,13 +1,7 @@
---[[
-    DANCE CONFIG
-    Letakkan di ReplicatedStorage
-]]
-
 local DanceConfig = {}
 
--- List animasi dance dengan ID dari Roblox
 DanceConfig.Animations = {
-	-- Kategori: Random / Special (Berdasarkan prefix '💀-')
+
 	{
 		Title = "Sturdy Ice Emote",
 		AnimationId = "rbxassetid://94645570070319",
@@ -253,38 +247,7 @@ DanceConfig.Animations = {
 		AnimationId = "rbxassetid://97031364148200",
 		Category = "Pose"
 	},
-	---- Kategori: Pose / Emote (Semua yang memiliki Category = "Emote" di config asli)
-	--{
-	--	Title = "Salute",
-	--	AnimationId = "rbxassetid://92109492488561",
-	--	Category = "Pose / Emote"
-	--},
-	--{
-	--	Title = "Stance1",
-	--	AnimationId = "rbxassetid://86241476099446",
-	--	Category = "Pose / Emote"
-	--},
-	--{
-	--	Title = "Stance2",
-	--	AnimationId = "rbxassetid://131789866699144",
-	--	Category = "Pose / Emote"
-	--},
-	--{
-	--	Title = "Stance3",
-	--	AnimationId = "rbxassetid://99541980916506",
-	--	Category = "Pose / Emote"
-	--},
-	--{
-	--	Title = "Stance4",
-	--	AnimationId = "rbxassetid://105042771831542",
-	--	Category = "Pose / Emote"
-	--},
-	--{
-	--	Title = "Stance5",
-	--	AnimationId = "rbxassetid://109853326508333",
-	--	Category = "Pose / Emote"
-	--},
-	
+
 }
 
 return DanceConfig

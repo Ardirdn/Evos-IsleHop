@@ -1,14 +1,3 @@
---[[
-    FISHERMAN SHOP CLIENT
-    Place in StarterPlayerScripts
-    
-    UI for selling fish at the Fisherman Shop
-    - ProximityPrompt interaction
-    - Cart system with quantity slider
-    - Fish disappears from list when added to cart
-    - Two-step confirmation
-]]
-
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
@@ -20,7 +9,6 @@ local playerGui = player:WaitForChild("PlayerGui")
 local FishConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("FishConfig"))
 local SoundConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("SoundConfig"))
 
--- Wait for remotes
 local remoteFolder = ReplicatedStorage:WaitForChild("FishermanShopRemotes", 10)
 if not remoteFolder then
 	warn("[FISHERMAN SHOP CLIENT] FishermanShopRemotes not found!")
@@ -33,16 +21,14 @@ local sellAllFishEvent = remoteFolder:FindFirstChild("SellAllFish")
 local sellSelectedFishEvent = remoteFolder:FindFirstChild("SellSelectedFish")
 local fishSoldEvent = remoteFolder:FindFirstChild("FishSold")
 
--- State
 local isShopOpen = false
 local isCartOpen = false
 local isQuantityPopupOpen = false
 local fishInventoryData = nil
-local cart = {} -- {fishId = quantity}
+local cart = {}
 local selectedFilter = "All"
 local currentSelectingFish = nil
 
--- Colors (SAME AS FISH COLLECTION)
 local COLORS = {
 	Background = Color3.fromRGB(15, 25, 40),
 	CardBg = Color3.fromRGB(25, 40, 60),
@@ -60,10 +46,6 @@ local COLORS = {
 	Legendary = Color3.fromRGB(255, 170, 0),
 	Mythic = Color3.fromRGB(255, 50, 100)
 }
-
-print("✅ [FISHERMAN SHOP CLIENT] Starting initialization...")
-
--- ==================== HELPER FUNCTIONS ====================
 
 local function createCorner(radius)
 	local corner = Instance.new("UICorner")
@@ -109,15 +91,11 @@ local function getAvailableFishCount(fishId)
 	return 0
 end
 
--- ==================== CREATE UI ====================
-
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "FishermanShopGUI"
 screenGui.ResetOnSpawn = false
 screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 screenGui.Parent = playerGui
-
--- ==================== MAIN SHOP PANEL ====================
 
 local shopPanel = Instance.new("Frame")
 shopPanel.Name = "ShopPanel"
@@ -129,7 +107,6 @@ shopPanel.BorderSizePixel = 0
 shopPanel.Visible = false
 shopPanel.Parent = screenGui
 
--- AspectRatio based on Width
 local shopAspect = Instance.new("UIAspectRatioConstraint")
 shopAspect.AspectRatio = 0.9
 shopAspect.DominantAxis = Enum.DominantAxis.Width
@@ -142,7 +119,6 @@ shopStroke.Color = COLORS.Warning
 shopStroke.Thickness = 2
 shopStroke.Parent = shopPanel
 
--- Main Panel Padding
 local shopPadding = Instance.new("UIPadding")
 shopPadding.PaddingTop = UDim.new(0.015, 0)
 shopPadding.PaddingBottom = UDim.new(0.015, 0)
@@ -150,7 +126,6 @@ shopPadding.PaddingLeft = UDim.new(0.025, 0)
 shopPadding.PaddingRight = UDim.new(0.025, 0)
 shopPadding.Parent = shopPanel
 
--- Header
 local headerFrame = Instance.new("Frame")
 headerFrame.Name = "Header"
 headerFrame.Size = UDim2.new(1, 0, 0.07, 0)
@@ -197,7 +172,6 @@ closeAspect.Parent = closeButton
 
 createCorner(8).Parent = closeButton
 
--- Filter Bar
 local filterFrame = Instance.new("Frame")
 filterFrame.Name = "FilterFrame"
 filterFrame.Size = UDim2.new(1, 0, 0.045, 0)
@@ -225,14 +199,14 @@ for i, filterName in ipairs(filters) do
 	btn.TextScaled = true
 	btn.LayoutOrder = i
 	btn.Parent = filterFrame
-	
+
 	local btnTextConstraint = Instance.new("UITextSizeConstraint")
 	btnTextConstraint.MaxTextSize = 12
 	btnTextConstraint.Parent = btn
-	
+
 	createCorner(6).Parent = btn
 	filterButtons[filterName] = btn
-	
+
 	btn.MouseButton1Click:Connect(function()
 		selectedFilter = filterName
 		for name, button in pairs(filterButtons) do
@@ -243,7 +217,6 @@ for i, filterName in ipairs(filters) do
 	end)
 end
 
--- Content Frame
 local contentFrame = Instance.new("ScrollingFrame")
 contentFrame.Name = "ContentFrame"
 contentFrame.Size = UDim2.new(1, 0, 0.62, 0)
@@ -268,7 +241,6 @@ contentGrid.CellPadding = UDim2.new(0.015, 0, 0.015, 0)
 contentGrid.SortOrder = Enum.SortOrder.LayoutOrder
 contentGrid.Parent = contentFrame
 
--- Bottom Action Bar
 local actionBar = Instance.new("Frame")
 actionBar.Name = "ActionBar"
 actionBar.Size = UDim2.new(1, 0, 0.14, 0)
@@ -286,7 +258,6 @@ actionPadding.PaddingLeft = UDim.new(0.02, 0)
 actionPadding.PaddingRight = UDim.new(0.02, 0)
 actionPadding.Parent = actionBar
 
--- Cart Info
 local cartInfoLabel = Instance.new("TextLabel")
 cartInfoLabel.Name = "CartInfo"
 cartInfoLabel.Size = UDim2.new(1, 0, 0.35, 0)
@@ -303,7 +274,6 @@ local cartInfoTextConstraint = Instance.new("UITextSizeConstraint")
 cartInfoTextConstraint.MaxTextSize = 16
 cartInfoTextConstraint.Parent = cartInfoLabel
 
--- Action Buttons
 local btnFrame = Instance.new("Frame")
 btnFrame.Size = UDim2.new(1, 0, 0.55, 0)
 btnFrame.Position = UDim2.new(0, 0, 0.4, 0)
@@ -370,8 +340,6 @@ viewCartTextConstraint.MaxTextSize = 14
 viewCartTextConstraint.Parent = viewCartBtn
 
 createCorner(8).Parent = viewCartBtn
-
--- ==================== QUANTITY POPUP ====================
 
 local quantityPopup = Instance.new("Frame")
 quantityPopup.Name = "QuantityPopup"
@@ -442,7 +410,6 @@ quantityCloseTextConstraint.Parent = quantityCloseBtn
 
 createCorner(6).Parent = quantityCloseBtn
 
--- Fish info in popup
 local popupFishName = Instance.new("TextLabel")
 popupFishName.Size = UDim2.new(1, 0, 0.12, 0)
 popupFishName.Position = UDim2.new(0, 0, 0.2, 0)
@@ -475,7 +442,6 @@ local popupAvailableTextConstraint = Instance.new("UITextSizeConstraint")
 popupAvailableTextConstraint.MaxTextSize = 13
 popupAvailableTextConstraint.Parent = popupAvailable
 
--- Slider
 local sliderFrame = Instance.new("Frame")
 sliderFrame.Size = UDim2.new(1, 0, 0.1, 0)
 sliderFrame.Position = UDim2.new(0, 0, 0.45, 0)
@@ -509,7 +475,6 @@ sliderKnobAspect.Parent = sliderKnob
 
 createCorner(12).Parent = sliderKnob
 
--- Quantity display
 local quantityDisplay = Instance.new("TextLabel")
 quantityDisplay.Size = UDim2.new(1, 0, 0.12, 0)
 quantityDisplay.Position = UDim2.new(0, 0, 0.58, 0)
@@ -525,7 +490,6 @@ local quantityDisplayTextConstraint = Instance.new("UITextSizeConstraint")
 quantityDisplayTextConstraint.MaxTextSize = 20
 quantityDisplayTextConstraint.Parent = quantityDisplay
 
--- Bottom buttons row
 local popupBtnFrame = Instance.new("Frame")
 popupBtnFrame.Size = UDim2.new(1, 0, 0.18, 0)
 popupBtnFrame.Position = UDim2.new(0, 0, 0.75, 0)
@@ -540,7 +504,6 @@ popupBtnLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 popupBtnLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 popupBtnLayout.Parent = popupBtnFrame
 
--- Max button
 local maxBtn = Instance.new("TextButton")
 maxBtn.Size = UDim2.new(0.25, 0, 1, 0)
 maxBtn.BackgroundColor3 = COLORS.Accent
@@ -559,7 +522,6 @@ maxBtnTextConstraint.Parent = maxBtn
 
 createCorner(6).Parent = maxBtn
 
--- Add to cart button in popup
 local popupAddBtn = Instance.new("TextButton")
 popupAddBtn.Size = UDim2.new(0.55, 0, 1, 0)
 popupAddBtn.BackgroundColor3 = COLORS.Success
@@ -578,7 +540,6 @@ popupAddBtnTextConstraint.Parent = popupAddBtn
 
 createCorner(6).Parent = popupAddBtn
 
--- Slider logic
 local selectedQuantity = 1
 local maxQuantity = 1
 local isDraggingSlider = false
@@ -625,8 +586,6 @@ quantityCloseBtn.MouseButton1Click:Connect(function()
 	isQuantityPopupOpen = false
 end)
 
--- ==================== CART PANEL ====================
-
 local cartPanel = Instance.new("Frame")
 cartPanel.Name = "CartPanel"
 cartPanel.Size = UDim2.new(0.4, 0, 0.65, 0)
@@ -657,7 +616,6 @@ cartMainPadding.PaddingLeft = UDim.new(0.03, 0)
 cartMainPadding.PaddingRight = UDim.new(0.03, 0)
 cartMainPadding.Parent = cartPanel
 
--- Cart Header
 local cartHeader = Instance.new("Frame")
 cartHeader.Size = UDim2.new(1, 0, 0.1, 0)
 cartHeader.Position = UDim2.new(0, 0, 0, 0)
@@ -706,7 +664,6 @@ cartCloseTextConstraint.Parent = cartClose
 
 createCorner(8).Parent = cartClose
 
--- Cart Content
 local cartContent = Instance.new("ScrollingFrame")
 cartContent.Name = "CartContent"
 cartContent.Size = UDim2.new(1, 0, 0.6, 0)
@@ -732,7 +689,6 @@ cartPadding.PaddingRight = UDim.new(0.02, 0)
 cartPadding.PaddingBottom = UDim.new(0.02, 0)
 cartPadding.Parent = cartContent
 
--- Cart Total
 local cartTotalFrame = Instance.new("Frame")
 cartTotalFrame.Size = UDim2.new(1, 0, 0.09, 0)
 cartTotalFrame.Position = UDim2.new(0, 0, 0.74, 0)
@@ -758,7 +714,6 @@ local cartTotalTextConstraint = Instance.new("UITextSizeConstraint")
 cartTotalTextConstraint.MaxTextSize = 22
 cartTotalTextConstraint.Parent = cartTotalLabel
 
--- Cart Actions
 local cartActionFrame = Instance.new("Frame")
 cartActionFrame.Size = UDim2.new(1, 0, 0.1, 0)
 cartActionFrame.Position = UDim2.new(0, 0, 0.86, 0)
@@ -809,35 +764,31 @@ discardTextConstraint.Parent = discardCartBtn
 
 createCorner(8).Parent = discardCartBtn
 
--- ==================== FISH CARD FOR SHOP (SAME STYLE AS FISH COLLECTION) ====================
-
 local function createShopFishCard(fishData)
 	local available = getAvailableFishCount(fishData.FishId)
-	
-	-- Skip if all fish are in cart
+
 	if available <= 0 then return nil end
-	
+
 	local card = Instance.new("Frame")
 	card.Name = "FishCard_" .. fishData.FishId
 	card.BackgroundColor3 = COLORS.CardBg
 	card.BorderSizePixel = 0
-	
+
 	createCorner(10).Parent = card
-	
+
 	local cardStroke = Instance.new("UIStroke")
 	cardStroke.Color = getRarityColor(fishData.Rarity)
 	cardStroke.Thickness = 2
 	cardStroke.Parent = card
-	
-	-- Image Container (SAME AS FISH COLLECTION)
+
 	local imageContainer = Instance.new("Frame")
 	imageContainer.Size = UDim2.new(1, -10, 0, 50)
 	imageContainer.Position = UDim2.new(0, 5, 0, 5)
 	imageContainer.BackgroundColor3 = Color3.fromRGB(15, 25, 35)
 	imageContainer.Parent = card
-	
+
 	createCorner(6).Parent = imageContainer
-	
+
 	local fishImage = Instance.new("ImageLabel")
 	fishImage.Size = UDim2.new(0.7, 0, 0.85, 0)
 	fishImage.Position = UDim2.new(0.5, 0, 0.5, 0)
@@ -846,8 +797,7 @@ local function createShopFishCard(fishData)
 	fishImage.Image = fishData.ImageID or ""
 	fishImage.ScaleType = Enum.ScaleType.Fit
 	fishImage.Parent = imageContainer
-	
-	-- Count badge
+
 	local countBadge = Instance.new("TextLabel")
 	countBadge.Size = UDim2.new(0, 30, 0, 16)
 	countBadge.Position = UDim2.new(1, -3, 0, 3)
@@ -859,8 +809,7 @@ local function createShopFishCard(fishData)
 	countBadge.TextSize = 9
 	countBadge.Parent = imageContainer
 	createCorner(4).Parent = countBadge
-	
-	-- Name
+
 	local nameLabel = Instance.new("TextLabel")
 	nameLabel.Size = UDim2.new(1, -6, 0, 14)
 	nameLabel.Position = UDim2.new(0, 3, 0, 58)
@@ -872,8 +821,7 @@ local function createShopFishCard(fishData)
 	nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	nameLabel.TextXAlignment = Enum.TextXAlignment.Center
 	nameLabel.Parent = card
-	
-	-- Price per fish
+
 	local priceLabel = Instance.new("TextLabel")
 	priceLabel.Size = UDim2.new(1, -6, 0, 12)
 	priceLabel.Position = UDim2.new(0, 3, 0, 72)
@@ -884,15 +832,13 @@ local function createShopFishCard(fishData)
 	priceLabel.TextSize = 9
 	priceLabel.TextXAlignment = Enum.TextXAlignment.Center
 	priceLabel.Parent = card
-	
-	-- Button container
+
 	local btnContainer = Instance.new("Frame")
 	btnContainer.Size = UDim2.new(1, -10, 0, 28)
 	btnContainer.Position = UDim2.new(0, 5, 1, -32)
 	btnContainer.BackgroundTransparency = 1
 	btnContainer.Parent = card
-	
-	-- Quick add (add 1)
+
 	local quickAddBtn = Instance.new("TextButton")
 	quickAddBtn.Size = UDim2.new(0.65, -2, 1, 0)
 	quickAddBtn.Position = UDim2.new(0, 0, 0, 0)
@@ -903,10 +849,9 @@ local function createShopFishCard(fishData)
 	quickAddBtn.TextColor3 = COLORS.Text
 	quickAddBtn.TextSize = 10
 	quickAddBtn.Parent = btnContainer
-	
+
 	createCorner(5).Parent = quickAddBtn
-	
-	-- Quantity select button
+
 	local qtyBtn = Instance.new("TextButton")
 	qtyBtn.Size = UDim2.new(0.35, -2, 1, 0)
 	qtyBtn.Position = UDim2.new(0.65, 2, 0, 0)
@@ -917,18 +862,16 @@ local function createShopFishCard(fishData)
 	qtyBtn.TextColor3 = Color3.fromRGB(0, 0, 0)
 	qtyBtn.TextSize = 14
 	qtyBtn.Parent = btnContainer
-	
+
 	createCorner(5).Parent = qtyBtn
-	
-	-- Quick add click
+
 	quickAddBtn.MouseButton1Click:Connect(function()
 		local currentAvailable = getAvailableFishCount(fishData.FishId)
 		if currentAvailable > 0 then
 			cart[fishData.FishId] = (cart[fishData.FishId] or 0) + 1
 			updateCartInfo()
-			updateShopDisplay() -- Refresh to update counts/hide cards
-			
-			-- Flash feedback
+			updateShopDisplay()
+
 			TweenService:Create(quickAddBtn, TweenInfo.new(0.1), {BackgroundColor3 = COLORS.Success}):Play()
 			task.delay(0.1, function()
 				if quickAddBtn.Parent then
@@ -937,57 +880,52 @@ local function createShopFishCard(fishData)
 			end)
 		end
 	end)
-	
-	-- Quantity select click
+
 	qtyBtn.MouseButton1Click:Connect(function()
 		local currentAvailable = getAvailableFishCount(fishData.FishId)
 		if currentAvailable > 0 then
 			currentSelectingFish = fishData.FishId
 			maxQuantity = currentAvailable
 			selectedQuantity = 1
-			
+
 			popupFishName.Text = fishData.Name
 			popupAvailable.Text = "Available: " .. currentAvailable .. " (Price: " .. formatMoney(fishData.Price or 0) .. " each)"
 			updateSliderVisual(1 / maxQuantity)
-			
+
 			quantityPopup.Visible = true
 			isQuantityPopupOpen = true
 		end
 	end)
-	
+
 	card.Parent = contentFrame
 	return card
 end
 
--- Popup add to cart
 popupAddBtn.MouseButton1Click:Connect(function()
 	if currentSelectingFish and selectedQuantity > 0 then
 		cart[currentSelectingFish] = (cart[currentSelectingFish] or 0) + selectedQuantity
 		updateCartInfo()
 		updateShopDisplay()
-		
+
 		quantityPopup.Visible = false
 		isQuantityPopupOpen = false
 		currentSelectingFish = nil
 	end
 end)
 
--- ==================== CART ITEM ====================
-
 local function createCartItem(fishId, quantity)
 	local fishData = FishConfig.Fish[fishId]
 	if not fishData then return nil end
-	
+
 	local item = Instance.new("Frame")
 	item.Name = "CartItem_" .. fishId
 	item.Size = UDim2.new(1, -10, 0, 45)
 	item.BackgroundColor3 = COLORS.CardBg
 	item.ZIndex = 12
 	item.Parent = cartContent
-	
+
 	createCorner(6).Parent = item
-	
-	-- Fish name
+
 	local nameLabel = Instance.new("TextLabel")
 	nameLabel.Size = UDim2.new(0.45, 0, 1, 0)
 	nameLabel.Position = UDim2.new(0, 10, 0, 0)
@@ -999,8 +937,7 @@ local function createCartItem(fishId, quantity)
 	nameLabel.TextXAlignment = Enum.TextXAlignment.Left
 	nameLabel.ZIndex = 12
 	nameLabel.Parent = item
-	
-	-- Value
+
 	local value = (fishData.Price or 0) * quantity
 	local valueLabel = Instance.new("TextLabel")
 	valueLabel.Size = UDim2.new(0.3, 0, 1, 0)
@@ -1013,8 +950,7 @@ local function createCartItem(fishId, quantity)
 	valueLabel.TextXAlignment = Enum.TextXAlignment.Right
 	valueLabel.ZIndex = 12
 	valueLabel.Parent = item
-	
-	-- Remove button
+
 	local removeBtn = Instance.new("TextButton")
 	removeBtn.Size = UDim2.new(0, 35, 0, 35)
 	removeBtn.Position = UDim2.new(1, -40, 0.5, 0)
@@ -1027,20 +963,18 @@ local function createCartItem(fishId, quantity)
 	removeBtn.TextSize = 14
 	removeBtn.ZIndex = 12
 	removeBtn.Parent = item
-	
+
 	createCorner(6).Parent = removeBtn
-	
+
 	removeBtn.MouseButton1Click:Connect(function()
 		cart[fishId] = nil
 		updateCartDisplay()
 		updateCartInfo()
-		updateShopDisplay() -- Show fish back in shop
+		updateShopDisplay()
 	end)
-	
+
 	return item
 end
-
--- ==================== DISPLAY FUNCTIONS ====================
 
 local function clearContent()
 	for _, child in ipairs(contentFrame:GetChildren()) do
@@ -1060,11 +994,11 @@ end
 
 function updateShopDisplay()
 	clearContent()
-	
+
 	if not fishInventoryData or not fishInventoryData.FishList then return end
-	
+
 	for _, fishData in ipairs(fishInventoryData.FishList) do
-		-- Filter
+
 		if selectedFilter == "All" or fishData.Rarity == selectedFilter then
 			createShopFishCard(fishData)
 		end
@@ -1078,7 +1012,7 @@ end
 
 function updateCartDisplay()
 	clearCartContent()
-	
+
 	local total = 0
 	for fishId, qty in pairs(cart) do
 		if qty > 0 then
@@ -1089,24 +1023,22 @@ function updateCartDisplay()
 			end
 		end
 	end
-	
+
 	cartTotalLabel.Text = "TOTAL: " .. formatMoney(total)
 end
 
 local function fetchInventory()
 	if not getFishInventoryFunc then return end
-	
+
 	local success, data = pcall(function()
 		return getFishInventoryFunc:InvokeServer()
 	end)
-	
+
 	if success and data then
 		fishInventoryData = data
 		updateShopDisplay()
 	end
 end
-
--- ==================== SHOP OPEN/CLOSE ====================
 
 local function openShop()
 	isShopOpen = true
@@ -1130,8 +1062,6 @@ cartClose.MouseButton1Click:Connect(function()
 	cartPanel.Visible = false
 	isCartOpen = false
 end)
-
--- ==================== CART ACTIONS ====================
 
 viewCartBtn.MouseButton1Click:Connect(function()
 	updateCartDisplay()
@@ -1159,7 +1089,7 @@ confirmSellBtn.MouseButton1Click:Connect(function()
 	local _, count = getCartTotal()
 	if count > 0 and sellSelectedFishEvent then
 		sellSelectedFishEvent:FireServer(cart)
-		-- ✅ Play transaction sound
+
 		SoundConfig.PlayLocalSound("Transaction")
 		cart = {}
 		updateCartInfo()
@@ -1172,7 +1102,7 @@ end)
 sellAllBtn.MouseButton1Click:Connect(function()
 	if sellAllFishEvent then
 		sellAllFishEvent:FireServer()
-		-- ✅ Play transaction sound
+
 		SoundConfig.PlayLocalSound("Transaction")
 		cart = {}
 		updateCartInfo()
@@ -1180,20 +1110,17 @@ sellAllBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
--- ==================== PROXIMITY PROMPT SETUP ====================
-
 local function setupProximityPrompt()
 	task.wait(3)
 	local fishermanShop = workspace:FindFirstChild("FishermanShop")
-	
+
 	if not fishermanShop then
 		warn("[FISHERMAN SHOP CLIENT] FishermanShop part not found in Workspace!")
-		-- Try again later
+
 		task.delay(5, setupProximityPrompt)
 		return
 	end
-	
-	-- Find or create proximity prompt
+
 	local prompt = fishermanShop:FindFirstChildOfClass("ProximityPrompt")
 	if not prompt then
 		prompt = Instance.new("ProximityPrompt")
@@ -1204,27 +1131,19 @@ local function setupProximityPrompt()
 		prompt.RequiresLineOfSight = false
 		prompt.Parent = fishermanShop
 	end
-	
+
 	prompt.Triggered:Connect(function(playerWhoTriggered)
 		if playerWhoTriggered == player then
 			openShop()
 		end
 	end)
-	
-	print("✅ [FISHERMAN SHOP CLIENT] Proximity prompt setup complete!")
-end
 
--- ==================== AUTO-REFRESH ====================
+end
 
 if fishSoldEvent then
 	fishSoldEvent.OnClientEvent:Connect(function(data)
-		print("🔄 [FISHERMAN SHOP] Fish sold, refreshing...")
 		task.delay(0.5, fetchInventory)
 	end)
 end
 
--- ==================== INITIALIZE ====================
-
 task.spawn(setupProximityPrompt)
-
-print("✅ [FISHERMAN SHOP CLIENT] Loaded - Go to FishermanShop to sell fish!")

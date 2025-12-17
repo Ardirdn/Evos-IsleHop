@@ -300,5 +300,3 @@ cameraIcon.selected:Connect(function()
 	task.wait(0.1)
 	cameraIcon:deselect()
 end)
-
-print("✅ [CINEMATIC CAMERA] Client loaded")

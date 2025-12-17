@@ -4,8 +4,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local player = Players.LocalPlayer
 
-print("✅ [CHAT TITLE CLIENT] Initializing...")
-
 local TitleConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("TitleConfig"))
 
 local titleRemotes = ReplicatedStorage:WaitForChild("TitleRemotes", 30)
@@ -31,13 +29,11 @@ end
 
 chatTitleUpdate.OnClientEvent:Connect(function(userId, titleName)
 	playerTitles[userId] = titleName
-	print(string.format("[CHAT TITLE CLIENT] Updated title for UserID %d: %s", userId, titleName or "None"))
 end)
 
 if BroadcastTitle then
 	BroadcastTitle.OnClientEvent:Connect(function(userId, titleName)
 		playerTitles[userId] = titleName
-		print(string.format("[CHAT TITLE CLIENT] Updated title (broadcast) for UserID %d: %s", userId, titleName or "None"))
 	end)
 end
 
@@ -88,8 +84,6 @@ if not rbxGeneral then
 	return
 end
 
-print("[CHAT TITLE CLIENT] Found RBXGeneral channel")
-
 TextChatService.OnIncomingMessage = function(message: TextChatMessage)
 	local properties = Instance.new("TextChatMessageProperties")
 
@@ -135,7 +129,6 @@ TextChatService.OnIncomingMessage = function(message: TextChatMessage)
 
 		properties.PrefixText = gradientTag .. " " .. coloredName
 
-		print(string.format("[CHAT TITLE CLIENT] ✅ Applied title for %s: %s", message.TextSource.Name, displayName))
 	else
 		local nameDisplay = message.PrefixText or ""
 		properties.PrefixText = string.format("<font color='rgb(255,255,255)'>%s</font>", nameDisplay)
@@ -143,5 +136,3 @@ TextChatService.OnIncomingMessage = function(message: TextChatMessage)
 
 	return properties
 end
-
-print("✅ [CHAT TITLE CLIENT] System active")

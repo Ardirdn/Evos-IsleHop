@@ -1,9 +1,3 @@
---[[
-    ROBLOX MUSIC PLAYER - MODIFIED VERSION
-    Place in StarterPlayer > StarterPlayerScripts
-    Requires: MusicConfig, existing MusicPlayer GUI in StarterGui
-]]
-
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -13,20 +7,15 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- Require MusicConfig
 local MusicConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("MusicConfig"))
 local PanelManager = require(script.Parent:WaitForChild("PanelManager"))
 
--- RemoteEvents for Favorites
 local musicRemoteFolder = ReplicatedStorage:WaitForChild("MusicRemotes")
 local toggleFavoriteMusicEvent = musicRemoteFolder:WaitForChild("ToggleFavorite")
 local getFavoritesMusicFunc = musicRemoteFolder:WaitForChild("GetFavorites")
 
--- Wait for MusicPlayer GUI
 local screenGui = playerGui:WaitForChild("MusicPlayer")
 
--- ==================== GET UI REFERENCES ====================
--- Main Panel
 local mainPanel = screenGui:WaitForChild("MainPanel")
 local buttonsPanel = mainPanel:WaitForChild("ButtonsPanel")
 local openLibraryButton = buttonsPanel:WaitForChild("OpenLibraryButton")
@@ -52,7 +41,6 @@ local playlistNameLabel = trackInfo:WaitForChild("PlaylistName")
 local songNameLabel = trackInfo:WaitForChild("SongName")
 local timeline = playingMusicPanel:WaitForChild("Timeline")
 
--- MyLibrary Panel
 local myLibraryPanel = screenGui:WaitForChild("MyLibraryPanel")
 local categoryFrame = myLibraryPanel:WaitForChild("Category")
 local allButton = categoryFrame:WaitForChild("AllButton")
@@ -72,7 +60,6 @@ local playlistScroll = playlistPanel:WaitForChild("Playlist")
 local playlistCardTemplate = playlistScroll:WaitForChild("PlaylistCard")
 playlistCardTemplate.Visible = false
 
--- Playlist Popup Panel
 local playlistPopupPanel = screenGui:WaitForChild("PlaylistPopupPanel")
 local popupHeader = playlistPopupPanel:WaitForChild("Header")
 local popupCloseButton = popupHeader:WaitForChild("CloseButton")
@@ -81,8 +68,6 @@ local PlaylistListPanel = playlistPopupPanel:WaitForChild("PlaylistListPanel")
 local popupMusicList = PlaylistListPanel:WaitForChild("MusicList")
 local popupPlaylistTitle = popupHeader:WaitForChild("PlaylistTitle")
 
-
--- Widget Panel
 local widgetPanel = screenGui:WaitForChild("WidgetPanel")
 local widgetButtonsPanel = widgetPanel:WaitForChild("ButtonsPanel")
 local widgetPlayingMusicPanel = widgetButtonsPanel:WaitForChild("PlayingMusicPanel")
@@ -112,14 +97,9 @@ local widgetVolumeFillCircle = widgetVolumeSlider:WaitForChild("FillCircle")
 local widgetVolumeMinButton = widgetVolumePanel:WaitForChild("MinButton")
 local widgetVolumeAddButton = widgetVolumePanel:WaitForChild("AddButton")
 
--- Queue Panel
 local queuePanel = screenGui:WaitForChild("QueuePanel")
 local queueListPanel = queuePanel:WaitForChild("QueueListPanel")
 local queueScroll = queueListPanel:WaitForChild("Queue")
-
-
-
--- ==================== USE HUD BUTTON TEMPLATE (RIGHT SIDE) ====================
 
 local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 
@@ -131,36 +111,32 @@ local floatingButton = nil
 local isMusicPanelOpen = false
 
 if buttonTemplate then
-	-- Hide the original template
+
 	buttonTemplate.Visible = false
-	
-	-- Clone the template
+
 	local buttonContainer = buttonTemplate:Clone()
 	buttonContainer.Name = "MusicButton"
 	buttonContainer.Visible = true
-	buttonContainer.LayoutOrder = 2 -- Second button on right
-	buttonContainer.BackgroundTransparency = 1 -- Transparent container
+	buttonContainer.LayoutOrder = 2
+	buttonContainer.BackgroundTransparency = 1
 	buttonContainer.Parent = rightFrame
-	
-	-- Get references
+
 	floatingButton = buttonContainer:FindFirstChild("ImageButton")
 	local buttonText = buttonContainer:FindFirstChild("TextLabel")
-	
-	-- Set button properties
+
 	if floatingButton then
-		floatingButton.Image = "rbxassetid://97131431743901" -- Music icon
-		floatingButton.BackgroundTransparency = 1 -- Transparent button
+		floatingButton.Image = "rbxassetid://97131431743901"
+		floatingButton.BackgroundTransparency = 1
 	end
-	
+
 	if buttonText then
 		buttonText.Text = "Music"
 	end
-	
 
 else
-	-- Fallback: Create button manually if template not found
+
 	warn("[MUSIC] HUD template not found, creating button manually")
-	
+
 	floatingButton = Instance.new("ImageButton")
 	floatingButton.Name = "MusicButton"
 	floatingButton.Size = UDim2.new(0.1, 0, 0.1, 0)
@@ -171,7 +147,7 @@ else
 	floatingButton.Image = "rbxassetid://97131431743901"
 	floatingButton.ScaleType = Enum.ScaleType.Fit
 	floatingButton.Parent = screenGui
-	
+
 	local buttonText = Instance.new("TextLabel")
 	buttonText.Size = UDim2.new(1, 0, 0.3, 0)
 	buttonText.Position = UDim2.new(0, 0, 1, 2)
@@ -183,11 +159,9 @@ else
 	buttonText.Parent = floatingButton
 end
 
--- Forward declarations for panel functions
 local closeMusicPlayer
 local openMusicPanel
 
--- Toggle panel on click
 if floatingButton then
 	floatingButton.MouseButton1Click:Connect(function()
 		if isMusicPanelOpen then
@@ -198,7 +172,6 @@ if floatingButton then
 	end)
 end
 
--- Initialize panels visibility
 mainPanel.Visible = false
 myLibraryPanel.Visible = false
 playlistPopupPanel.Visible = false
@@ -207,7 +180,6 @@ queuePanel.Visible = false
 volumePanel.Visible = false
 widgetVolumePanel.Visible = false
 
--- Use existing CloseButton in WidgetPanel to hide widget
 local widgetCloseButton = widgetPanel:FindFirstChild("CloseButton")
 if widgetCloseButton then
 	widgetCloseButton.MouseButton1Click:Connect(function()
@@ -215,9 +187,6 @@ if widgetCloseButton then
 	end)
 end
 
--- ==================== PANEL NAVIGATION HANDLERS ====================
-
--- Function to close all music panels
 closeMusicPlayer = function()
 	mainPanel.Visible = false
 	myLibraryPanel.Visible = false
@@ -228,18 +197,15 @@ closeMusicPlayer = function()
 	PanelManager:Close("MusicPanel")
 end
 
--- Function to open music panel (for PanelManager integration)
 openMusicPanel = function()
-	PanelManager:Open("MusicPanel") -- This closes other panels first
+	PanelManager:Open("MusicPanel")
 	mainPanel.Visible = true
 	widgetPanel.Visible = false
 	isMusicPanelOpen = true
 end
 
--- Register with PanelManager
 PanelManager:Register("MusicPanel", closeMusicPlayer)
 
--- Function to show main panel (from sub-panels)
 local function showMainPanel()
 	mainPanel.Visible = true
 	myLibraryPanel.Visible = false
@@ -247,7 +213,6 @@ local function showMainPanel()
 	queuePanel.Visible = false
 end
 
--- Function to show library panel
 local function showLibraryPanel()
 	mainPanel.Visible = false
 	myLibraryPanel.Visible = true
@@ -255,7 +220,6 @@ local function showLibraryPanel()
 	queuePanel.Visible = false
 end
 
--- ==================== MAIN PANEL - Close Button ====================
 local mainHeader = mainPanel:FindFirstChild("Header")
 if mainHeader then
 	local mainCloseButton = mainHeader:FindFirstChild("CloseButton")
@@ -266,7 +230,6 @@ if mainHeader then
 	end
 end
 
--- ==================== MY LIBRARY PANEL - Back & Close Buttons ====================
 local libraryHeader = myLibraryPanel:FindFirstChild("Header")
 if libraryHeader then
 	local libraryBackButton = libraryHeader:FindFirstChild("BackButton")
@@ -275,7 +238,7 @@ if libraryHeader then
 			showMainPanel()
 		end)
 	end
-	
+
 	local libraryCloseButton = libraryHeader:FindFirstChild("CloseButton")
 	if libraryCloseButton then
 		libraryCloseButton.MouseButton1Click:Connect(function()
@@ -284,7 +247,6 @@ if libraryHeader then
 	end
 end
 
--- ==================== PLAYLIST POPUP PANEL - Back & Close Buttons ====================
 local popupHeaderRef = playlistPopupPanel:FindFirstChild("Header")
 if popupHeaderRef then
 	local popupBack = popupHeaderRef:FindFirstChild("BackButton")
@@ -294,7 +256,7 @@ if popupHeaderRef then
 			myLibraryPanel.Visible = true
 		end)
 	end
-	
+
 	local popupClose = popupHeaderRef:FindFirstChild("CloseButton")
 	if popupClose then
 		popupClose.MouseButton1Click:Connect(function()
@@ -303,7 +265,6 @@ if popupHeaderRef then
 	end
 end
 
--- ==================== QUEUE PANEL - Back & Close Buttons ====================
 local queueHeader = queuePanel:FindFirstChild("Header")
 if queueHeader then
 	local queueBackButton = queueHeader:FindFirstChild("BackButton")
@@ -313,7 +274,7 @@ if queueHeader then
 			mainPanel.Visible = true
 		end)
 	end
-	
+
 	local queueCloseButton = queueHeader:FindFirstChild("CloseButton")
 	if queueCloseButton then
 		queueCloseButton.MouseButton1Click:Connect(function()
@@ -322,8 +283,6 @@ if queueHeader then
 	end
 end
 
-
--- ==================== MUSIC PLAYER LOGIC ====================
 local currentSound = nil
 local currentPlaylist = nil
 local currentIndex = 1
@@ -340,7 +299,6 @@ local currentTab = "all"
 local currentVolume = MusicConfig.Settings.DefaultVolume
 local autoPlayStarted = false
 
--- Forward declarations
 local updateLibraryContent
 local updateFavoriteButton
 local updateQueueDisplay
@@ -413,8 +371,6 @@ loadFavorites = function()
 				end
 			end
 
-
-
 			if myLibraryPanel.Visible then
 				updateLibraryContent()
 			end
@@ -476,7 +432,6 @@ updateFavoriteButton = function()
 	if currentSound then
 		local isFav = isFavorite(currentSound)
 
-		-- Main panel favorite button
 		if isFav then
 			favButton.BackgroundColor3 = Color3.fromHex("#e20553")
 			if favButton:FindFirstChildOfClass("ImageLabel") then
@@ -489,7 +444,6 @@ updateFavoriteButton = function()
 			end
 		end
 
-		-- Widget favorite button
 		if isFav then
 			widgetFavButton.BackgroundColor3 = Color3.fromHex("#e20553")
 			if widgetFavButton:FindFirstChildOfClass("ImageLabel") then
@@ -506,10 +460,10 @@ end
 
 updatePlayPauseButton = function()
 	if isPlaying then
-		playPauseButton.Image = "rbxassetid://PAUSE_ICON_ID" -- Replace with pause icon
+		playPauseButton.Image = "rbxassetid://PAUSE_ICON_ID"
 		widgetPlayPauseButton.Image = "rbxassetid://PAUSE_ICON_ID"
 	else
-		playPauseButton.Image = "rbxassetid://PLAY_ICON_ID" -- Replace with play icon
+		playPauseButton.Image = "rbxassetid://PLAY_ICON_ID"
 		widgetPlayPauseButton.Image = "rbxassetid://PLAY_ICON_ID"
 	end
 end
@@ -525,7 +479,7 @@ updateLoopButton = function()
 end
 
 updateQueueDisplay = function()
-	-- Clear existing queue items
+
 	for _, child in ipairs(queueScroll:GetChildren()) do
 		if child:IsA("Frame") and child.Name == "MusicCard" and child ~= musicCardTemplate then
 			child:Destroy()
@@ -533,7 +487,7 @@ updateQueueDisplay = function()
 	end
 
 	if #queue == 0 then
-		-- Show empty message if needed
+
 	else
 		for i, song in ipairs(queue) do
 			local queueCard = musicCardTemplate:Clone()
@@ -667,9 +621,8 @@ local function createMusicCard(sound, parent)
 	card.Visible = true
 	card.Name = "MusicCard"
 
-	-- Note: GUI has typo "TrackInifo" instead of "TrackInfo"
 	local cardTrackInfo = card:FindFirstChild("TrackInifo")
-	
+
 	if cardTrackInfo then
 		local trackTitle = cardTrackInfo:FindFirstChild("Tracktitle")
 		if trackTitle then
@@ -732,19 +685,17 @@ local function createMusicCard(sound, parent)
 end
 
 local function loadPlaylistPopup(playlistName)
-	-- Clear existing songs
+
 	for _, child in ipairs(popupMusicList:GetChildren()) do
 		if child:IsA("Frame") and child.Name == "MusicCard" then
 			child:Destroy()
 		end
 	end
 
-	-- Set playlist title
 	if popupPlaylistTitle then
 		popupPlaylistTitle.Text = playlistName
 	end
 
-	-- Load songs from specific playlist
 	local songs = playlists[playlistName]
 	if songs then
 		for _, sound in ipairs(songs) do
@@ -830,7 +781,7 @@ updateLibraryContent = function()
 				local openPlaylistButton = infoPanel:FindFirstChild("OpenPlaylistButton")
 				if openPlaylistButton then
 					openPlaylistButton.MouseButton1Click:Connect(function()
-						loadPlaylistPopup(playlistName) -- Pass playlist name ke fungsi
+						loadPlaylistPopup(playlistName)
 						playlistPopupPanel.Visible = true
 						myLibraryPanel.Visible = false
 					end)
@@ -848,9 +799,6 @@ updateLibraryContent = function()
 	end
 end
 
-
--- ==================== BUTTON CONNECTIONS ====================
--- Main Panel Buttons
 openLibraryButton.MouseButton1Click:Connect(function()
 	myLibraryPanel.Visible = true
 	mainPanel.Visible = false
@@ -900,7 +848,6 @@ favButton.MouseButton1Click:Connect(function()
 	end
 end)
 
--- Volume controls
 volumeAddButton.MouseButton1Click:Connect(function()
 	currentVolume = math.min(1, currentVolume + 0.1)
 	volumeFillBar.Size = UDim2.new(currentVolume, 0, 1, 0)
@@ -919,7 +866,6 @@ volumeMinButton.MouseButton1Click:Connect(function()
 	end
 end)
 
--- Widget Panel Buttons
 widgetPlayPauseButton.MouseButton1Click:Connect(function()
 	widgetVolumePanel.Visible = false
 	if currentSound then
@@ -963,7 +909,6 @@ widgetFavButton.MouseButton1Click:Connect(function()
 	end
 end)
 
--- Widget volume controls
 widgetVolumeAddButton.MouseButton1Click:Connect(function()
 	currentVolume = math.min(1, currentVolume + 0.1)
 	widgetVolumeFillBar.Size = UDim2.new(currentVolume, 0, 1, 0)
@@ -986,7 +931,6 @@ widgetVolumeMinButton.MouseButton1Click:Connect(function()
 	end
 end)
 
--- Library Category Buttons
 allButton.MouseButton1Click:Connect(function()
 	currentTab = "all"
 	allPanel.Visible = true
@@ -1011,7 +955,6 @@ playlistButton.MouseButton1Click:Connect(function()
 	updateLibraryContent()
 end)
 
--- Playlist Popup Buttons
 popupCloseButton.MouseButton1Click:Connect(function()
 	playlistPopupPanel.Visible = false
 	mainPanel.Visible = true
@@ -1022,7 +965,6 @@ popupBackButton.MouseButton1Click:Connect(function()
 	myLibraryPanel.Visible = true
 end)
 
--- ==================== PROGRESS BAR UPDATE ====================
 RunService.RenderStepped:Connect(function()
 	if currentSound and currentSound.IsPlaying then
 		if not isDraggingProgress then
@@ -1056,19 +998,14 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 
--- ==================== INITIALIZE ====================
 loadPlaylists()
 loadFavorites()
 
--- Auto-play random song on join
 task.wait(2)
 if #allSongs > 0 and not autoPlayStarted then
 	autoPlayStarted = true
-	-- Pick a random song instead of always the first one
+
 	local randomIndex = math.random(1, #allSongs)
 	currentIndex = randomIndex
 	playSong(allSongs[randomIndex], false)
-	print(string.format("🎵 [MUSIC] Auto-playing random song: %s (index %d/%d)", allSongs[randomIndex].Name, randomIndex, #allSongs))
 end
-
-print("✅ [MUSIC PLAYER] System fully loaded and ready!")

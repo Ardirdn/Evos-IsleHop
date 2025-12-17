@@ -53,7 +53,6 @@ local function setHideTitles(value)
 		end
 	end
 
-	print(string.format("🏷️ [TITLE] Hide titles: %s", tostring(value)))
 end
 
 _G.SetHideTitles = setHideTitles
@@ -362,5 +361,3 @@ Players.PlayerAdded:Connect(function(targetPlayer)
 	setupHideDefaultName(targetPlayer)
 end)
 Players.PlayerRemoving:Connect(onPlayerRemoving)
-
-print("✅ [TITLE CLIENT v4] Super simple - loaded (Roblox default names hidden)")

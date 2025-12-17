@@ -9,8 +9,6 @@ local SpeedrunLeaderboard = DataStoreService:GetOrderedDataStore(DataStoreConfig
 local PlaytimeLeaderboard = DataStoreService:GetOrderedDataStore(DataStoreConfig.Leaderboards.Playtime)
 local DonationLeaderboard = DataStoreService:GetOrderedDataStore(DataStoreConfig.Leaderboards.Donation)
 
-print(string.format("📊 [LEADERBOARD SERVER] Using DataStores: Summit=%s", DataStoreConfig.Leaderboards.Summit))
-
 local CONFIG = {
 	UPDATE_INTERVAL = 60,
 	MAX_ENTRIES = 10,
@@ -22,8 +20,6 @@ if not leaderboardsFolder then
 	warn("[LEADERBOARD SERVER] ❌ Leaderboards folder not found in Workspace!")
 	return
 end
-
-print("[LEADERBOARD SERVER] ✅ Leaderboards folder found")
 
 local function formatSpeedrunTime(seconds)
 	local hours = math.floor(seconds / 3600)
@@ -211,7 +207,6 @@ local function updateSummitLeaderboards()
 		populateLeaderboard(leaderboardData, entries, "Summit")
 	end
 
-	print(string.format("[LEADERBOARD] Summit updated - %d entries to %d boards", #entries, #leaderboards))
 end
 
 local function updateSpeedrunLeaderboards()
@@ -249,7 +244,6 @@ local function updateSpeedrunLeaderboards()
 		populateLeaderboard(leaderboardData, entries, "Speedrun")
 	end
 
-	print(string.format("[LEADERBOARD] Speedrun updated - %d entries to %d boards", #entries, #leaderboards))
 end
 
 local function updatePlaytimeLeaderboards()
@@ -286,7 +280,6 @@ local function updatePlaytimeLeaderboards()
 		populateLeaderboard(leaderboardData, entries, "Playtime")
 	end
 
-	print(string.format("[LEADERBOARD] Playtime updated - %d entries to %d boards", #entries, #leaderboards))
 end
 
 local function updateDonationLeaderboards()
@@ -321,24 +314,20 @@ local function updateDonationLeaderboards()
 		populateLeaderboard(leaderboardData, entries, "Donation")
 	end
 
-	print(string.format("[LEADERBOARD] Donation updated - %d entries to %d boards", #entries, #leaderboards))
 end
 
 local function updateAllLeaderboards()
-	print("[LEADERBOARD] Starting full leaderboard update...")
 
 	updateSummitLeaderboards()
 	updateSpeedrunLeaderboards()
 	updatePlaytimeLeaderboards()
 	updateDonationLeaderboards()
 
-	print("[LEADERBOARD] ✅ Full leaderboard update complete")
 end
 
 leaderboardsFolder.DescendantAdded:Connect(function(descendant)
 	if descendant.Name == "Sample" and descendant:IsA("Frame") then
 		task.wait(0.5)
-		print("[LEADERBOARD] New leaderboard detected, triggering update...")
 		updateAllLeaderboards()
 	end
 end)
@@ -359,19 +348,14 @@ task.defer(function()
 
 	local types = {"Summit", "Speedrun", "Playtime", "Donation"}
 
-	print("[LEADERBOARD] === Discovered Leaderboards ===")
 	for _, leaderboardType in ipairs(types) do
 		local found = findAllLeaderboardsOfType(leaderboardType)
 		if #found > 0 then
-			print(string.format("  • %s: %d board(s)", leaderboardType, #found))
 			for i, data in ipairs(found) do
-				print(string.format("      %d. %s", i, data.Container:GetFullName()))
 			end
 		else
-			print(string.format("  • %s: None found", leaderboardType))
 		end
 	end
-	print("[LEADERBOARD] ================================")
 end)
 
 local refreshEvent = game.ServerScriptService:FindFirstChild("RefreshLeaderboardsEvent")
@@ -383,22 +367,14 @@ end
 
 refreshEvent.Event:Connect(function(leaderboardType)
 	if leaderboardType == "Summit" then
-		print("[LEADERBOARD] 📊 External refresh triggered: Summit")
 		updateSummitLeaderboards()
 	elseif leaderboardType == "Donation" then
-		print("[LEADERBOARD] 📊 External refresh triggered: Donation")
 		updateDonationLeaderboards()
 	elseif leaderboardType == "Playtime" then
-		print("[LEADERBOARD] 📊 External refresh triggered: Playtime")
 		updatePlaytimeLeaderboards()
 	elseif leaderboardType == "Speedrun" then
-		print("[LEADERBOARD] 📊 External refresh triggered: Speedrun")
 		updateSpeedrunLeaderboards()
 	elseif leaderboardType == "All" or leaderboardType == nil then
-		print("[LEADERBOARD] 📊 External refresh triggered: All leaderboards")
 		updateAllLeaderboards()
 	end
 end)
-
-print("[LEADERBOARD SERVER] ✅ Initialized - Waiting for leaderboards folder...")
-print("[LEADERBOARD SERVER] ✅ RefreshLeaderboardsEvent created for external triggers")

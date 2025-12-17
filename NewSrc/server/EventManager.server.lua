@@ -1,8 +1,3 @@
---[[
-    EVENT MANAGER (CROSS-SERVER)
-    Place in ServerScriptService/EventManager
-]]
-
 local DataStoreService = game:GetService("DataStoreService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
@@ -10,11 +5,9 @@ local Players = game:GetService("Players")
 local EventConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("EventConfig"))
 local NotificationService = require(script.Parent.NotificationServer)
 
--- ✅ CROSS-SERVER DATASTORE
 local EventDataStore = DataStoreService:GetDataStore("GlobalEvents_v1")
 local EVENT_KEY = "ActiveEvent"
 
--- Create RemoteEvents
 local remoteFolder = ReplicatedStorage:FindFirstChild("EventRemotes")
 if not remoteFolder then
 	remoteFolder = Instance.new("Folder")
@@ -43,13 +36,7 @@ if not eventChangedRemote then
 	eventChangedRemote.Parent = remoteFolder
 end
 
-print("✅ [EVENT MANAGER] Initialized")
-
--- ==================== GLOBAL STATE ====================
-
-local CurrentActiveEvent = nil -- {Id, Multiplier}
-
--- ==================== HELPER FUNCTIONS ====================
+local CurrentActiveEvent = nil
 
 local TitleConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("TitleConfig"))
 
@@ -76,7 +63,7 @@ local function loadEventFromDataStore()
 	end)
 
 	if success and result then
-		-- ✅ Rebuild full event data from EventConfig
+
 		for _, event in ipairs(EventConfig.AvailableEvents) do
 			if event.Id == result.Id then
 				CurrentActiveEvent = {
@@ -86,19 +73,16 @@ local function loadEventFromDataStore()
 					Icon = event.Icon,
 					Color = event.Color
 				}
-				print(string.format("📡 [EVENT MANAGER] Loaded event from DataStore: %s (x%d)", result.Id, result.Multiplier))
 				return
 			end
 		end
 	else
 		CurrentActiveEvent = nil
-		print("📡 [EVENT MANAGER] No active event")
 	end
 end
 
-
 local function saveEventToDataStore(eventData)
-	-- ✅ Convert to simple table (DataStore hanya terima string/number/table sederhana)
+
 	local simpleData = nil
 
 	if eventData then
@@ -106,7 +90,7 @@ local function saveEventToDataStore(eventData)
 			Id = eventData.Id,
 			Name = eventData.Name,
 			Multiplier = eventData.Multiplier,
-			-- ❌ JANGAN save Color3 (DataStore tidak support!)
+
 		}
 	end
 
@@ -121,12 +105,11 @@ local function saveEventToDataStore(eventData)
 	return success
 end
 
-
 local function getEventMultiplier()
 	if CurrentActiveEvent then
 		return CurrentActiveEvent.Multiplier
 	end
-	return 1 -- Default: no multiplier
+	return 1
 end
 
 local function broadcastEventChange()
@@ -135,10 +118,8 @@ local function broadcastEventChange()
 	end
 end
 
--- ==================== ADMIN FUNCTIONS ====================
-
 local function activateEvent(eventId)
-	-- Find event
+
 	local eventData = nil
 	for _, event in ipairs(EventConfig.AvailableEvents) do
 		if event.Id == eventId then
@@ -158,14 +139,11 @@ local function activateEvent(eventId)
 		return false
 	end
 
-	-- Save to DataStore (cross-server)
 	CurrentActiveEvent = eventData
 	saveEventToDataStore(eventData)
 
-	-- Broadcast to all players
 	broadcastEventChange()
 
-	print(string.format("🎉 [EVENT MANAGER] Event activated: %s (x%d)", eventData.Name, eventData.Multiplier))
 	return true
 end
 
@@ -173,14 +151,10 @@ local function deactivateEvent()
 	CurrentActiveEvent = nil
 	saveEventToDataStore(nil)
 
-	-- Broadcast to all players
 	broadcastEventChange()
 
-	print("🎉 [EVENT MANAGER] Event deactivated")
 	return true
 end
-
--- ==================== REMOTE HANDLERS ====================
 
 getActiveEventFunc.OnServerInvoke = function(player)
 	return CurrentActiveEvent
@@ -206,16 +180,15 @@ setEventRemote.OnServerEvent:Connect(function(player, action, eventId)
 				Icon = "🎉"
 			})
 
-			-- ✅ PERFORMANCE FIX: Stagger notifications to prevent lag spike
 			local otherPlayers = {}
 			for _, p in ipairs(Players:GetPlayers()) do
 				if p ~= player then
 					table.insert(otherPlayers, p)
 				end
 			end
-			
+
 			for i, p in ipairs(otherPlayers) do
-				task.delay(i * 0.1, function()  -- 0.1s between each notification
+				task.delay(i * 0.1, function()
 					if p and p.Parent then
 						NotificationService:Send(p, {
 							Message = string.format("Event %s is now active!", CurrentActiveEvent.Name),
@@ -235,14 +208,13 @@ setEventRemote.OnServerEvent:Connect(function(player, action, eventId)
 			Duration = 3
 		})
 
-		-- ✅ PERFORMANCE FIX: Stagger notifications
 		local otherPlayers = {}
 		for _, p in ipairs(Players:GetPlayers()) do
 			if p ~= player then
 				table.insert(otherPlayers, p)
 			end
 		end
-		
+
 		for i, p in ipairs(otherPlayers) do
 			task.delay(i * 0.1, function()
 				if p and p.Parent then
@@ -257,13 +229,10 @@ setEventRemote.OnServerEvent:Connect(function(player, action, eventId)
 	end
 end)
 
--- ==================== INITIALIZE ====================
-
 loadEventFromDataStore()
 
--- Notify new players about active event
 Players.PlayerAdded:Connect(function(player)
-	task.wait(5) -- Wait for player to load
+	task.wait(5)
 	if CurrentActiveEvent then
 		NotificationService:Send(player, {
 			Message = string.format("%s is active! (x%d Summit)", CurrentActiveEvent.Name, CurrentActiveEvent.Multiplier),
@@ -273,8 +242,6 @@ Players.PlayerAdded:Connect(function(player)
 		})
 	end
 end)
-
--- ==================== EXPORT ====================
 
 local EventManager = {}
 
@@ -286,7 +253,6 @@ function EventManager:GetActiveEvent()
 	return CurrentActiveEvent
 end
 
--- ✅ ADDED: Export via _G so other ServerScripts can access
 _G.GetEventMultiplier = function()
 	return getEventMultiplier()
 end
@@ -297,8 +263,4 @@ end
 
 _G.EventManager = EventManager
 
-print("✅ [EVENT MANAGER] System loaded")
-print("✅ [EVENT MANAGER] Exported to _G.EventManager, _G.GetEventMultiplier, _G.GetActiveEvent")
-
 return EventManager
-

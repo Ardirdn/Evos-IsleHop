@@ -17,8 +17,6 @@ if not showNotificationEvent then
 	showNotificationEvent.Parent = notificationComm
 end
 
-print("✅ [NOTIFICATION SERVER] Initialized")
-
 function NotificationServer:Send(player, data)
 	if not player or not player:IsA("Player") or not player.Parent then
 		warn("⚠️ [NOTIFICATION SERVER] Invalid player")
@@ -37,7 +35,6 @@ function NotificationServer:Send(player, data)
 	end)
 
 	if success then
-		print(string.format("📤 [NOTIFICATION SERVER] Sent '%s' to %s", data.Message, player.Name))
 	else
 		warn(string.format("⚠️ [NOTIFICATION SERVER] Failed to send to %s", player.Name))
 	end
@@ -55,7 +52,6 @@ function NotificationServer:SendToAll(data)
 		count = count + 1
 	end
 
-	print(string.format("📢 [NOTIFICATION SERVER] Broadcast '%s' to %d players", data.Message, count))
 end
 
 function NotificationServer:SendToPlayers(players, data)
@@ -83,7 +79,6 @@ function NotificationServer:SendToAdmins(data, adminIds)
 		end
 	end
 
-	print(string.format("👑 [NOTIFICATION SERVER] Sent to %d admins", count))
 end
 
 return NotificationServer

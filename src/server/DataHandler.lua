@@ -18,7 +18,6 @@ local PlayerDataCache = {}
 local SessionLocks = {}
 
 local PlayerDataStore = DataStoreService:GetDataStore(DataStoreConfig.PlayerData)
-print(string.format("✅ [DATA HANDLER] Using DataStore: %s", DataStoreConfig.PlayerData))
 
 local function getDefaultData(userId)
 	return {
@@ -101,8 +100,6 @@ function DataHandler:LoadPlayer(player)
 		return false
 	end
 
-	print(string.format("📂 [DATA HANDLER] Loading data for %s...", player.Name))
-
 	local data = nil
 	local success = false
 
@@ -135,8 +132,6 @@ function DataHandler:LoadPlayer(player)
 	moneyValue.Value = data.Money
 	moneyValue.Parent = player
 
-	print(string.format("✅ [DATA HANDLER] Loaded data for %s (Money: $%d, Title: %s)", player.Name, data.Money, data.Title))
-
 	return true
 end
 
@@ -149,8 +144,6 @@ function DataHandler:SavePlayer(player)
 	local userId = player.UserId
 	local key = "Player_" .. userId
 	local data = PlayerDataCache[player]
-
-	print(string.format("💾 [DATA HANDLER] Saving data for %s...", player.Name))
 
 	local success = false
 	local errorMsg = nil
@@ -171,7 +164,6 @@ function DataHandler:SavePlayer(player)
 	end
 
 	if success then
-		print(string.format("✅ [DATA HANDLER] Saved data for %s", player.Name))
 		return true
 	else
 		warn(string.format("❌ [DATA HANDLER] Failed to save data for %s after %d attempts", player.Name, CONFIG.MaxRetries))
@@ -198,7 +190,6 @@ function DataHandler:Set(player, field, value)
 		end
 	end
 
-	print(string.format("📝 [DATA HANDLER] Set %s.%s = %s", player.Name, field, tostring(value)))
 	return true
 end
 
@@ -253,7 +244,6 @@ function DataHandler:AddToArray(player, field, value)
 	end
 
 	table.insert(array, value)
-	print(string.format("📝 [DATA HANDLER] Added %s to %s.%s", tostring(value), player.Name, field))
 	return true
 end
 
@@ -276,7 +266,6 @@ function DataHandler:RemoveFromArray(player, field, value)
 	end
 
 	table.remove(array, index)
-	print(string.format("📝 [DATA HANDLER] Removed %s from %s.%s", tostring(value), player.Name, field))
 	return true
 end
 
@@ -301,14 +290,12 @@ function DataHandler:CleanupPlayer(player)
 	PlayerDataCache[player] = nil
 	SessionLocks[userId] = nil
 
-	print(string.format("🧹 [DATA HANDLER] Cleaned up data for %s", player.Name))
 end
 
 task.spawn(function()
 	while true do
 		task.wait(CONFIG.AutoSaveInterval)
 
-		print("💾 [DATA HANDLER] Auto-save started...")
 		local count = 0
 
 		for player, _ in pairs(PlayerDataCache) do
@@ -318,20 +305,16 @@ task.spawn(function()
 			end
 		end
 
-		print(string.format("✅ [DATA HANDLER] Auto-saved %d players", count))
 	end
 end)
 
 game:BindToClose(function()
-	print("🛑 [DATA HANDLER] Server shutting down, saving all data...")
 
 	for player, _ in pairs(PlayerDataCache) do
 		if player and player.Parent then
 			DataHandler:SavePlayer(player)
 		end
 	end
-
-	print("✅ [DATA HANDLER] All data saved on shutdown")
 
 	if RunService:IsStudio() then
 		task.wait(1)
@@ -347,7 +330,5 @@ end)
 Players.PlayerRemoving:Connect(function(player)
 	DataHandler:CleanupPlayer(player)
 end)
-
-print("✅ [DATA HANDLER] System initialized")
 
 return DataHandler

@@ -24,8 +24,6 @@ if not getFavoritesFunc then
 	getFavoritesFunc.Parent = remoteFolder
 end
 
-print("✅ [MUSIC SERVER] Initialized")
-
 toggleFavoriteEvent.OnServerEvent:Connect(function(player, songId)
 	if not player or not songId then return end
 
@@ -33,10 +31,8 @@ toggleFavoriteEvent.OnServerEvent:Connect(function(player, songId)
 
 	if isFavorite then
 		DataHandler:RemoveFromArray(player, "FavoriteMusic", songId)
-		print(string.format("🎵 [MUSIC] %s removed favorite: %s", player.Name, songId))
 	else
 		DataHandler:AddToArray(player, "FavoriteMusic", songId)
-		print(string.format("🎵 [MUSIC] %s added favorite: %s", player.Name, songId))
 	end
 
 	DataHandler:SavePlayer(player)
@@ -51,5 +47,3 @@ getFavoritesFunc.OnServerInvoke = function(player)
 
 	return {}
 end
-
-print("✅ [MUSIC SERVER] System loaded")

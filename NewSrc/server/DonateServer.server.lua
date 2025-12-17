@@ -1,13 +1,3 @@
---[[
-    DONATE SERVER (SIMPLIFIED)
-    Place in ServerScriptService/DonateServer
-    
-    Handles:
-    - Donate UI data requests
-    - Donation purchase prompts
-    - Leaderboard updates
-]]
-
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local MarketplaceService = game:GetService("MarketplaceService")
@@ -20,7 +10,6 @@ local DataStoreConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitFo
 
 local DonationLeaderboard = DataStoreService:GetOrderedDataStore(DataStoreConfig.Leaderboards.Donation)
 
--- Create RemoteEvents
 local remoteFolder = ReplicatedStorage:FindFirstChild("DonateRemotes")
 if not remoteFolder then
 	remoteFolder = Instance.new("Folder")
@@ -42,9 +31,6 @@ if not purchaseDonationEvent then
 	purchaseDonationEvent.Parent = remoteFolder
 end
 
-print("✅ [DONATE SERVER] Initialized")
-
--- Get player donation data
 getDonateDataFunc.OnServerInvoke = function(player)
 	local data = DataHandler:GetData(player)
 	if not data then
@@ -62,7 +48,6 @@ getDonateDataFunc.OnServerInvoke = function(player)
 	}
 end
 
--- Purchase Donation
 purchaseDonationEvent.OnServerEvent:Connect(function(player, productId)
 	if not productId or productId == 0 then
 		NotificationService:Send(player, {
@@ -73,17 +58,13 @@ purchaseDonationEvent.OnServerEvent:Connect(function(player, productId)
 		return
 	end
 
-	print(string.format("💰 [DONATE] Purchase request: %s - Product %d", player.Name, productId))
 	MarketplaceService:PromptProductPurchase(player, productId)
 end)
 
--- NOTE: Donation Leaderboard display updates are now handled by LeaderboardServer.server.lua
--- Leaderboards are in workspace.Leaderboards folder and support multiple copies
 local function updateDonationLeaderboard()
-	-- Handled by LeaderboardServer
+
 end
 
--- Auto update leaderboard
 task.spawn(function()
 	while task.wait(60) do
 		updateDonationLeaderboard()
@@ -92,5 +73,3 @@ end)
 
 task.wait(3)
 updateDonationLeaderboard()
-
-print("✅ [DONATE SERVER] System loaded")

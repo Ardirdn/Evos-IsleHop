@@ -823,6 +823,4 @@ end
 
 _G.AdminLogUI = AdminLogUI
 
-print("✅ [ADMIN LOG CLIENT] Initialized")
-
 return AdminLogUI

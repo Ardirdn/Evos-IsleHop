@@ -32,12 +32,6 @@ local hasPrimaryAccess = isPrimaryAdmin()
 local hasFullAccess = TitleConfig.IsFullAdmin(player.UserId)
 local isThirdparty = isThirdpartyAdmin()
 
-print(string.format("✅ [ADMIN CLIENT] Admin tier: %s (Primary: %s, Full: %s, Thirdparty: %s)",
-	TitleConfig.GetAdminTier(player.UserId) or "Unknown",
-	tostring(hasPrimaryAccess),
-	tostring(hasFullAccess),
-	tostring(isThirdparty)))
-
 local remoteFolder = ReplicatedStorage:WaitForChild("AdminRemotes", 10)
 if not remoteFolder then
 	warn("AdminRemotes folder not found! Server script may not be running.")
@@ -74,7 +68,6 @@ local function loadTopbarPlus()
 	if success and result then
 		Icon = result
 		topbarPlusLoaded = true
-		print("✓ TopbarPlus loaded successfully")
 		return true
 	else
 		warn("Failed to load TopbarPlus: " .. tostring(result))
@@ -1280,7 +1273,6 @@ local function showGiveTitlePopup(targetPlayer)
 				local giveTitleEvent = remoteFolder:FindFirstChild("GiveTitle")
 				if giveTitleEvent then
 					giveTitleEvent:FireServer(targetPlayer.UserId, selectedTitle)
-					print(string.format("[ADMIN CLIENT] Gave title '%s' to %s", selectedTitle, targetPlayer.Name))
 				end
 				popup:Destroy()
 				mainContainer.Visible = true
@@ -1658,7 +1650,6 @@ local function showModifySummitPopup(targetPlayer)
 				local modifySummitEvent = remoteFolder:FindFirstChild("ModifySummitData")
 				if modifySummitEvent then
 					modifySummitEvent:FireServer(targetPlayer.UserId, newValue)
-					print(string.format("[ADMIN CLIENT] Set %s's summit to %d", targetPlayer.Name, newValue))
 				end
 				popup:Destroy()
 				mainContainer.Visible = true
@@ -1758,7 +1749,6 @@ local function createPlayerCard(targetPlayer)
 
 				if success and serverTitle then
 					titleText = serverTitle
-					print("📥 [ADMIN CLIENT] Got title for", targetPlayer.Name, ":", titleText)
 
 					local TitleConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("TitleConfig"))
 					if TitleConfig.Titles[titleText] then
@@ -2579,7 +2569,6 @@ task.spawn(function()
 
 	if success and activeEvent then
 		currentActiveEventId = activeEvent.Id
-		print("[ADMIN CLIENT] Current active event:", activeEvent.Name)
 	end
 end)
 
@@ -2734,10 +2723,8 @@ end
 eventChangedRemote.OnClientEvent:Connect(function(newActiveEvent)
 	if newActiveEvent then
 		currentActiveEventId = newActiveEvent.Id
-		print("[ADMIN CLIENT] Event changed to:", newActiveEvent.Name)
 	else
 		currentActiveEventId = nil
-		print("[ADMIN CLIENT] Event deactivated")
 	end
 
 	for _, card in pairs(eventsScroll:GetChildren()) do
@@ -3484,7 +3471,6 @@ if not hasPrimaryAccess then
 		end
 	end
 
-	print("✅ [ADMIN CLIENT] Secondary Admin mode - restricted access applied")
 else
 	if notifTab and notifTabBtn then
 		notifTab.Visible = true
@@ -3493,7 +3479,6 @@ else
 		currentTab = notifTab
 	end
 
-	print("✅ [ADMIN CLIENT] Primary Admin mode - full access")
 end
 
 local isOpen = false
@@ -3529,7 +3514,6 @@ end
 PanelManager:Register("AdminPanel", closeAdminPanel)
 
 if topbarPlusLoaded and Icon then
-	print("Creating TopbarPlus icon...")
 	local adminIcon = Icon.new()
 	adminIcon:setLabel("Admin")
 	adminIcon:setImage("rbxassetid://128692376033664")
@@ -3546,7 +3530,6 @@ if topbarPlusLoaded and Icon then
 		adminIcon:deselect()
 	end)
 
-	print("✓ TopbarPlus icon created")
 else
 	warn("Using fallback admin button")
 
@@ -3618,7 +3601,4 @@ else
 		buttonFrame.BackgroundColor3 = COLORS.Panel
 	end)
 
-	print("✓ Fallback admin button created")
 end
-
-print("Admin Panel System Loaded Successfully")

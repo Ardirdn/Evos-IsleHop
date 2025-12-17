@@ -24,7 +24,6 @@ local function onEquipped()
 
 	if player then
 		FlyAbility:OnEquip(player, CONFIG)
-		print(string.format("[%s] Equipped for %s - UI shown", tool.Name, player.Name))
 	end
 end
 
@@ -34,12 +33,9 @@ local function onUnequipped()
 
 	if player then
 		FlyAbility:OnUnequip(player)
-		print(string.format("[%s] Unequipped for %s - UI hidden", tool.Name, player.Name))
 	end
 	player = nil
 end
 
 tool.Equipped:Connect(onEquipped)
 tool.Unequipped:Connect(onUnequipped)
-
-print(string.format("✅ [%s] Tool loaded (Toggle-based flight)", tool.Name))

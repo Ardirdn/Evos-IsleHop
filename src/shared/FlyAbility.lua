@@ -42,7 +42,6 @@ if RunService:IsServer() then
         equipStateRemote.Parent = ReplicatedStorage
     end
 
-    print("[FLY ABILITY] Server module loaded")
 end
 
 local DEFAULT_CONFIG = {
@@ -181,7 +180,6 @@ function FlyAbility:StartFlight(player, config)
             track.Looped = true
             track:Play()
             state.animTrack = track
-            print("[FLY ABILITY] Animation playing")
         else
             warn("[FLY ABILITY] Failed to load animation")
         end
@@ -192,7 +190,6 @@ function FlyAbility:StartFlight(player, config)
     local flightSpeed = config.FlightSpeed or DEFAULT_CONFIG.FlightSpeed
     flightRemote:FireClient(player, true, {FlightSpeed = flightSpeed})
 
-    print(string.format("[FLY ABILITY] Started flight for %s", player.Name))
     return true
 end
 
@@ -231,7 +228,6 @@ function FlyAbility:StopFlight(player)
         flightRemote:FireClient(player, false, {})
     end
 
-    print(string.format("[FLY ABILITY] Stopped flight for %s", player.Name))
 end
 
 function FlyAbility:OnEquip(player, config)
@@ -244,7 +240,6 @@ function FlyAbility:OnEquip(player, config)
     local flightSpeed = config and config.FlightSpeed or DEFAULT_CONFIG.FlightSpeed
     equipStateRemote:FireClient(player, true, {FlightSpeed = flightSpeed})
 
-    print(string.format("[FLY ABILITY] Tool equipped for %s - UI shown", player.Name))
 end
 
 function FlyAbility:OnUnequip(player)
@@ -259,14 +254,11 @@ function FlyAbility:OnUnequip(player)
 
     equipStateRemote:FireClient(player, false, {})
 
-    print(string.format("[FLY ABILITY] Tool unequipped for %s - UI hidden", player.Name))
 end
 
 function FlyAbility:ForceCleanup(player)
     if not RunService:IsServer() then return end
     if not player then return end
-
-    print(string.format("[FLY ABILITY] Force cleanup for %s", player.Name))
 
     if activeFlights[player] then
         self:StopFlight(player)
@@ -290,7 +282,6 @@ function FlyAbility:ForceCleanup(player)
         equipStateRemote:FireClient(player, false, {ForceCleanup = true})
     end
 
-    print(string.format("[FLY ABILITY] Force cleanup complete for %s", player.Name))
 end
 
 function FlyAbility:IsFlying(player)
@@ -575,7 +566,6 @@ if RunService:IsClient() then
         isFlightEnabled = false
         updateToggleVisual()
 
-        print("[FLY ABILITY CLIENT] Flight UI created")
     end
 
     local function showFlightUI()
@@ -673,7 +663,6 @@ if RunService:IsClient() then
             end
         end)
 
-        print("[FLY ABILITY CLIENT] Flight control started")
     end
 
     local function stopFlightControl()
@@ -697,7 +686,6 @@ if RunService:IsClient() then
 
         resetToggle()
 
-        print("[FLY ABILITY CLIENT] Flight control stopped")
     end
 
     local function setupClientListeners()
@@ -710,7 +698,6 @@ if RunService:IsClient() then
                     stopFlightControl()
                 end
             end)
-            print("[FLY ABILITY CLIENT] Listening for flight state changes")
         end
 
         local equipRemote = ReplicatedStorage:WaitForChild("FlightEquipState", 10)
@@ -725,12 +712,10 @@ if RunService:IsClient() then
                     destroyFlightUI()
                 end
             end)
-            print("[FLY ABILITY CLIENT] Listening for equip state changes")
         end
     end
 
     task.spawn(setupClientListeners)
-    print("[FLY ABILITY] Client module loaded")
 end
 
 if RunService:IsServer() then

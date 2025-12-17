@@ -1,55 +1,25 @@
---[[
-    FISH CONFIG
-    Place in ReplicatedStorage/Modules/FishConfig.lua
-    
-    SINGLE SOURCE OF TRUTH untuk semua data ikan.
-    Setiap ikan memiliki:
-    - Name: Nama display ikan
-    - Rarity: Common, Uncommon, Rare, Epic, Legendary, Mythic, Secret
-    - Price: Harga jual (auto-calculated berdasarkan rarity jika 0)
-    - Weight: Berat minimum dalam kg
-    - MaxWeight: Berat maksimum dalam kg
-    - ImageID: Asset ID untuk gambar ikan
-    - Location: Area di mana ikan ini lebih sering muncul
-    - Description: Deskripsi singkat ikan
-    
-    LOCATION SYSTEM:
-    - "Anywhere" : Bisa didapat di mana saja (default)
-    - "DeepSea" : Laut dalam
-    - "River" : Sungai
-    - "Lake" : Danau
-    - "Swamp" : Rawa
-    - "Arctic" : Daerah es/kutub
-    - "Volcanic" : Daerah vulkanik
-    - "CoralReef" : Terumbu karang
-    - "Cave" : Gua bawah air
-]]
-
 local FishConfig = {}
 
--- Rarity weight untuk random selection
 FishConfig.RarityWeights = {
-	Common = 50, -- 50%
-	Uncommon = 30, -- 30%
-	Rare = 15, -- 15%
-	Epic = 4, -- 4%
-	Legendary = 1, -- 1%
-	Mythic = 0.5, -- 0.5% (1 in 200)
-	Secret = 0.1, -- 0.1% (1 in 1000)
+	Common = 50,
+	Uncommon = 30,
+	Rare = 15,
+	Epic = 4,
+	Legendary = 1,
+	Mythic = 0.5,
+	Secret = 0.1,
 }
 
--- Rarity colors
 FishConfig.RarityColors = {
 	Common = Color3.fromRGB(200, 200, 200),
 	Uncommon = Color3.fromRGB(100, 255, 100),
 	Rare = Color3.fromRGB(80, 150, 255),
 	Epic = Color3.fromRGB(200, 100, 255),
 	Legendary = Color3.fromRGB(255, 170, 0),
-	Mythic = Color3.fromRGB(255, 50, 50), -- Red/Crimson
-	Secret = Color3.fromRGB(40, 0, 80), -- Deep Dark Violet
+	Mythic = Color3.fromRGB(255, 50, 50),
+	Secret = Color3.fromRGB(40, 0, 80),
 }
 
--- Base price per rarity (auto-calculated for each fish)
 FishConfig.RarityBasePrices = {
 	Common = 100,
 	Uncommon = 250,
@@ -60,7 +30,6 @@ FishConfig.RarityBasePrices = {
 	Secret = 50000,
 }
 
--- Location bonus multipliers (higher = more rare fish in that area)
 FishConfig.LocationBonus = {
 	Anywhere = 1.0,
 	DeepSea = 1.5,
@@ -74,7 +43,7 @@ FishConfig.LocationBonus = {
 }
 
 FishConfig.Fish = {
-	-- ==================== COMMON ====================
+
 	["Channa striata"] = {
 		Name = "Channa striata",
 		Rarity = "Common",
@@ -166,7 +135,6 @@ FishConfig.Fish = {
 		Description = "Ikan berbintik putih yang indah dipandang.",
 	},
 
-	-- ==================== UNCOMMON ====================
 	["Artifact Fin"] = {
 		Name = "Artifact Fin",
 		Rarity = "Uncommon",
@@ -228,7 +196,6 @@ FishConfig.Fish = {
 		Description = "Ikan listrik yang bisa menyetrum mangsanya.",
 	},
 
-	-- ==================== RARE ====================
 	["Abyss Shadow"] = {
 		Name = "Abyss Shadow",
 		Rarity = "Rare",
@@ -280,7 +247,6 @@ FishConfig.Fish = {
 		Description = "Piranha dari dimensi kekosongan yang mengerikan.",
 	},
 
-	-- ==================== EPIC ====================
 	["Crocodile"] = {
 		Name = "Crocodile",
 		Rarity = "Epic",
@@ -342,7 +308,6 @@ FishConfig.Fish = {
 		Description = "Axolotl merah yang sangat dicari kolektor.",
 	},
 
-	-- ==================== LEGENDARY ====================
 	["Aether"] = {
 		Name = "Aether",
 		Rarity = "Legendary",
@@ -384,7 +349,6 @@ FishConfig.Fish = {
 		Description = "Ikan kuno yang menyerupai peti mati firaun.",
 	},
 
-	-- ==================== MYTHIC ====================
 	["BabyCrocodile"] = {
 		Name = "Baby Crocodile",
 		Rarity = "Mythic",
@@ -426,7 +390,6 @@ FishConfig.Fish = {
 		Description = "Makhluk dengan tentakel bayangan dari kegelapan.",
 	},
 
-	-- ==================== SECRET ====================
 	["CosmicAlan"] = {
 		Name = "Cosmic Alan",
 		Rarity = "Secret",
@@ -469,41 +432,36 @@ FishConfig.Fish = {
 	},
 }
 
--- Auto-calculate prices untuk semua ikan berdasarkan rarity
 function FishConfig.AutoCalculatePrices()
 	local count = 0
 	for fishId, fishData in pairs(FishConfig.Fish) do
 		count = count + 1
-		-- Fix typo: Dugong seharusnya Legendary bukan "Dugong"
+
 		if fishData.Rarity == "Dugong" then
 			fishData.Rarity = "Legendary"
 		end
 
-		-- Set price based on rarity if currently 0
 		if fishData.Price == 0 then
 			local basePrice = FishConfig.RarityBasePrices[fishData.Rarity]
 			if basePrice then
-				-- Add slight variation (±20%) untuk variety
+
 				local variation = math.random(80, 120) / 100
 				fishData.Price = math.floor(basePrice * variation)
 			else
 				warn("⚠️ Unknown rarity for fish:", fishId, "-", fishData.Rarity)
-				fishData.Price = 50 -- Default fallback
+				fishData.Price = 50
 			end
 		end
 	end
-	print("✅ [FISH CONFIG] Auto-calculated prices for", count, "fish types")
 end
 
--- Function untuk get random fish berdasarkan rarity weight
 function FishConfig.GetRandomFish()
-	-- Calculate total weight
+
 	local totalWeight = 0
 	for _, weight in pairs(FishConfig.RarityWeights) do
 		totalWeight = totalWeight + weight
 	end
 
-	-- Random selection
 	local random = math.random() * totalWeight
 	local currentWeight = 0
 	local selectedRarity = "Common"
@@ -516,7 +474,6 @@ function FishConfig.GetRandomFish()
 		end
 	end
 
-	-- Get all fish of selected rarity
 	local fishPool = {}
 	for fishId, fishData in pairs(FishConfig.Fish) do
 		if fishData.Rarity == selectedRarity then
@@ -524,28 +481,23 @@ function FishConfig.GetRandomFish()
 		end
 	end
 
-	-- Return random fish from pool
 	if #fishPool > 0 then
 		local randomFish = fishPool[math.random(1, #fishPool)]
 		return randomFish, FishConfig.Fish[randomFish]
 	end
 
-	-- Fallback ke ikan pertama
 	local firstFish = next(FishConfig.Fish)
 	return firstFish, FishConfig.Fish[firstFish]
 end
 
--- Function untuk get random fish berdasarkan location
 function FishConfig.GetRandomFishByLocation(location)
 	location = location or "Anywhere"
-	
-	-- Calculate total weight
+
 	local totalWeight = 0
 	for _, weight in pairs(FishConfig.RarityWeights) do
 		totalWeight = totalWeight + weight
 	end
 
-	-- Random selection for rarity
 	local random = math.random() * totalWeight
 	local currentWeight = 0
 	local selectedRarity = "Common"
@@ -558,7 +510,6 @@ function FishConfig.GetRandomFishByLocation(location)
 		end
 	end
 
-	-- Get all fish of selected rarity that match location or are "Anywhere"
 	local fishPool = {}
 	for fishId, fishData in pairs(FishConfig.Fish) do
 		if fishData.Rarity == selectedRarity then
@@ -568,22 +519,18 @@ function FishConfig.GetRandomFishByLocation(location)
 		end
 	end
 
-	-- Return random fish from pool
 	if #fishPool > 0 then
 		local randomFish = fishPool[math.random(1, #fishPool)]
 		return randomFish, FishConfig.Fish[randomFish]
 	end
 
-	-- Fallback to GetRandomFish
 	return FishConfig.GetRandomFish()
 end
 
--- Get fish by ID
 function FishConfig.GetFishById(fishId)
 	return FishConfig.Fish[fishId]
 end
 
--- Get all fish of a specific rarity
 function FishConfig.GetFishByRarity(rarity)
 	local result = {}
 	for fishId, fishData in pairs(FishConfig.Fish) do
@@ -594,7 +541,6 @@ function FishConfig.GetFishByRarity(rarity)
 	return result
 end
 
--- Get all fish in a specific location
 function FishConfig.GetFishByLocation(location)
 	local result = {}
 	for fishId, fishData in pairs(FishConfig.Fish) do
@@ -605,12 +551,10 @@ function FishConfig.GetFishByLocation(location)
 	return result
 end
 
--- Get rarity color
 function FishConfig.GetRarityColor(rarity)
 	return FishConfig.RarityColors[rarity] or FishConfig.RarityColors.Common
 end
 
--- Auto-calculate prices saat module di-load
 FishConfig.AutoCalculatePrices()
 
 return FishConfig

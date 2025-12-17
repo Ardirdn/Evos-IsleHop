@@ -23,8 +23,6 @@ for _, checkpoint in pairs(checkpointsFolder:GetChildren()) do
 	end
 end
 
-print("✅ [SKIP CHECKPOINT] System initialized")
-
 for checkpointNum, checkpoint in pairs(checkpoints) do
 	if checkpointNum >= #checkpoints then
 		continue
@@ -42,10 +40,7 @@ for checkpointNum, checkpoint in pairs(checkpoints) do
 		continue
 	end
 
-	print("[SKIP] Setup prompt for Checkpoint" .. checkpointNum)
-
 	proximityPrompt.Triggered:Connect(function(player)
-		print(string.format("[SKIP] %s triggered skip at Checkpoint%d", player.Name, checkpointNum))
 
 		local data = DataHandler:GetData(player)
 		if not data then
@@ -65,7 +60,6 @@ for checkpointNum, checkpoint in pairs(checkpoints) do
 				Type = "warning",
 				Duration = 3
 			})
-			print(string.format("[SKIP] Player at checkpoint %d, trying to skip %d", currentCheckpoint, checkpointNum))
 			return
 		end
 
@@ -125,7 +119,6 @@ local function executeSkip(player)
 		Icon = "⚡"
 	})
 
-	print(string.format("[SKIP] ✅ %s skipped from %d to %d", player.Name, currentCheckpoint, nextCheckpoint))
 end
 
 executeSkipEvent.Event:Connect(function(player)
@@ -135,5 +128,3 @@ end)
 _G.ExecuteSkipCheckpoint = function(player)
 	executeSkip(player)
 end
-
-print("✅ [SKIP CHECKPOINT] Handler loaded")

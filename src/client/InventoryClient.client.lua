@@ -64,8 +64,6 @@ for _, titleData in ipairs(TitleConfig.SummitTitles) do
 	summitTitleCache[titleData.Name] = titleData
 end
 
-print("✅ [INVENTORY CLIENT v3] Starting initialization...")
-
 local function createCorner(radius)
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0, radius)
@@ -777,5 +775,3 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		end
 	end
 end)
-
-print("✅ [INVENTORY CLIENT v3] Loaded with Titles tab")

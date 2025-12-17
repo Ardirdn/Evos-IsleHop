@@ -11,7 +11,6 @@ local CONFIG = {
 }
 
 if not CONFIG.SHOW_CHECKPOINT_BUTTON then
-	print("[CHECKPOINT CLIENT] Button hidden by config")
 	return
 end
 
@@ -347,7 +346,6 @@ resetButton.MouseButton1Click:Connect(function()
 	}):Play()
 
 	teleportToBasecamp:FireServer()
-	print("[CHECKPOINT CLIENT] Reset to basecamp requested")
 
 	for i = COOLDOWN_TIME, 1, -1 do
 		resetText.Text = string.format("⏳ %ds", i)
@@ -376,7 +374,6 @@ skipButton.MouseButton1Click:Connect(function()
 	}):Play()
 
 	skipCheckpoint:FireServer()
-	print("[CHECKPOINT CLIENT] Skip checkpoint requested")
 
 	togglePanel()
 
@@ -407,5 +404,3 @@ end
 
 workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateScale)
 updateScale()
-
-print("✅ [CHECKPOINT CLIENT] UI loaded (Admin Panel style)")

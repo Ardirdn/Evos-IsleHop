@@ -26,7 +26,6 @@ local function setupPlayerCollisionGroup()
 		PhysicsService:CollisionGroupSetCollidable(PLAYERS_COLLISION_GROUP, PLAYERS_COLLISION_GROUP, false)
 	end)
 
-	print("✅ [COLLISION] NoPlayerCollision group setup complete")
 end
 
 local function applyNoCollisionToCharacter(character)
@@ -48,7 +47,6 @@ local function applyNoCollisionToCharacter(character)
 		end
 	end)
 
-	print(string.format("[NO COLLISION] Applied to %d parts for: %s", partCount, character.Name))
 end
 
 setupPlayerCollisionGroup()
@@ -72,9 +70,6 @@ local function setupSyncListener()
 
 		local userId = player.UserId
 
-		print(string.format("🔄 [CHECKPOINT SYNC] Received sync for %s", player.Name))
-		print(string.format("   - TotalSummits: %d", migratedData.TotalSummits or 0))
-
 		if playerData and playerData[userId] then
 			local oldSummits = playerData[userId].TotalSummits or 0
 
@@ -83,9 +78,6 @@ local function setupSyncListener()
 			playerData[userId].LastCheckpoint = migratedData.LastCheckpoint or playerData[userId].LastCheckpoint
 			playerData[userId].BestSpeedrun = migratedData.BestSpeedrun or playerData[userId].BestSpeedrun
 			playerData[userId].TotalPlaytime = migratedData.TotalPlaytime or playerData[userId].TotalPlaytime
-
-			print(string.format("   ✅ Cache updated: TotalSummits %d → %d",
-				oldSummits, playerData[userId].TotalSummits))
 
 			if playerCurrentCheckpoint then
 				playerCurrentCheckpoint[userId] = playerData[userId].LastCheckpoint
@@ -96,7 +88,6 @@ local function setupSyncListener()
 				local summitsValue = playerStats:FindFirstChild("Summit")
 				if summitsValue then
 					summitsValue.Value = playerData[userId].TotalSummits
-					print(string.format("   ✅ PlayerStats.Summit updated to %d", playerData[userId].TotalSummits))
 				end
 			end
 		else
@@ -104,7 +95,6 @@ local function setupSyncListener()
 		end
 	end)
 
-	print("✅ [CHECKPOINT] SyncPlayerDataEvent listener ready")
 end
 
 local DataHandler = require(game.ServerScriptService:WaitForChild("DataHandler"))
@@ -117,7 +107,6 @@ pcall(function()
 	local EventManagerModule = game.ServerScriptService:WaitForChild("EventManager", 5)
 	if EventManagerModule then
 		EventManager = require(EventManagerModule)
-		print("[CHECKPOINT] EventManager loaded")
 	end
 end)
 
@@ -128,16 +117,12 @@ end
 local SpeedrunLeaderboard = DataStoreService:GetOrderedDataStore(DataStoreConfig.Leaderboards.Speedrun)
 local PlaytimeLeaderboard = DataStoreService:GetOrderedDataStore(DataStoreConfig.Leaderboards.Playtime)
 
-print(string.format("[CHECKPOINT] Using DataStores from config (Version: %s)", DataStoreConfig.VERSION))
-
 local checkpointsFolder = workspace:FindFirstChild("Checkpoints")
 
 if not checkpointsFolder then
 	warn("[ERROR] Checkpoints folder tidak ditemukan di Workspace!")
 	return
 end
-
-print("[CHECKPOINTS] Checkpoints folder found:", checkpointsFolder.Name)
 
 local checkpoints = {}
 local checkpointCount = 0
@@ -147,21 +132,16 @@ for _, checkpoint in pairs(checkpointsFolder:GetChildren()) do
 		local number = tonumber(checkpoint.Name:match("%d+"))
 		checkpoints[number] = checkpoint
 		checkpointCount = checkpointCount + 1
-		print("[CHECKPOINTS] Found:", checkpoint.Name, "Number:", number, "Position:", checkpoint.Position)
 
 		checkpoint.CanCollide = false
 
 		local spawnLoc = checkpoint:FindFirstChild("SpawnLocation")
 		if spawnLoc then
-			print("[CHECKPOINTS] - SpawnLocation found in", checkpoint.Name)
 		else
 			warn("[WARNING] - SpawnLocation NOT FOUND in", checkpoint.Name)
 		end
 	end
 end
-
-print("[CHECKPOINTS] Total checkpoints loaded:", checkpointCount)
-print("[CHECKPOINTS] Highest checkpoint number:", #checkpoints)
 
 if checkpointCount == 0 then
 	warn("[ERROR] Tidak ada checkpoint yang ditemukan! Pastikan nama part adalah 'Checkpoint0', 'Checkpoint1', dll")
@@ -205,8 +185,6 @@ local skipCheckpoint = Instance.new("RemoteEvent")
 skipCheckpoint.Name = "SkipCheckpoint"
 skipCheckpoint.Parent = remoteFolder
 
-print("[REMOTES] Remote events created in ReplicatedStorage")
-
 local function formatPlaytime(seconds)
 	local days = math.floor(seconds / 86400)
 	local hours = math.floor((seconds % 86400) / 3600)
@@ -241,8 +219,6 @@ local function setCheckpointColor(checkpointNum, color)
 		end
 	end
 
-	print(string.format("[CHECKPOINT COLOR] Set Checkpoint%d circles to RGB(%d, %d, %d)",
-		checkpointNum, color.R * 255, color.G * 255, color.B * 255))
 end
 
 local function resetAllCheckpointColors(player)
@@ -252,11 +228,9 @@ local function resetAllCheckpointColors(player)
 		setCheckpointColor(i, Color3.fromRGB(255, 255, 255))
 	end
 
-	print("[CHECKPOINT COLOR] Reset all checkpoints to white for:", player.Name)
 end
 
 local function loadPlayerData(player)
-	print(string.format("[DATA LOAD] Loading data for: %s", player.Name))
 	local userId = player.UserId
 
 	task.wait(1)
@@ -274,7 +248,6 @@ local function loadPlayerData(player)
 		retries = retries + 1
 		task.wait(0.5)
 		if retries % 5 == 0 then
-			print(string.format("[DATA LOAD] Retry %d/%d for %s...", retries, maxRetries, player.Name))
 		end
 	end
 
@@ -290,9 +263,6 @@ local function loadPlayerData(player)
 		TotalPlaytime = data.TotalPlaytime or 0,
 		CurrentSpeedrunStart = nil
 	}
-
-	print(string.format("[DATA LOAD] Loaded from DataHandler - Checkpoint: %d, Summits: %d",
-		checkpointData.LastCheckpoint, checkpointData.TotalSummits))
 
 	playerData[userId] = checkpointData
 	playerCurrentCheckpoint[userId] = checkpointData.LastCheckpoint
@@ -313,8 +283,6 @@ local function savePlayerData(player)
 		warn("[DATA SAVE] No data to save for:", player.Name)
 		return
 	end
-
-	print("[DATA SAVE] Saving data for:", player.Name)
 
 	DataHandler:Set(player, "LastCheckpoint", data.LastCheckpoint)
 	DataHandler:Set(player, "TotalSummits", data.TotalSummits)
@@ -339,7 +307,6 @@ local function savePlayerData(player)
 		PlaytimeLeaderboard:SetAsync(tostring(userId), playtimeInt)
 	end)
 
-	print("[DATA SAVE] Saved via DataHandler")
 end
 
 local function updatePlaytime(player)
@@ -442,12 +409,10 @@ local function getGamepassMultiplier(player)
 		timestamp = currentTime
 	}
 
-	print(string.format("[GAMEPASS CACHE] Cached multiplier for %s: x%d", player.Name, multiplier))
 	return multiplier
 end
 
 Players.PlayerAdded:Connect(function(player)
-	print("[PLAYER] Player joined:", player.Name, "UserID:", player.UserId)
 	local data = loadPlayerData(player)
 
 	if not data then
@@ -482,12 +447,9 @@ Players.PlayerAdded:Connect(function(player)
 	playtimeValue.Value = formatPlaytime(data.TotalPlaytime or 0)
 	playtimeValue.Parent = playerStats
 
-	print("[PLAYER] PlayerStats created for:", player.Name)
-
 	playerCooldowns[player.UserId] = {}
 
 	player.CharacterAdded:Connect(function(character)
-		print("[SPAWN] Character spawned for:", player.Name)
 		local humanoid = character:WaitForChild("Humanoid")
 		task.wait(0.2)
 
@@ -504,7 +466,6 @@ Players.PlayerAdded:Connect(function(player)
 			local spawnLocation = spawnCheckpoint:FindFirstChild("SpawnLocation")
 			if spawnLocation then
 				character:MoveTo(spawnLocation.Position + Vector3.new(0, 3, 0))
-				print("[SPAWN] Player spawned at checkpoint:", currentData.LastCheckpoint, "Position:", spawnLocation.Position)
 				for i = 1, currentData.LastCheckpoint do
 					setCheckpointColor(i, Color3.fromRGB(0, 255, 0))
 				end
@@ -519,18 +480,14 @@ Players.PlayerAdded:Connect(function(player)
 
 		if speedrunTimers[player.UserId] then
 			speedrunTimers[player.UserId].active = false
-			print("[SPEEDRUN] Timer reset for:", player.Name)
 		end
 
 		playerCooldowns[player.UserId] = {}
 		playerCurrentCheckpoint[player.UserId] = currentData.LastCheckpoint
-		print("[CHECKPOINT] Current checkpoint reset to:", currentData.LastCheckpoint)
 	end)
 end)
 
-print("[CHECKPOINTS] Setting up checkpoint triggers...")
 for checkpointNum, checkpoint in pairs(checkpoints) do
-	print("[CHECKPOINTS] Setting trigger for Checkpoint" .. checkpointNum)
 
 	checkpoint.Touched:Connect(function(hit)
 		local character = hit.Parent
@@ -559,7 +516,6 @@ for checkpointNum, checkpoint in pairs(checkpoints) do
 		end
 
 		playerCooldowns[userId][cooldownKey] = currentTime
-		print("[CHECKPOINT HIT] Player", player.Name, "touched Checkpoint" .. checkpointNum)
 
 		local currentCheckpoint = playerCurrentCheckpoint[userId] or 0
 		local expectedCheckpoint = currentCheckpoint + 1
@@ -571,9 +527,7 @@ for checkpointNum, checkpoint in pairs(checkpoints) do
 					active = true,
 					pausedTime = 0
 				}
-				print("[SPEEDRUN] Started for:", player.Name)
 			else
-				print("[SPEEDRUN] Already active for:", player.Name)
 			end
 			return
 		end
@@ -587,12 +541,10 @@ for checkpointNum, checkpoint in pairs(checkpoints) do
 				Duration = 4
 			})
 
-			print("[VALIDATION] Player", player.Name, "tried to skip to checkpoint", checkpointNum, "- Expected:", expectedCheckpoint)
 			return
 		end
 
 		if checkpointNum <= currentCheckpoint then
-			print("[CHECKPOINT] Player", player.Name, "already passed checkpoint:", checkpointNum, "(current:", currentCheckpoint, ")")
 			return
 		end
 
@@ -607,9 +559,6 @@ for checkpointNum, checkpoint in pairs(checkpoints) do
 				local moneyPerCheckpoint = math.floor(CONFIG.MONEY_PER_SUMMIT / totalCheckpoints)
 
 				DataHandler:Increment(player, "Money", moneyPerCheckpoint)
-
-				print(string.format("[CHECKPOINT] 💰 %s earned $%d at checkpoint %d (Total Money: $%d)",
-					player.Name, moneyPerCheckpoint, checkpointNum, DataHandler:Get(player, "Money") or 0))
 
 				local checkpointMessage = string.format("Berhasil mencapai checkpoint %d, kamu mendapat $%d", checkpointNum, moneyPerCheckpoint)
 				NotificationServer:Send(player, {
@@ -628,18 +577,14 @@ for checkpointNum, checkpoint in pairs(checkpoints) do
 				})
 			end
 
-			print("[CHECKPOINT] Player", player.Name, "reached checkpoint:", checkpointNum)
 		end
 
 		if checkpointNum == #checkpoints then
-			print("[SUMMIT] Player", player.Name, "reached summit!")
 
 			local speedrunTime = nil
 			if speedrunTimers[userId] and speedrunTimers[userId].active then
 				speedrunTime = tick() - speedrunTimers[userId].startTime
 				speedrunTimers[userId].active = false
-
-				print("[SPEEDRUN] Finished in:", formatTime(speedrunTime))
 
 				local speedrunMs = math.floor(speedrunTime * 1000)
 				if not data.BestSpeedrun or speedrunMs < data.BestSpeedrun then
@@ -654,7 +599,6 @@ for checkpointNum, checkpoint in pairs(checkpoints) do
 						Icon = "🏆",
 						Duration = 5
 					})
-					print("[SPEEDRUN] NEW BEST TIME!")
 				else
 					NotificationServer:Send(player, {
 						Message = "Kamu mencapai puncak dalam waktu " .. formatTime(speedrunTime),
@@ -665,7 +609,6 @@ for checkpointNum, checkpoint in pairs(checkpoints) do
 				end
 
 			else
-				print("[SPEEDRUN] Timer not active")
 			end
 
 			local gamepassMultiplier = getGamepassMultiplier(player)
@@ -690,9 +633,6 @@ for checkpointNum, checkpoint in pairs(checkpoints) do
 			if CONFIG.GIVE_SUMMIT_BONUS ~= false then
 				local moneyReward = CONFIG.MONEY_PER_SUMMIT
 				DataHandler:Increment(player, "Money", moneyReward)
-
-				print(string.format("[SUMMIT] 💰 %s earned $%d bonus (Total Money: $%d)",
-					player.Name, moneyReward, DataHandler:Get(player, "Money") or 0))
 
 				local summitMessage = string.format("🎉 Summit Reached! +$%d (Bonus)", moneyReward)
 				if totalMultiplier > 1 then
@@ -727,13 +667,11 @@ for checkpointNum, checkpoint in pairs(checkpoints) do
 			resetAllCheckpointColors(player)
 
 			savePlayerData(player)
-			print("[SUMMIT] ✅ Data saved")
 
 			task.spawn(function()
 				task.wait(0.5)
 				local TitleServer = require(script.Parent:WaitForChild("TitleServer"))
 				TitleServer:UpdateSummitTitle(player)
-				print("[SUMMIT] ✅ Title updated")
 			end)
 
 			task.spawn(function()
@@ -746,8 +684,6 @@ for checkpointNum, checkpoint in pairs(checkpoints) do
 
 	end)
 end
-
-print("[CHECKPOINTS] All checkpoint triggers setup complete!")
 
 for checkpointNum, checkpoint in pairs(checkpoints) do
 	if checkpointNum >= #checkpoints then
@@ -764,10 +700,7 @@ for checkpointNum, checkpoint in pairs(checkpoints) do
 		continue
 	end
 
-	print("[SKIP] Setup prompt for Checkpoint" .. checkpointNum)
-
 	proximityPrompt.Triggered:Connect(function(player)
-		print(string.format("[SKIP] %s triggered skip at Checkpoint%d", player.Name, checkpointNum))
 
 		local data = DataHandler:GetData(player)
 		if not data then
@@ -787,7 +720,6 @@ for checkpointNum, checkpoint in pairs(checkpoints) do
 				Type = "warning",
 				Duration = 3
 			})
-			print(string.format("[SKIP] Player at checkpoint %d, trying to skip %d", currentCheckpoint, checkpointNum))
 			return
 		end
 
@@ -837,7 +769,6 @@ local function executeSkip(player)
 		Icon = "⚡"
 	})
 
-	print(string.format("[SKIP] ✅ %s skipped from %d to %d", player.Name, currentCheckpoint, nextCheckpoint))
 end
 
 _G.ExecuteSkipCheckpoint = function(player)
@@ -845,7 +776,6 @@ _G.ExecuteSkipCheckpoint = function(player)
 end
 
 skipCheckpoint.OnServerEvent:Connect(function(player)
-	print(string.format("[SKIP UI] %s requested skip via UI", player.Name))
 
 	local data = DataHandler:GetData(player)
 	if not data then
@@ -880,10 +810,7 @@ skipCheckpoint.OnServerEvent:Connect(function(player)
 	MarketplaceService:PromptProductPurchase(player, CONFIG.SKIP_PRODUCT_ID)
 end)
 
-print("✅ [SKIP CHECKPOINT] Handler integrated")
-
 teleportToBasecamp.OnServerEvent:Connect(function(player)
-	print("[TELEPORT] Player", player.Name, "requesting teleport to basecamp")
 	local character = player.Character
 	if not character then
 		warn("[TELEPORT] Character not found")
@@ -900,8 +827,6 @@ teleportToBasecamp.OnServerEvent:Connect(function(player)
 		DataHandler:Set(player, "LastCheckpoint", 0)
 		DataHandler:SavePlayer(player)
 
-		print("[TELEPORT] Reset LastCheckpoint to 0 for:", player.Name)
-
 		resetAllCheckpointColors(player)
 	end
 
@@ -911,7 +836,6 @@ teleportToBasecamp.OnServerEvent:Connect(function(player)
 		if spawnLocation then
 			character:MoveTo(spawnLocation.Position + Vector3.new(0, 3, 0))
 			hideSummitButton:FireClient(player)
-			print("[TELEPORT] Player teleported to basecamp SpawnLocation")
 		else
 			character:MoveTo(basecamp.Position + Vector3.new(0, 5, 0))
 			hideSummitButton:FireClient(player)
@@ -930,7 +854,6 @@ teleportToBasecamp.OnServerEvent:Connect(function(player)
 end)
 
 Players.PlayerRemoving:Connect(function(player)
-	print("[PLAYER] Player leaving:", player.Name)
 
 	local userId = player.UserId
 	local data = playerData[userId]
@@ -938,15 +861,12 @@ Players.PlayerRemoving:Connect(function(player)
 	if data then
 		updatePlaytime(player)
 
-		print("[PLAYER LEAVE] Syncing with DataHandler cache...")
-
 		local cachedSummits = DataHandler:Get(player, "TotalSummits")
 		local cachedSpeedrun = DataHandler:Get(player, "BestSpeedrun")
 		local cachedCheckpoint = DataHandler:Get(player, "LastCheckpoint")
 		local cachedPlaytime = DataHandler:Get(player, "TotalPlaytime")
 
 		if cachedSummits ~= nil then
-			print(string.format("[PLAYER LEAVE] Using cached TotalSummits: %d (was: %d)", cachedSummits, data.TotalSummits))
 			data.TotalSummits = cachedSummits
 		end
 
@@ -963,7 +883,6 @@ Players.PlayerRemoving:Connect(function(player)
 		end
 
 		savePlayerData(player)
-		print("[PLAYER LEAVE] Data saved with synced values")
 	else
 		warn("[PLAYER LEAVE] No data found for:", player.Name)
 	end
@@ -975,12 +894,10 @@ Players.PlayerRemoving:Connect(function(player)
 	playtimeSessions[userId] = nil
 	gamepassCache[userId] = nil
 
-	print("[PLAYER LEAVE] Cleanup complete for:", player.Name)
 end)
 
 task.spawn(function()
 	while task.wait(30) do
-		print("[PLAYTIME] Updating all player playtimes...")
 		for _, player in pairs(Players:GetPlayers()) do
 			updatePlaytime(player)
 		end
@@ -989,7 +906,6 @@ end)
 
 task.spawn(function()
 	while task.wait(60) do
-		print("[AUTO SAVE] Running auto-save...")
 		for _, player in pairs(Players:GetPlayers()) do
 			updatePlaytime(player)
 			savePlayerData(player)
@@ -999,11 +915,9 @@ task.spawn(function()
 end)
 
 task.wait(2)
-print("[INIT] Running initial leaderboard update...")
 updateLeaderboards()
 
 function CheckpointSystem.SyncPlayerData(player)
-	print(string.format("[CHECKPOINT SYNC] 🔄 Starting sync for %s", player.Name))
 
 	local userId = player.UserId
 
@@ -1016,8 +930,6 @@ function CheckpointSystem.SyncPlayerData(player)
 		return false
 	end
 
-	print(string.format("[CHECKPOINT SYNC] Got data - Summits: %d", freshData.TotalSummits))
-
 	if playerData[userId] then
 		local oldSummits = playerData[userId].TotalSummits
 
@@ -1026,7 +938,6 @@ function CheckpointSystem.SyncPlayerData(player)
 		playerData[userId].BestSpeedrun = freshData.BestSpeedrun
 		playerData[userId].TotalPlaytime = freshData.TotalPlaytime
 
-		print(string.format("[CHECKPOINT SYNC] ✅ SUCCESS! %s: %d → %d", player.Name, oldSummits, freshData.TotalSummits))
 		return true
 	else
 		playerData[userId] = {
@@ -1036,18 +947,12 @@ function CheckpointSystem.SyncPlayerData(player)
 			TotalPlaytime = freshData.TotalPlaytime
 		}
 
-		print(string.format("[CHECKPOINT SYNC] ✅ Created new cache for %s - Summits: %d", player.Name, freshData.TotalSummits))
 		return true
 	end
 end
 
 syncEvent.Event:Connect(function(player)
-	print("[CHECKPOINT SYNC] Received sync request via BindableEvent")
 	CheckpointSystem.SyncPlayerData(player)
 end)
-
-print("========================================")
-print("CHECKPOINT SYSTEM FULLY LOADED!")
-print("========================================")
 
 return CheckpointSystem

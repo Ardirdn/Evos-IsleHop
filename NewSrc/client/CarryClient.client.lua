@@ -1,19 +1,11 @@
---[[
-    CARRY CLIENT (DRAGGABLE + 2 REQUEST MODES)
-    Place in StarterPlayerScripts/CarryClient
-]]
-
--- Services
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
--- Remotes
 local CarryRemote = ReplicatedStorage:WaitForChild("CarryRemote")
 
--- Config
 local SIT_R15_ID = 109869231937807
 local SIT_R6_ID  = 116296618982747
 local CARRY_R15_ID = 101810098714973
@@ -22,12 +14,10 @@ local REQUEST_TIMEOUT = 8
 local HIDE_ON_PENDING = true
 local MAX_CLICK_DISTANCE = 20
 
--- Player/UI
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 local camera = workspace.CurrentCamera
 
--- ==================== COLORS ====================
 local COLORS = {
 	Background = Color3.fromRGB(25, 25, 30),
 	Panel = Color3.fromRGB(30, 30, 35),
@@ -47,7 +37,6 @@ local COLORS = {
 	CloseHover = Color3.fromRGB(220, 80, 80),
 }
 
--- ==================== HELPERS ====================
 local function createCorner(radius)
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0, radius)
@@ -82,8 +71,8 @@ local function getAnimator(hum)
 	return hum and (hum:FindFirstChildOfClass("Animator") or Instance.new("Animator", hum))
 end
 
-local function rigIsR15(hum) 
-	return hum and hum.RigType == Enum.HumanoidRigType.R15 
+local function rigIsR15(hum)
+	return hum and hum.RigType == Enum.HumanoidRigType.R15
 end
 
 local function getHRP()
@@ -98,7 +87,6 @@ local function targetIsCarried(pTarget)
 	return hrp and hrp:FindFirstChild("CarryWeld") ~= nil
 end
 
--- ==================== DRAGGABLE FUNCTION ====================
 local function makeDraggable(frame)
 	local dragging, dragInput, dragStart, startPos
 
@@ -106,11 +94,9 @@ local function makeDraggable(frame)
 		local delta = input.Position - dragStart
 		local viewportSize = camera.ViewportSize
 
-		-- Convert to scale
 		local newX = startPos.X.Scale + (delta.X / viewportSize.X)
 		local newY = startPos.Y.Scale + (delta.Y / viewportSize.Y)
 
-		-- Clamp to screen bounds
 		newX = math.clamp(newX, 0, 1 - frame.Size.X.Scale)
 		newY = math.clamp(newY, 0, 1 - frame.Size.Y.Scale)
 
@@ -144,7 +130,6 @@ local function makeDraggable(frame)
 	end)
 end
 
--- ==================== CREATE SCREEN GUI ====================
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "GendongGUI"
 screenGui.ResetOnSpawn = false
@@ -152,23 +137,21 @@ screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 screenGui.DisplayOrder = 50
 screenGui.Parent = playerGui
 
--- ==================== FRAME 1: SELECT/PROMPT/STATUS ====================
 local frame = Instance.new("Frame")
 frame.Name = "Frame"
-frame.Size = UDim2.new(0.156, 0, 0.278, 0) -- ~300x300 on 1920x1080
-frame.Position = UDim2.new(0.75, 0, 0.35, 0) -- Kanan tengah agak atas
+frame.Size = UDim2.new(0.156, 0, 0.278, 0)
+frame.Position = UDim2.new(0.75, 0, 0.35, 0)
 frame.AnchorPoint = Vector2.new(0.5, 0.5)
 frame.BackgroundColor3 = COLORS.Background
 frame.BorderSizePixel = 0
 frame.Visible = false
-frame.Active = true -- Enable dragging
+frame.Active = true
 frame.Parent = screenGui
 
 createCorner(12).Parent = frame
 createStroke(COLORS.Border, 2).Parent = frame
 makeDraggable(frame)
 
--- Drag indicator (optional visual cue)
 local dragIndicator = Instance.new("Frame")
 dragIndicator.Size = UDim2.new(0.15, 0, 0.015, 0)
 dragIndicator.Position = UDim2.new(0.5, 0, 0.02, 0)
@@ -179,7 +162,6 @@ dragIndicator.Parent = frame
 
 createCorner(10).Parent = dragIndicator
 
--- Close Button
 local btnClose = Instance.new("TextButton")
 btnClose.Name = "CloseButton"
 btnClose.Size = UDim2.new(0.1, 0, 0.1, 0)
@@ -195,7 +177,6 @@ btnClose.Parent = frame
 
 createCorner(6).Parent = btnClose
 
--- Avatar Image
 local imgAvatar = Instance.new("ImageLabel")
 imgAvatar.Name = "AvatarImage"
 imgAvatar.Size = UDim2.new(0.267, 0, 0.267, 0)
@@ -209,7 +190,6 @@ imgAvatar.Parent = frame
 createCorner(40).Parent = imgAvatar
 createStroke(COLORS.Border, 2).Parent = imgAvatar
 
--- Name Label
 local nameLabel = Instance.new("TextLabel")
 nameLabel.Name = "NameLabel"
 nameLabel.Size = UDim2.new(0.933, 0, 0.083, 0)
@@ -224,7 +204,6 @@ nameLabel.TextWrapped = true
 nameLabel.TextXAlignment = Enum.TextXAlignment.Center
 nameLabel.Parent = frame
 
--- Request to Carry Button
 local btnCarry = Instance.new("TextButton")
 btnCarry.Name = "CarryButton"
 btnCarry.Size = UDim2.new(0.9, 0, 0.12, 0)
@@ -241,7 +220,6 @@ btnCarry.Parent = frame
 
 createCorner(8).Parent = btnCarry
 
--- Request to be Carried Button
 local btnBeCarried = Instance.new("TextButton")
 btnBeCarried.Name = "BeCarriedButton"
 btnBeCarried.Size = UDim2.new(0.9, 0, 0.12, 0)
@@ -258,7 +236,6 @@ btnBeCarried.Parent = frame
 
 createCorner(8).Parent = btnBeCarried
 
--- Get Down Button
 local btnDown = Instance.new("TextButton")
 btnDown.Name = "TurunButton"
 btnDown.Size = UDim2.new(0.9, 0, 0.12, 0)
@@ -276,7 +253,6 @@ btnDown.Parent = frame
 
 createCorner(8).Parent = btnDown
 
--- Add Friend Button
 local btnAdd = Instance.new("TextButton")
 btnAdd.Name = "AddButton"
 btnAdd.Size = UDim2.new(0.9, 0, 0.1, 0)
@@ -295,10 +271,9 @@ btnAdd.Parent = frame
 
 createCorner(8).Parent = btnAdd
 
--- ==================== FRAME 2: CARRIER UI ====================
 local frame2 = Instance.new("Frame")
 frame2.Name = "Frame2"
-frame2.Size = UDim2.new(0.146, 0, 0.185, 0) -- ~280x200
+frame2.Size = UDim2.new(0.146, 0, 0.185, 0)
 frame2.Position = UDim2.new(0.5, 0, 0.85, 0)
 frame2.AnchorPoint = Vector2.new(0.5, 0.5)
 frame2.BackgroundColor3 = COLORS.Background
@@ -311,7 +286,6 @@ createCorner(12).Parent = frame2
 createStroke(COLORS.Border, 2).Parent = frame2
 makeDraggable(frame2)
 
--- Drag indicator
 local dragIndicator2 = Instance.new("Frame")
 dragIndicator2.Size = UDim2.new(0.15, 0, 0.02, 0)
 dragIndicator2.Position = UDim2.new(0.5, 0, 0.02, 0)
@@ -322,7 +296,6 @@ dragIndicator2.Parent = frame2
 
 createCorner(10).Parent = dragIndicator2
 
--- Carrier Avatar
 local cAvatar = Instance.new("ImageLabel")
 cAvatar.Name = "AvatarImage"
 cAvatar.Size = UDim2.new(0.214, 0, 0.3, 0)
@@ -336,7 +309,6 @@ cAvatar.Parent = frame2
 createCorner(30).Parent = cAvatar
 createStroke(COLORS.Border, 2).Parent = cAvatar
 
--- Carrier Name
 local cName = Instance.new("TextLabel")
 cName.Name = "NameLabel"
 cName.Size = UDim2.new(0.9, 0, 0.1, 0)
@@ -351,7 +323,6 @@ cName.TextWrapped = true
 cName.TextXAlignment = Enum.TextXAlignment.Center
 cName.Parent = frame2
 
--- Navigation Container
 local navContainer = Instance.new("Frame")
 navContainer.Size = UDim2.new(0.93, 0, 0.175, 0)
 navContainer.Position = UDim2.new(0.5, 0, 0.52, 0)
@@ -410,7 +381,6 @@ btnRight.Parent = navContainer
 
 createCorner(6).Parent = btnRight
 
--- Drop All Button
 local btnDropAll = Instance.new("TextButton")
 btnDropAll.Name = "DropAllButton"
 btnDropAll.Size = UDim2.new(0.93, 0, 0.175, 0)
@@ -427,7 +397,6 @@ btnDropAll.Parent = frame2
 
 createCorner(6).Parent = btnDropAll
 
--- ==================== HOVER EFFECTS ====================
 local function setupButtonHover(button, normalColor, hoverColor)
 	button.MouseEnter:Connect(function()
 		tweenButton(button, "BackgroundColor3", hoverColor)
@@ -447,13 +416,11 @@ setupButtonHover(btnRight, COLORS.Button, COLORS.ButtonHover)
 setupButtonHover(btnPut, COLORS.Danger, COLORS.DangerHover)
 setupButtonHover(btnDropAll, Color3.fromRGB(180, 50, 50), Color3.fromRGB(200, 70, 70))
 
--- ==================== REST OF LOGIC ====================
-
 local function pointOverOurGui(px, py)
 	local list = playerGui:GetGuiObjectsAtPosition(px, py)
 	for _, o in ipairs(list) do
-		if o == frame or o:IsDescendantOf(frame) or o == frame2 or o:IsDescendantOf(frame2) then 
-			return true 
+		if o == frame or o:IsDescendantOf(frame) or o == frame2 or o:IsDescendantOf(frame2) then
+			return true
 		end
 	end
 	return false
@@ -485,7 +452,6 @@ local function pickPlayerAt(px, py)
 	return pTarget
 end
 
--- Animation
 local sitTrack, carryTrack
 local function playSit()
 	local hum = getHumanoid(); if not hum then return end
@@ -500,10 +466,10 @@ local function playSit()
 		sitTrack = track; sitTrack.Priority = Enum.AnimationPriority.Action; sitTrack.Looped = true; sitTrack:Play(0.2)
 	end
 end
-local function stopSit() 
-	local hum = getHumanoid(); 
-	if sitTrack then sitTrack:Stop(0.2); sitTrack = nil end 
-	if hum then hum.Sit = false end 
+local function stopSit()
+	local hum = getHumanoid();
+	if sitTrack then sitTrack:Stop(0.2); sitTrack = nil end
+	if hum then hum.Sit = false end
 end
 local function playCarry()
 	local hum = getHumanoid(); if not hum then return end
@@ -519,7 +485,6 @@ local function playCarry()
 end
 local function stopCarry() if carryTrack then carryTrack:Stop(0.2); carryTrack = nil end end
 
--- State
 local uiMode = "idle"
 local selectedTargetId, selectedTargetName, lastRequesterId, currentOtherId = nil, nil, nil, nil
 local carriedList, carriedIndex = {}, 1
@@ -529,15 +494,13 @@ local addBtnMode = "friend"
 local currentCarrierId, currentCarrierName = nil, nil
 local keepUiConn = nil
 
--- Block jump AND trigger Get Down when pressed
 local jumpBlockConn = nil
 local function startBlockingJump()
 	if jumpBlockConn then jumpBlockConn:Disconnect() end
 	jumpBlockConn = UserInputService.JumpRequest:Connect(function()
 		local h = getHumanoid()
 		if h then h.Jump = false end
-		
-		-- ✅ Trigger Get Down when jump is pressed while being carried
+
 		if isCarried then
 			CarryRemote:FireServer("Stop", {})
 		end
@@ -547,15 +510,14 @@ local function stopBlockingJump()
 	if jumpBlockConn then jumpBlockConn:Disconnect(); jumpBlockConn = nil end
 end
 
--- Add/Decline
-local function hideAddBtn() 
+local function hideAddBtn()
 	addBtnMode="friend"
 	btnAdd.Visible=false
 	btnAdd.Active=false
 	btnAdd.AutoButtonColor=false
 	btnAdd.BackgroundColor3=COLORS.Accent
 end
-local function setAddBtnEnabled(text) 
+local function setAddBtnEnabled(text)
 	addBtnMode="friend"
 	btnAdd.Visible=true
 	btnAdd.Text=text or "Add Friend"
@@ -563,7 +525,7 @@ local function setAddBtnEnabled(text)
 	btnAdd.AutoButtonColor=true
 	btnAdd.BackgroundColor3=COLORS.Accent
 end
-local function setAddBtnDecline() 
+local function setAddBtnDecline()
 	addBtnMode="decline"
 	btnAdd.Visible=true
 	btnAdd.Text="No"
@@ -599,7 +561,6 @@ task.spawn(function()
 	while true do task.wait(2); if frame.Visible and currentOtherId and addBtnMode~="decline" then setAddButtonFor(currentOtherId) end end
 end)
 
--- Modes
 local function setModeSelect(pTarget)
 	uiMode = "select"
 	selectedTargetId = pTarget.UserId
@@ -609,7 +570,6 @@ local function setModeSelect(pTarget)
 	nameLabel.Text = ("Target: %s"):format(selectedTargetName)
 	imgAvatar.Image = headshotUrl(pTarget.UserId, 180)
 
-	-- Show both buttons
 	btnCarry.Text = "Request to Carry"
 	btnCarry.Visible = true
 	btnCarry.Active = true
@@ -631,12 +591,11 @@ local function setModePrompt(fromId, messageOrName)
 	selectedTargetId, selectedTargetName = nil, nil
 	lastRequesterId = fromId
 
-	-- Check if messageOrName is full message or just name
 	if messageOrName and messageOrName:find("Accept%?") then
-		-- It's a full message
+
 		nameLabel.Text = messageOrName
 	else
-		-- It's just a name, use default template
+
 		nameLabel.Text = ("%s wants to carry you. Accept?"):format(messageOrName or "Someone")
 	end
 
@@ -654,7 +613,6 @@ local function setModePrompt(fromId, messageOrName)
 	setAddBtnDecline()
 	frame.Visible = true
 end
-
 
 local function ensureStatusVisible()
 	if not isCarried or not currentCarrierId then return end
@@ -702,7 +660,6 @@ local function resetFrame()
 	frame.Visible = false
 end
 
--- World Tap
 local function handleWorldTap(px, py)
 	if uiMode == "prompt" or waitingForApproval then return end
 	if pointOverOurGui(px, py) then return end
@@ -711,7 +668,6 @@ local function handleWorldTap(px, py)
 	if pTarget then overlayFromStatus = frame2.Visible; setModeSelect(pTarget) end
 end
 
--- Waiting
 local function stopWaitTimer()
 	waitingForApproval = false
 	waitToken += 1
@@ -771,12 +727,11 @@ local function flashAndClose(msg)
 	end
 end
 
--- Carrier UI
 local function ensureCarrierAnim()
-	if (#carriedList > 0) and (not isCarried) then 
-		if not carryTrack then playCarry() end 
-	else 
-		stopCarry() 
+	if (#carriedList > 0) and (not isCarried) then
+		if not carryTrack then playCarry() end
+	else
+		stopCarry()
 	end
 end
 local function refreshCarrierUI()
@@ -791,12 +746,12 @@ local function refreshCarrierUI()
 	ensureCarrierAnim()
 end
 local function addCarried(id, name)
-	for _, it in ipairs(carriedList) do 
-		if it.id == id then 
+	for _, it in ipairs(carriedList) do
+		if it.id == id then
 			it.name = name
 			refreshCarrierUI()
-			return 
-		end 
+			return
+		end
 	end
 	table.insert(carriedList, {id=id, name=name})
 	carriedIndex = #carriedList
@@ -804,8 +759,8 @@ local function addCarried(id, name)
 end
 local function removeCarried(id)
 	local idx
-	for i, it in ipairs(carriedList) do 
-		if it.id == id then idx = i break end 
+	for i, it in ipairs(carriedList) do
+		if it.id == id then idx = i break end
 	end
 	if idx then table.remove(carriedList, idx) end
 	if carriedIndex > #carriedList then carriedIndex = #carriedList end
@@ -813,15 +768,14 @@ local function removeCarried(id)
 end
 local function setCarriedListFromSnapshot(list)
 	carriedList = {}
-	for _, it in ipairs(list or {}) do 
-		table.insert(carriedList, {id = it.id, name = it.name}) 
+	for _, it in ipairs(list or {}) do
+		table.insert(carriedList, {id = it.id, name = it.name})
 	end
 	if carriedIndex > #carriedList then carriedIndex = #carriedList end
 	if carriedIndex < 1 then carriedIndex = 1 end
 	refreshCarrierUI()
 end
 
--- Input
 UserInputService.InputBegan:Connect(function(input, gp)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
 		local pos = UserInputService:GetMouseLocation()
@@ -842,16 +796,14 @@ UserInputService.InputBegan:Connect(function(input, gp)
 	end
 end)
 
--- UPDATE BUTTON HANDLERS (GANTI YANG LAMA)
-
 btnCarry.MouseButton1Click:Connect(function()
 	if uiMode == "select" then
 		if not selectedTargetId then return end
 		startWaitTimer()
-		-- Request to CARRY target (we become carrier)
+
 		CarryRemote:FireServer("Request", {
 			targetId = selectedTargetId,
-			requestType = "carry"  -- NEW FLAG
+			requestType = "carry"
 		})
 	elseif uiMode == "prompt" then
 		if not lastRequesterId then return end
@@ -864,14 +816,13 @@ btnBeCarried.MouseButton1Click:Connect(function()
 	if uiMode == "select" then
 		if not selectedTargetId then return end
 		startWaitTimer()
-		-- Request to BE CARRIED by target (target becomes carrier)
+
 		CarryRemote:FireServer("Request", {
 			targetId = selectedTargetId,
-			requestType = "be_carried"  -- NEW FLAG
+			requestType = "be_carried"
 		})
 	end
 end)
-
 
 btnClose.MouseButton1Click:Connect(function()
 	if uiMode == "prompt" and lastRequesterId then
@@ -886,75 +837,73 @@ btnClose.MouseButton1Click:Connect(function()
 	end
 end)
 
-btnDown.MouseButton1Click:Connect(function() 
-	CarryRemote:FireServer("Stop", {}) 
+btnDown.MouseButton1Click:Connect(function()
+	CarryRemote:FireServer("Stop", {})
 end)
 
 btnAdd.MouseButton1Click:Connect(function()
 	if addBtnMode == "decline" then
-		if uiMode == "prompt" and lastRequesterId then 
+		if uiMode == "prompt" and lastRequesterId then
 			CarryRemote:FireServer("Response", {requesterId = lastRequesterId, accept = false})
-			resetFrame() 
+			resetFrame()
 		end
 	else
 		if currentOtherId then requestFriend(currentOtherId) end
 	end
 end)
 
-btnRight.MouseButton1Click:Connect(function() 
-	if #carriedList == 0 then return end 
+btnRight.MouseButton1Click:Connect(function()
+	if #carriedList == 0 then return end
 	carriedIndex += 1
-	if carriedIndex > #carriedList then carriedIndex = 1 end 
-	refreshCarrierUI() 
+	if carriedIndex > #carriedList then carriedIndex = 1 end
+	refreshCarrierUI()
 end)
 
-btnLeft.MouseButton1Click:Connect(function() 
-	if #carriedList == 0 then return end 
+btnLeft.MouseButton1Click:Connect(function()
+	if #carriedList == 0 then return end
 	carriedIndex -= 1
-	if carriedIndex < 1 then carriedIndex = #carriedList end 
-	refreshCarrierUI() 
+	if carriedIndex < 1 then carriedIndex = #carriedList end
+	refreshCarrierUI()
 end)
 
-btnPut.MouseButton1Click:Connect(function() 
-	if #carriedList == 0 then return end 
+btnPut.MouseButton1Click:Connect(function()
+	if #carriedList == 0 then return end
 	local item = carriedList[carriedIndex]
-	if item and item.id then 
-		CarryRemote:FireServer("Stop", {targetId = item.id}) 
-	end 
+	if item and item.id then
+		CarryRemote:FireServer("Stop", {targetId = item.id})
+	end
 end)
 
 btnDropAll.MouseButton1Click:Connect(function()
-	-- Drop all carried players at once
+
 	CarryRemote:FireServer("Stop", {})
 end)
 
--- Remote Handlers (COMPLETE - WITH START HANDLER)
 CarryRemote.OnClientEvent:Connect(function(action, data)
 	if action == "Prompt" then
 		local customMsg = data.customMessage
 		if customMsg then
-			-- Use custom message from server
+
 			setModePrompt(data.fromId, customMsg)
 		else
-			-- Fallback to default message
+
 			setModePrompt(data.fromId, data.fromName)
 		end
 
-		-- ✅ CRITICAL FIX: ADD THIS "Start" HANDLER
 	elseif action == "Start" then
 		stopWaitTimer()
 		if data.youAreCarrier then
-			-- We are carrying someone
+
 			addCarried(data.targetId, data.targetName)
-			if not isCarried then 
+			if not isCarried then
 				frame2.Visible = true
-				frame.Visible = false 
+				frame.Visible = false
 			end
-			if #carriedList > 0 and not isCarried then 
-				if not carryTrack then playCarry() end 
+			if #carriedList > 0 and not isCarried then
+				if not carryTrack then playCarry() end
 			end
 		else
-			-- We are being carried
+
 			setModeStatusCarried(data.carrierName, data.carrierId)
 			playSit()
 			stopCarry()
@@ -982,12 +931,12 @@ CarryRemote.OnClientEvent:Connect(function(action, data)
 
 	elseif action == "CarrierList" then
 		setCarriedListFromSnapshot(data.list or {})
-		if not isCarried then 
+		if not isCarried then
 			frame2.Visible = (#carriedList > 0)
 			if #carriedList > 0 then if not carryTrack then playCarry() end else stopCarry() end
-		else 
+		else
 			frame2.Visible = false
-			stopCarry() 
+			stopCarry()
 		end
 
 	elseif action == "Declined" then flashAndClose("Declined")
@@ -996,19 +945,17 @@ CarryRemote.OnClientEvent:Connect(function(action, data)
 	elseif action == "Failed" then flashAndClose("Failed")
 	elseif action == "RequestExpired" then flashAndClose("Timed out")
 	elseif action == "PromptExpire" or action == "PromptClose" then
-		if overlayFromStatus then 
+		if overlayFromStatus then
 			overlayFromStatus=false
 			frame.Visible=false
-			frame2.Visible=(#carriedList>0 and not isCarried) 
-		else 
-			resetFrame() 
+			frame2.Visible=(#carriedList>0 and not isCarried)
+		else
+			resetFrame()
 		end
 	elseif action == "Limit" then flashAndClose("Limit")
 	end
 end)
 
-
--- Respawn Reset
 player.CharacterAdded:Connect(function()
 	if sitTrack then sitTrack:Stop(0.1); sitTrack = nil end
 	if carryTrack then carryTrack:Stop(0.1); carryTrack = nil end
@@ -1027,5 +974,3 @@ player.CharacterAdded:Connect(function()
 	btnCarry.AutoButtonColor = true
 	btnCarry.BackgroundColor3 = COLORS.Accent
 end)
-
-print("✅ [CARRY CLIENT] Loaded with draggable UI & dual request modes")

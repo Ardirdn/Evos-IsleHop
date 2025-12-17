@@ -1,35 +1,5 @@
---[[
-    FISHING ROD CONFIG
-    Place in ReplicatedStorage/Modules/FishingRod.config.lua
-    
-    SINGLE SOURCE OF TRUTH untuk semua data fishing rod.
-    Semua script lain (shop, fishing, client) harus ambil data dari sini.
-    
-    Setiap rod memiliki:
-    - FISHING STATS:
-      - ToolName, ToolObject: Nama tool
-      - MaxThrowDistance, ThrowHeight: Jarak dan tinggi lempar
-      - BobSpeed, BobHeight: Animasi bobbing floater
-      - LineStyle: Warna dan style tali pancing
-    
-    - SHOP DATA:
-      - DisplayName: Nama yang ditampilkan di UI
-      - Description: Deskripsi item
-      - Price: Harga dalam game currency (0 = gratis)
-      - Category: Kategori rod (Starter, Basic, Epic, Legendary)
-      - Rarity: Rarity rod (Common, Uncommon, Rare, Epic, Legendary)
-      - CatchBonus: Bonus catch rate dalam persen
-      - ImageId: Asset ID untuk thumbnail
-      - IsPremium: Apakah item premium (beli dengan Robux)
-      - ProductId: Developer Product ID jika premium
-    
-    NOTE: Rod dan Floater adalah INDEPENDENT - player bebas mix-and-match!
-    Equipment floater disimpan terpisah di DataHandler.EquippedFloater
-]]
-
 local FishingRodConfig = {}
 
--- Rarity colors (untuk reference)
 FishingRodConfig.RarityColors = {
 	Common = Color3.fromRGB(200, 200, 200),
 	Uncommon = Color3.fromRGB(100, 255, 100),
@@ -38,10 +8,8 @@ FishingRodConfig.RarityColors = {
 	Legendary = Color3.fromRGB(255, 170, 0)
 }
 
--- Default rod ID (gratis untuk semua pemain baru)
 FishingRodConfig.DefaultRod = "WoodRod"
 
--- Default Line Style (used if not specified per rod)
 FishingRodConfig.DefaultLineStyle = {
 	Color = Color3.fromRGB(0, 255, 255),
 	Width = 0.16,
@@ -51,9 +19,9 @@ FishingRodConfig.DefaultLineStyle = {
 }
 
 FishingRodConfig.Rods = {
-	-- ==================== STARTER RODS ====================
+
 	["WoodRod"] = {
-		-- Fishing Stats
+
 		ToolName = "WoodRod",
 		ToolObject = "WoodRod",
 		MaxThrowDistance = 35,
@@ -61,16 +29,16 @@ FishingRodConfig.Rods = {
 		BobSpeed = 2.5,
 		BobHeight = 0.4,
 		LineStyle = {
-			Color = Color3.fromRGB(139, 90, 43), -- Brown (wooden)
+			Color = Color3.fromRGB(139, 90, 43),
 			Width = 0.12,
 			Transparency = 0.2,
 			LightEmission = 0,
 			IsNeon = false,
 		},
-		-- Shop Data
+
 		DisplayName = "Wooden Rod",
 		Description = "Basic wooden fishing rod. Perfect for beginners!",
-		Price = 0, -- Free starter
+		Price = 0,
 		Category = "Starter",
 		Rarity = "Common",
 		CatchBonus = 0,
@@ -79,9 +47,8 @@ FishingRodConfig.Rods = {
 		ProductId = nil
 	},
 
-	-- ==================== BASIC RODS ====================
 	["BambooRod"] = {
-		-- Fishing Stats
+
 		ToolName = "BambooRod",
 		ToolObject = "BambooRod",
 		MaxThrowDistance = 40,
@@ -89,13 +56,13 @@ FishingRodConfig.Rods = {
 		BobSpeed = 2.2,
 		BobHeight = 0.4,
 		LineStyle = {
-			Color = Color3.fromRGB(107, 142, 35), -- Olive green (bamboo)
+			Color = Color3.fromRGB(107, 142, 35),
 			Width = 0.12,
 			Transparency = 0.2,
 			LightEmission = 0,
 			IsNeon = false,
 		},
-		-- Shop Data
+
 		DisplayName = "Bamboo Rod",
 		Description = "Lightweight bamboo rod with decent range and flexibility.",
 		Price = 500,
@@ -108,7 +75,7 @@ FishingRodConfig.Rods = {
 	},
 
 	["BananaRod"] = {
-		-- Fishing Stats
+
 		ToolName = "BananaRod",
 		ToolObject = "BananaRod",
 		MaxThrowDistance = 55,
@@ -116,13 +83,13 @@ FishingRodConfig.Rods = {
 		BobSpeed = 2,
 		BobHeight = 0.5,
 		LineStyle = {
-			Color = Color3.fromRGB(255, 225, 53), -- Bright yellow
+			Color = Color3.fromRGB(255, 225, 53),
 			Width = 0.14,
 			Transparency = 0.15,
 			LightEmission = 3,
 			IsNeon = true,
 		},
-		-- Shop Data
+
 		DisplayName = "Banana Rod",
 		Description = "A-peel-ing rod that's perfect for tropical fishing!",
 		Price = 1200,
@@ -135,7 +102,7 @@ FishingRodConfig.Rods = {
 	},
 
 	["BaconRod"] = {
-		-- Fishing Stats
+
 		ToolName = "BaconRod",
 		ToolObject = "BaconRod",
 		MaxThrowDistance = 45,
@@ -143,13 +110,13 @@ FishingRodConfig.Rods = {
 		BobSpeed = 2.5,
 		BobHeight = 0.4,
 		LineStyle = {
-			Color = Color3.fromRGB(200, 80, 60), -- Bacon red-brown
+			Color = Color3.fromRGB(200, 80, 60),
 			Width = 0.18,
 			Transparency = 0.1,
 			LightEmission = 2,
 			IsNeon = false,
 		},
-		-- Shop Data
+
 		DisplayName = "Bacon Rod",
 		Description = "Crispy and delicious... wait, for fishing?!",
 		Price = 1500,
@@ -161,9 +128,8 @@ FishingRodConfig.Rods = {
 		ProductId = nil
 	},
 
-	-- ==================== EPIC RODS ====================
 	["DevilRod"] = {
-		-- Fishing Stats
+
 		ToolName = "DevilRod",
 		ToolObject = "DevilRod",
 		MaxThrowDistance = 48,
@@ -171,13 +137,13 @@ FishingRodConfig.Rods = {
 		BobSpeed = 2,
 		BobHeight = 0.5,
 		LineStyle = {
-			Color = Color3.fromRGB(255, 50, 50), -- Devil red
+			Color = Color3.fromRGB(255, 50, 50),
 			Width = 0.16,
 			Transparency = 0.1,
 			LightEmission = 8,
 			IsNeon = true,
 		},
-		-- Shop Data
+
 		DisplayName = "Devil Rod",
 		Description = "Forged in hellfire, this rod attracts the most sinister catches.",
 		Price = 5000,
@@ -190,7 +156,7 @@ FishingRodConfig.Rods = {
 	},
 
 	["WolfRod"] = {
-		-- Fishing Stats
+
 		ToolName = "WolfRod",
 		ToolObject = "WolfRod",
 		MaxThrowDistance = 50,
@@ -198,13 +164,13 @@ FishingRodConfig.Rods = {
 		BobSpeed = 2,
 		BobHeight = 0.5,
 		LineStyle = {
-			Color = Color3.fromRGB(100, 100, 120), -- Wolf gray
+			Color = Color3.fromRGB(100, 100, 120),
 			Width = 0.14,
 			Transparency = 0.15,
 			LightEmission = 2,
 			IsNeon = false,
 		},
-		-- Shop Data
+
 		DisplayName = "Wolf Rod",
 		Description = "Hunt your prey with the instincts of a wolf.",
 		Price = 5500,
@@ -217,7 +183,7 @@ FishingRodConfig.Rods = {
 	},
 
 	["BoneRod"] = {
-		-- Fishing Stats
+
 		ToolName = "BoneRod",
 		ToolObject = "BoneRod",
 		MaxThrowDistance = 54,
@@ -225,13 +191,13 @@ FishingRodConfig.Rods = {
 		BobSpeed = 1.8,
 		BobHeight = 0.6,
 		LineStyle = {
-			Color = Color3.fromRGB(230, 230, 230), -- Bone white
+			Color = Color3.fromRGB(230, 230, 230),
 			Width = 0.16,
 			Transparency = 0.1,
 			LightEmission = 4,
 			IsNeon = true,
 		},
-		-- Shop Data
+
 		DisplayName = "Bone Rod",
 		Description = "Crafted from ancient bones, attracts skeletal sea creatures.",
 		Price = 6000,
@@ -244,7 +210,7 @@ FishingRodConfig.Rods = {
 	},
 
 	["InfernoRod"] = {
-		-- Fishing Stats
+
 		ToolName = "InfernoRod",
 		ToolObject = "InfernoRod",
 		MaxThrowDistance = 52,
@@ -252,13 +218,13 @@ FishingRodConfig.Rods = {
 		BobSpeed = 2.3,
 		BobHeight = 0.5,
 		LineStyle = {
-			Color = Color3.fromRGB(255, 100, 0), -- Inferno orange
+			Color = Color3.fromRGB(255, 100, 0),
 			Width = 0.18,
 			Transparency = 0.08,
 			LightEmission = 10,
 			IsNeon = true,
 		},
-		-- Shop Data
+
 		DisplayName = "Inferno Rod",
 		Description = "Burns with eternal flames, perfect for volcanic waters.",
 		Price = 6500,
@@ -271,7 +237,7 @@ FishingRodConfig.Rods = {
 	},
 
 	["IcedRod"] = {
-		-- Fishing Stats
+
 		ToolName = "IcedRod",
 		ToolObject = "IcedRod",
 		MaxThrowDistance = 50,
@@ -279,13 +245,13 @@ FishingRodConfig.Rods = {
 		BobSpeed = 2.1,
 		BobHeight = 0.5,
 		LineStyle = {
-			Color = Color3.fromRGB(150, 220, 255), -- Ice blue
+			Color = Color3.fromRGB(150, 220, 255),
 			Width = 0.15,
 			Transparency = 0.1,
 			LightEmission = 6,
 			IsNeon = true,
 		},
-		-- Shop Data
+
 		DisplayName = "Iced Rod",
 		Description = "Frozen in eternal ice, attracts arctic creatures.",
 		Price = 6000,
@@ -298,7 +264,7 @@ FishingRodConfig.Rods = {
 	},
 
 	["KnightRod"] = {
-		-- Fishing Stats
+
 		ToolName = "KnightRod",
 		ToolObject = "KnightRod",
 		MaxThrowDistance = 55,
@@ -306,13 +272,13 @@ FishingRodConfig.Rods = {
 		BobSpeed = 2.0,
 		BobHeight = 0.5,
 		LineStyle = {
-			Color = Color3.fromRGB(192, 192, 192), -- Silver armor
+			Color = Color3.fromRGB(192, 192, 192),
 			Width = 0.18,
 			Transparency = 0.1,
 			LightEmission = 3,
 			IsNeon = false,
 		},
-		-- Shop Data
+
 		DisplayName = "Knight Rod",
 		Description = "Medieval power for honorable anglers. For the realm!",
 		Price = 7000,
@@ -324,9 +290,8 @@ FishingRodConfig.Rods = {
 		ProductId = nil
 	},
 
-	-- ==================== LEGENDARY RODS ====================
 	["ReaperRod"] = {
-		-- Fishing Stats
+
 		ToolName = "ReaperRod",
 		ToolObject = "ReaperRod",
 		MaxThrowDistance = 65,
@@ -334,13 +299,13 @@ FishingRodConfig.Rods = {
 		BobSpeed = 1.8,
 		BobHeight = 0.6,
 		LineStyle = {
-			Color = Color3.fromRGB(50, 0, 80), -- Dark purple death
+			Color = Color3.fromRGB(50, 0, 80),
 			Width = 0.20,
 			Transparency = 0.05,
 			LightEmission = 10,
 			IsNeon = true,
 		},
-		-- Shop Data
+
 		DisplayName = "Reaper Rod",
 		Description = "The ultimate rod. Harvest souls from the deep abyss.",
 		Price = 15000,
@@ -353,14 +318,10 @@ FishingRodConfig.Rods = {
 	},
 }
 
--- ==================== HELPER FUNCTIONS ====================
-
--- Get rod config by ID
 function FishingRodConfig.GetRodById(rodId)
 	return FishingRodConfig.Rods[rodId]
 end
 
--- Get LineStyle for a rod
 function FishingRodConfig.GetLineStyle(rodName)
 	local rodConfig = FishingRodConfig.Rods[rodName]
 	if rodConfig and rodConfig.LineStyle then
@@ -369,11 +330,10 @@ function FishingRodConfig.GetLineStyle(rodName)
 	return FishingRodConfig.DefaultLineStyle
 end
 
--- Get all rods as array (for shop display, ordered by price)
 function FishingRodConfig.GetRodsArray()
 	local rodsArray = {}
 	for rodId, rodData in pairs(FishingRodConfig.Rods) do
-		-- Create a copy with RodId field for compatibility
+
 		local rodWithId = {}
 		for k, v in pairs(rodData) do
 			rodWithId[k] = v
@@ -381,16 +341,14 @@ function FishingRodConfig.GetRodsArray()
 		rodWithId.RodId = rodId
 		table.insert(rodsArray, rodWithId)
 	end
-	
-	-- Sort by price
+
 	table.sort(rodsArray, function(a, b)
 		return a.Price < b.Price
 	end)
-	
+
 	return rodsArray
 end
 
--- Get rods by category
 function FishingRodConfig.GetRodsByCategory(category)
 	local result = {}
 	for rodId, rodData in pairs(FishingRodConfig.Rods) do
@@ -406,24 +364,20 @@ function FishingRodConfig.GetRodsByCategory(category)
 	return result
 end
 
--- Get rod price
 function FishingRodConfig.GetPrice(rodId)
 	local rod = FishingRodConfig.Rods[rodId]
 	return rod and rod.Price or 0
 end
 
--- Get catch bonus
 function FishingRodConfig.GetCatchBonus(rodId)
 	local rod = FishingRodConfig.Rods[rodId]
 	return rod and rod.CatchBonus or 0
 end
 
--- Check if rod exists
 function FishingRodConfig.Exists(rodId)
 	return FishingRodConfig.Rods[rodId] ~= nil
 end
 
--- Get rarity color
 function FishingRodConfig.GetRarityColor(rodId)
 	local rod = FishingRodConfig.Rods[rodId]
 	if rod then

@@ -46,18 +46,6 @@ function DataStoreConfig:GetAllNames()
 end
 
 function DataStoreConfig:PrintInfo()
-    print("============================================")
-    print("📦 DATASTORE CONFIG")
-    print("============================================")
-    print("VERSION:", self.VERSION)
-    print("")
-    print("Current DataStores:")
-    print("  - PlayerData:", self.PlayerData)
-    print("  - Summit:", self.Leaderboards.Summit)
-    print("  - Speedrun:", self.Leaderboards.Speedrun)
-    print("  - Playtime:", self.Leaderboards.Playtime)
-    print("  - Donation:", self.Leaderboards.Donation)
-    print("============================================")
 end
 
 return DataStoreConfig

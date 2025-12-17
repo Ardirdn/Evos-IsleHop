@@ -1,14 +1,3 @@
---[[
-    FISH COLLECTION CLIENT (ADAPTIVE VERSION)
-    Place in StarterPlayerScripts
-    
-    UI for Fish Inventory and Fish Index (Pokedex-style)
-    - Inventory: Fish player owns, can hold
-    - Index: All fish types, discovered/undiscovered
-    
-    ✅ FULLY ADAPTIVE: Uses Scale + AspectRatioConstraint
-]]
-
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
@@ -19,7 +8,6 @@ local playerGui = player:WaitForChild("PlayerGui")
 
 local FishConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("FishConfig"))
 
--- Wait for remotes
 local remoteFolder = ReplicatedStorage:WaitForChild("FishermanShopRemotes", 10)
 if not remoteFolder then
 	warn("[FISH COLLECTION] FishermanShopRemotes not found!")
@@ -30,19 +18,16 @@ local getFishInventoryFunc = remoteFolder:WaitForChild("GetFishInventory", 5)
 local getDiscoveredFishFunc = remoteFolder:WaitForChild("GetDiscoveredFish", 5)
 local fishSoldEvent = remoteFolder:FindFirstChild("FishSold")
 
--- State
 local isOpen = false
 local currentTab = "Inventory"
 local currentSort = "Rarity"
 local fishInventoryData = nil
 local fishIndexData = nil
 
--- Fish holding state
 local isHoldingFish = false
 local heldFishTool = nil
 local previouslyHeldRod = nil
 
--- Colors
 local COLORS = {
 	Background = Color3.fromRGB(15, 25, 40),
 	CardBg = Color3.fromRGB(25, 40, 60),
@@ -60,10 +45,6 @@ local COLORS = {
 	Legendary = Color3.fromRGB(255, 170, 0),
 	Mythic = Color3.fromRGB(255, 50, 100)
 }
-
-print("✅ [FISH COLLECTION] Starting initialization (ADAPTIVE VERSION)...")
-
--- ==================== HELPER FUNCTIONS ====================
 
 local function createCorner(radius)
 	local corner = Instance.new("UICorner")
@@ -85,18 +66,13 @@ local function formatMoney(amount)
 	end
 end
 
--- ==================== MOBILE DETECTION ====================
 local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
-
--- ==================== CREATE UI ====================
 
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "FishCollectionGUI"
 screenGui.ResetOnSpawn = false
 screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 screenGui.Parent = playerGui
-
--- ==================== USE HUD BUTTON TEMPLATE (LEFT SIDE) ====================
 
 local hudGui = playerGui:WaitForChild("HUD", 10)
 local leftFrame = hudGui and hudGui:FindFirstChild("Left")
@@ -105,36 +81,32 @@ local buttonTemplate = leftFrame and leftFrame:FindFirstChild("ButtonTemplate")
 local floatingButton = nil
 
 if buttonTemplate then
-	-- ✅ Hide the original template
+
 	buttonTemplate.Visible = false
-	
-	-- Clone the template
+
 	local buttonContainer = buttonTemplate:Clone()
 	buttonContainer.Name = "FishButton"
 	buttonContainer.Visible = true
-	buttonContainer.LayoutOrder = 2 -- Second button (after Equip)
-	buttonContainer.BackgroundTransparency = 1 -- ✅ Transparent container
+	buttonContainer.LayoutOrder = 2
+	buttonContainer.BackgroundTransparency = 1
 	buttonContainer.Parent = leftFrame
-	
-	-- Get references
+
 	floatingButton = buttonContainer:FindFirstChild("ImageButton")
 	local buttonText = buttonContainer:FindFirstChild("TextLabel")
-	
-	-- Set button properties
+
 	if floatingButton then
-		floatingButton.Image = "rbxassetid://88132286506428" -- Fish icon
-		floatingButton.BackgroundTransparency = 1 -- ✅ Transparent button
+		floatingButton.Image = "rbxassetid://88132286506428"
+		floatingButton.BackgroundTransparency = 1
 	end
-	
+
 	if buttonText then
 		buttonText.Text = "Fish"
 	end
-	
-	print("✅ [FISH COLLECTION] Using HUD template button")
+
 else
-	-- Fallback: Create button manually if template not found
+
 	warn("[FISH COLLECTION] HUD template not found, creating button manually")
-	
+
 	floatingButton = Instance.new("ImageButton")
 	floatingButton.Name = "FishButton"
 	floatingButton.Size = UDim2.new(0.1, 0, 0.1, 0)
@@ -144,11 +116,11 @@ else
 	floatingButton.Image = "rbxassetid://88132286506428"
 	floatingButton.ScaleType = Enum.ScaleType.Fit
 	floatingButton.Parent = screenGui
-	
+
 	local buttonAspect = Instance.new("UIAspectRatioConstraint")
 	buttonAspect.AspectRatio = 1
 	buttonAspect.Parent = floatingButton
-	
+
 	local buttonText = Instance.new("TextLabel")
 	buttonText.Size = UDim2.new(1, 0, 0.3, 0)
 	buttonText.Position = UDim2.new(0, 0, 1, 2)
@@ -160,9 +132,6 @@ else
 	buttonText.Parent = floatingButton
 end
 
-
--- ==================== MAIN PANEL (FULLY ADAPTIVE) ====================
-
 local mainPanel = Instance.new("Frame")
 mainPanel.Name = "MainPanel"
 mainPanel.Size = UDim2.new(0.5, 0, 0.8, 0)
@@ -173,7 +142,6 @@ mainPanel.BorderSizePixel = 0
 mainPanel.Visible = false
 mainPanel.Parent = screenGui
 
--- AspectRatio based on Width
 local panelAspect = Instance.new("UIAspectRatioConstraint")
 panelAspect.AspectRatio = 0.85
 panelAspect.DominantAxis = Enum.DominantAxis.Width
@@ -186,15 +154,12 @@ mainStroke.Color = COLORS.Accent
 mainStroke.Thickness = 2
 mainStroke.Parent = mainPanel
 
--- Main Panel Padding
 local mainPadding = Instance.new("UIPadding")
 mainPadding.PaddingTop = UDim.new(0.02, 0)
 mainPadding.PaddingBottom = UDim.new(0.02, 0)
 mainPadding.PaddingLeft = UDim.new(0.03, 0)
 mainPadding.PaddingRight = UDim.new(0.03, 0)
 mainPadding.Parent = mainPanel
-
--- ==================== HEADER (ADAPTIVE) ====================
 
 local headerFrame = Instance.new("Frame")
 headerFrame.Name = "Header"
@@ -242,8 +207,6 @@ closeAspect.Parent = closeButton
 
 createCorner(8).Parent = closeButton
 
--- ==================== TAB BUTTONS (ADAPTIVE) ====================
-
 local tabFrame = Instance.new("Frame")
 tabFrame.Name = "TabFrame"
 tabFrame.Size = UDim2.new(1, 0, 0.06, 0)
@@ -290,8 +253,6 @@ indexTabTextConstraint.Parent = indexTabBtn
 
 createCorner(8).Parent = indexTabBtn
 
--- ==================== SORT BUTTON (ADAPTIVE) ====================
-
 local sortButton = Instance.new("TextButton")
 sortButton.Name = "SortButton"
 sortButton.Size = UDim2.new(0.18, 0, 0.045, 0)
@@ -310,7 +271,6 @@ sortTextConstraint.Parent = sortButton
 
 createCorner(6).Parent = sortButton
 
--- Sort Popup (adaptive)
 local sortPopup = Instance.new("Frame")
 sortPopup.Name = "SortPopup"
 sortPopup.Size = UDim2.new(0.2, 0, 0.15, 0)
@@ -353,13 +313,13 @@ for i, option in ipairs(sortOptions) do
 	optBtn.TextScaled = true
 	optBtn.ZIndex = 11
 	optBtn.Parent = sortPopup
-	
+
 	local optTextConstraint = Instance.new("UITextSizeConstraint")
 	optTextConstraint.MaxTextSize = 13
 	optTextConstraint.Parent = optBtn
-	
+
 	createCorner(5).Parent = optBtn
-	
+
 	optBtn.MouseButton1Click:Connect(function()
 		currentSort = option
 		sortPopup.Visible = false
@@ -378,8 +338,6 @@ sortButton.MouseButton1Click:Connect(function()
 	sortPopup.Visible = not sortPopup.Visible
 end)
 
--- ==================== CONTENT FRAME (ADAPTIVE GRID) ====================
-
 local contentFrame = Instance.new("ScrollingFrame")
 contentFrame.Name = "ContentFrame"
 contentFrame.Size = UDim2.new(1, 0, 0.62, 0)
@@ -391,7 +349,6 @@ contentFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
 contentFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
 contentFrame.Parent = mainPanel
 
--- Content Padding
 local contentPadding = Instance.new("UIPadding")
 contentPadding.PaddingTop = UDim.new(0.01, 0)
 contentPadding.PaddingBottom = UDim.new(0.02, 0)
@@ -399,7 +356,6 @@ contentPadding.PaddingLeft = UDim.new(0.01, 0)
 contentPadding.PaddingRight = UDim.new(0.01, 0)
 contentPadding.Parent = contentFrame
 
--- Adaptive Grid
 local columns = isMobile and 3 or 4
 local cellWidth = 1 / columns
 
@@ -408,8 +364,6 @@ contentGrid.CellSize = UDim2.new(cellWidth - 0.02, 0, 0, 130)
 contentGrid.CellPadding = UDim2.new(0.015, 0, 0.015, 0)
 contentGrid.SortOrder = Enum.SortOrder.LayoutOrder
 contentGrid.Parent = contentFrame
-
--- ==================== STATS BAR (ADAPTIVE) ====================
 
 local statsBar = Instance.new("Frame")
 statsBar.Name = "StatsBar"
@@ -458,16 +412,14 @@ local discTextConstraint = Instance.new("UITextSizeConstraint")
 discTextConstraint.MaxTextSize = 16
 discTextConstraint.Parent = discoveredLabel
 
--- ==================== HOLD FISH FUNCTION ====================
-
 local function holdFish(fishId, fishName)
 	local character = player.Character
 	if not character then return end
-	
+
 	local humanoid = character:FindFirstChild("Humanoid")
 	local backpack = player:FindFirstChild("Backpack")
 	if not humanoid or not backpack then return end
-	
+
 	if isHoldingFish and heldFishTool and heldFishTool.Name == fishName then
 		humanoid:UnequipTools()
 		if previouslyHeldRod then
@@ -479,17 +431,16 @@ local function holdFish(fishId, fishName)
 		end
 		isHoldingFish = false
 		heldFishTool = nil
-		print("🐟 [FISH COLLECTION] Unequipped fish:", fishName)
 		return
 	end
-	
+
 	local currentTool = character:FindFirstChildOfClass("Tool")
 	if currentTool and currentTool.Name:find("FishingRod") then
 		previouslyHeldRod = currentTool.Name
 	elseif currentTool == nil then
 		previouslyHeldRod = nil
 	end
-	
+
 	local fishTool = nil
 	for _, tool in ipairs(backpack:GetChildren()) do
 		if tool:IsA("Tool") and tool.Name == fishName then
@@ -497,7 +448,7 @@ local function holdFish(fishId, fishName)
 			break
 		end
 	end
-	
+
 	if not fishTool then
 		for _, tool in ipairs(character:GetChildren()) do
 			if tool:IsA("Tool") and tool.Name == fishName then
@@ -506,42 +457,36 @@ local function holdFish(fishId, fishName)
 			end
 		end
 	end
-	
+
 	if fishTool then
 		humanoid:EquipTool(fishTool)
 		isHoldingFish = true
 		heldFishTool = fishTool
-		print("🐟 [FISH COLLECTION] Equipped fish:", fishName)
 	else
-		print("⚠️ [FISH COLLECTION] Fish tool not found:", fishName)
 	end
 end
-
--- ==================== FISH CARD CREATION (ADAPTIVE) ====================
 
 local function createFishCard(fishData, isInventory, isDiscovered)
 	local card = Instance.new("Frame")
 	card.Name = "FishCard_" .. fishData.FishId
 	card.BackgroundColor3 = isDiscovered == false and Color3.fromRGB(10, 15, 20) or COLORS.CardBg
 	card.BorderSizePixel = 0
-	
+
 	createCorner(10).Parent = card
-	
+
 	local cardStroke = Instance.new("UIStroke")
 	cardStroke.Color = isDiscovered == false and Color3.fromRGB(40, 40, 50) or getRarityColor(fishData.Rarity)
 	cardStroke.Thickness = isDiscovered == false and 1 or 2
 	cardStroke.Parent = card
-	
-	-- Fish Image Container (adaptive)
+
 	local imageContainer = Instance.new("Frame")
 	imageContainer.Size = UDim2.new(0.9, 0, 0.45, 0)
 	imageContainer.Position = UDim2.new(0.05, 0, 0.04, 0)
 	imageContainer.BackgroundColor3 = Color3.fromRGB(15, 25, 35)
 	imageContainer.Parent = card
-	
+
 	createCorner(6).Parent = imageContainer
-	
-	-- Fish Image
+
 	local fishImage = Instance.new("ImageLabel")
 	fishImage.Size = UDim2.new(0.8, 0, 0.8, 0)
 	fishImage.Position = UDim2.new(0.5, 0, 0.5, 0)
@@ -551,8 +496,7 @@ local function createFishCard(fishData, isInventory, isDiscovered)
 	fishImage.ImageColor3 = isDiscovered == false and Color3.fromRGB(0, 0, 0) or Color3.fromRGB(255, 255, 255)
 	fishImage.ScaleType = Enum.ScaleType.Fit
 	fishImage.Parent = imageContainer
-	
-	-- Count badge (for inventory)
+
 	if isInventory and fishData.Count and fishData.Count > 0 then
 		local countBadge = Instance.new("TextLabel")
 		countBadge.Size = UDim2.new(0.35, 0, 0.28, 0)
@@ -565,14 +509,13 @@ local function createFishCard(fishData, isInventory, isDiscovered)
 		countBadge.TextScaled = true
 		countBadge.Parent = imageContainer
 		createCorner(4).Parent = countBadge
-		
+
 		local countTextConstraint = Instance.new("UITextSizeConstraint")
 		countTextConstraint.MinTextSize = 8
 		countTextConstraint.MaxTextSize = 12
 		countTextConstraint.Parent = countBadge
 	end
-	
-	-- Fish Name (adaptive)
+
 	local nameLabel = Instance.new("TextLabel")
 	nameLabel.Size = UDim2.new(0.94, 0, 0.12, 0)
 	nameLabel.Position = UDim2.new(0.03, 0, 0.52, 0)
@@ -584,13 +527,12 @@ local function createFishCard(fishData, isInventory, isDiscovered)
 	nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	nameLabel.TextXAlignment = Enum.TextXAlignment.Center
 	nameLabel.Parent = card
-	
+
 	local nameTextConstraint = Instance.new("UITextSizeConstraint")
 	nameTextConstraint.MinTextSize = 8
 	nameTextConstraint.MaxTextSize = 12
 	nameTextConstraint.Parent = nameLabel
-	
-	-- Rarity (adaptive)
+
 	local rarityLabel = Instance.new("TextLabel")
 	rarityLabel.Size = UDim2.new(0.94, 0, 0.1, 0)
 	rarityLabel.Position = UDim2.new(0.03, 0, 0.65, 0)
@@ -601,13 +543,12 @@ local function createFishCard(fishData, isInventory, isDiscovered)
 	rarityLabel.TextScaled = true
 	rarityLabel.TextXAlignment = Enum.TextXAlignment.Center
 	rarityLabel.Parent = card
-	
+
 	local rarityTextConstraint = Instance.new("UITextSizeConstraint")
 	rarityTextConstraint.MinTextSize = 7
 	rarityTextConstraint.MaxTextSize = 10
 	rarityTextConstraint.Parent = rarityLabel
-	
-	-- Price (adaptive)
+
 	if isDiscovered ~= false then
 		local priceLabel = Instance.new("TextLabel")
 		priceLabel.Size = UDim2.new(0.94, 0, 0.14, 0)
@@ -619,7 +560,7 @@ local function createFishCard(fishData, isInventory, isDiscovered)
 		priceLabel.TextScaled = true
 		priceLabel.TextXAlignment = Enum.TextXAlignment.Center
 		priceLabel.Parent = card
-		
+
 		local priceTextConstraint = Instance.new("UITextSizeConstraint")
 		priceTextConstraint.MinTextSize = 9
 		priceTextConstraint.MaxTextSize = 13
@@ -635,14 +576,13 @@ local function createFishCard(fishData, isInventory, isDiscovered)
 		unknownLabel.TextScaled = true
 		unknownLabel.TextXAlignment = Enum.TextXAlignment.Center
 		unknownLabel.Parent = card
-		
+
 		local unknownTextConstraint = Instance.new("UITextSizeConstraint")
 		unknownTextConstraint.MinTextSize = 9
 		unknownTextConstraint.MaxTextSize = 13
 		unknownTextConstraint.Parent = unknownLabel
 	end
-	
-	-- Click to hold fish (for inventory)
+
 	if isInventory and fishData.Count and fishData.Count > 0 then
 		local clickBtn = Instance.new("TextButton")
 		clickBtn.Size = UDim2.new(1, 0, 1, 0)
@@ -650,25 +590,23 @@ local function createFishCard(fishData, isInventory, isDiscovered)
 		clickBtn.Text = ""
 		clickBtn.ZIndex = 10
 		clickBtn.Parent = card
-		
+
 		clickBtn.MouseButton1Click:Connect(function()
 			holdFish(fishData.FishId, fishData.Name)
 		end)
-		
+
 		clickBtn.MouseEnter:Connect(function()
 			TweenService:Create(card, TweenInfo.new(0.1), {BackgroundColor3 = COLORS.Accent}):Play()
 		end)
-		
+
 		clickBtn.MouseLeave:Connect(function()
 			TweenService:Create(card, TweenInfo.new(0.1), {BackgroundColor3 = COLORS.CardBg}):Play()
 		end)
 	end
-	
+
 	card.Parent = contentFrame
 	return card
 end
-
--- ==================== DISPLAY FUNCTIONS ====================
 
 local function clearContent()
 	for _, child in ipairs(contentFrame:GetChildren()) do
@@ -681,12 +619,12 @@ end
 function updateInventoryDisplay()
 	clearContent()
 	sortButton.Visible = true
-	
+
 	if not fishInventoryData or not fishInventoryData.FishList then return end
-	
+
 	local fishList = fishInventoryData.FishList
 	local rarityOrder = {Common = 1, Uncommon = 2, Rare = 3, Epic = 4, Legendary = 5, Mythic = 6}
-	
+
 	if currentSort == "Rarity" then
 		table.sort(fishList, function(a, b)
 			local orderA = rarityOrder[a.Rarity] or 0
@@ -705,11 +643,11 @@ function updateInventoryDisplay()
 			return a.Name < b.Name
 		end)
 	end
-	
+
 	for _, fishData in ipairs(fishList) do
 		createFishCard(fishData, true, true)
 	end
-	
+
 	totalValueLabel.Text = "💰 Total Value: " .. formatMoney(fishInventoryData.TotalValue or 0)
 	totalValueLabel.Visible = true
 	discoveredLabel.Visible = false
@@ -719,33 +657,31 @@ local function updateIndexDisplay()
 	clearContent()
 	sortButton.Visible = false
 	sortPopup.Visible = false
-	
+
 	if not fishIndexData or not fishIndexData.AllFish then return end
-	
+
 	local allFish = fishIndexData.AllFish
 	local discoveredCount = 0
-	
+
 	for _, fishData in ipairs(allFish) do
 		createFishCard(fishData, false, fishData.IsDiscovered)
 		if fishData.IsDiscovered then
 			discoveredCount = discoveredCount + 1
 		end
 	end
-	
+
 	totalValueLabel.Visible = false
 	discoveredLabel.Visible = true
 	discoveredLabel.Text = string.format("📖 Discovered: %d/%d", discoveredCount, #allFish)
 end
 
--- ==================== DATA FETCHING ====================
-
 local function fetchInventory()
 	if not getFishInventoryFunc then return end
-	
+
 	local success, data = pcall(function()
 		return getFishInventoryFunc:InvokeServer()
 	end)
-	
+
 	if success and data then
 		fishInventoryData = data
 		if currentTab == "Inventory" then
@@ -756,11 +692,11 @@ end
 
 local function fetchIndex()
 	if not getDiscoveredFishFunc then return end
-	
+
 	local success, data = pcall(function()
 		return getDiscoveredFishFunc:InvokeServer()
 	end)
-	
+
 	if success and data then
 		fishIndexData = data
 		if currentTab == "Index" then
@@ -769,12 +705,10 @@ local function fetchIndex()
 	end
 end
 
--- ==================== TAB SWITCHING ====================
-
 local function switchTab(tab)
 	currentTab = tab
 	sortPopup.Visible = false
-	
+
 	if tab == "Inventory" then
 		inventoryTabBtn.BackgroundColor3 = COLORS.Accent
 		inventoryTabBtn.TextColor3 = COLORS.Text
@@ -798,12 +732,10 @@ indexTabBtn.MouseButton1Click:Connect(function()
 	switchTab("Index")
 end)
 
--- ==================== OPEN/CLOSE ====================
-
 local function togglePanel()
 	isOpen = not isOpen
 	mainPanel.Visible = isOpen
-	
+
 	if isOpen then
 		switchTab(currentTab)
 	end
@@ -816,23 +748,16 @@ closeButton.MouseButton1Click:Connect(function()
 	sortPopup.Visible = false
 end)
 
--- ==================== AUTO-REFRESH ====================
-
 if fishSoldEvent then
 	fishSoldEvent.OnClientEvent:Connect(function(data)
-		print("🔄 [FISH COLLECTION] Fish sold, refreshing...")
 		fetchInventory()
 	end)
 end
 
--- ==================== KEYBIND ====================
-
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed then return end
-	
+
 	if input.KeyCode == Enum.KeyCode.F then
 		togglePanel()
 	end
 end)
-
-print("✅ [FISH COLLECTION] Loaded (ADAPTIVE VERSION) - Press F or click button to open")

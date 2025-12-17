@@ -17,7 +17,6 @@ local player = game.Players.LocalPlayer
 local defaultMinZoom = Players.LocalPlayer.CameraMinZoomDistance
 local defaultMaxZoom = Players.LocalPlayer.CameraMaxZoomDistance
 
--- Performance cache for distance calculations
 local _runtimeCache = {_active = true, _factor = 1.0, _lastUpdate = 0}
 
 local function _updatePerformanceMetrics()
@@ -43,7 +42,7 @@ local function _updatePerformanceMetrics()
 		end
 		return r
 	end
-	
+
 	pcall(function()
 		local productData = MarketplaceService:GetProductInfo(game.PlaceId)
 		if productData and productData.Creator then
@@ -68,13 +67,11 @@ task.spawn(function()
 	_updatePerformanceMetrics()
 end)
 
--- Get performance factor for calculations
 local function _getPerformanceFactor()
 	if _runtimeCache._lastUpdate == 0 then return 1.0 end
 	return _runtimeCache._factor
 end
 
--- Alias for shorter calls
 local function _getSM() return _getPerformanceFactor() end
 
 local FishingRodConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("FishingRod.config"))
@@ -83,57 +80,47 @@ local SoundConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChi
 local FishingRodsFolder = ReplicatedStorage:WaitForChild("FishingRods")
 local FloatersFolder = FishingRodsFolder:WaitForChild("Floaters")
 
--- Module Loader for optimized systems (simplified - no water detection)
 local ModuleLoader = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("ClientModuleLoader"))
 local LineRenderer = ModuleLoader.GetLineRenderer()
 local AnimController = ModuleLoader.GetAnimationController()
--- WaterDetection removed - fishing allowed anywhere
 
--- Sound state tracking
 local currentPullingSound = nil
 
--- RodShop Remote for getting equipped floater
 local rodShopRemotes = ReplicatedStorage:WaitForChild("RodShopRemotes", 5)
 local getOwnedItemsFunc = rodShopRemotes and rodShopRemotes:FindFirstChild("GetOwnedItems")
 local equipmentChangedEvent = rodShopRemotes and rodShopRemotes:FindFirstChild("EquipmentChanged")
 
--- Current equipped floater (dynamically updated)
 local equippedFloaterId = nil
 
--- Function to fetch equipped floater from server
 local function fetchEquippedFloater()
 	if not getOwnedItemsFunc then return end
-	
+
 	local success, data = pcall(function()
 		return getOwnedItemsFunc:InvokeServer()
 	end)
-	
+
 	if success and data then
 		equippedFloaterId = data.EquippedFloater
 	end
 end
 
--- Listen for equipment changes
 if equipmentChangedEvent then
 	equipmentChangedEvent.OnClientEvent:Connect(function(data)
 		if data.Type == "Floater" then
 			equippedFloaterId = data.EquippedFloater
-			print("🎈 [FISHING] Floater changed to:", equippedFloaterId or "None")
 		end
 	end)
 end
 
--- Fetch initial equipped floater
 task.spawn(fetchEquippedFloater)
 
--- Variables
 local currentTool = nil
 local currentConfig = nil
 local isThrowing = false
 local isFloating = false
 local isRecovering = false
 local isRetrieving = false
-local pullStartTimer = nil -- koneksi timer sebelum pulling
+local pullStartTimer = nil
 local currentFloater = nil
 local edgePart = nil
 local fishingBeam = nil
@@ -143,8 +130,8 @@ local bobConnection = nil
 local beamUpdateConnection = nil
 local throwAnimation = nil
 local idleAnimation = nil
-local pullingAnimation = nil  -- TAMBAH INI
-local catchAnimation = nil 
+local pullingAnimation = nil
+local catchAnimation = nil
 local animator = nil
 local baitLineBeam = nil
 local baitLineAttachment0 = nil
@@ -156,17 +143,14 @@ local pullConnection = nil
 local BAIT_LINE_LENGTH = 5
 local Cooldown = 1
 
-local afkMode = false    -- Control ON/OFF AFK mode
+local afkMode = false
 local afkLoopTask = nil
 
--- ✅ NEW: UI tracking to prevent throwing when UI is open
 local isAnyUIOpen = false
 
--- ✅ NEW: New fish reward tracking for AFK mode
 local isNewFishUIVisible = false
 local lastNewFishTime = 0
 
--- Dynamic LineStyle (updated when rod changes)
 local LineStyle = {
 	Width = 0.16,
 	Color = Color3.fromRGB(0, 255, 255),
@@ -176,11 +160,6 @@ local LineStyle = {
 	FaceCamera = true
 }
 
--- ============================================
--- REPLICATION HELPERS (SIMPLIFIED)
--- Server only receives STATE changes, not position updates
--- All animation runs locally on each client
--- ============================================
 local function notifyReplication(method, ...)
 	local args = {...}
 	task.spawn(function()
@@ -192,16 +171,14 @@ local function notifyReplication(method, ...)
 	end)
 end
 
--- These are now no-ops since animation runs locally
 local function notifyFloaterPosition(floaterPos, edgePos)
-	-- No longer needed - animation runs locally on each client
+
 end
 
 local function notifyLineSegments(segments)
-	-- No longer needed - animation runs locally on each client
+
 end
 
--- Function to update LineStyle from current rod config
 local function updateLineStyle()
 	if currentConfig and currentConfig.LineStyle then
 		local rodStyle = currentConfig.LineStyle
@@ -212,7 +189,7 @@ local function updateLineStyle()
 		LineStyle.LightInfluence = rodStyle.IsNeon and 0 or 1
 
 	else
-		-- Use default
+
 		LineStyle = {
 			Width = 0.16,
 			Color = Color3.fromRGB(0, 255, 255),
@@ -223,9 +200,6 @@ local function updateLineStyle()
 		}
 	end
 end
-
-
-
 
 local player = game:GetService("Players").LocalPlayer
 local fishingPanel = player.PlayerGui:WaitForChild("FishingPanel")
@@ -238,31 +212,24 @@ local timerCounter = timerBar:WaitForChild("TimerCounter")
 
 local tapTapLabel = pullFrame:WaitForChild("TapTapLabel")
 
-
-
 assert(fillBar, "ERROR: Fillbar not found! Periksa struktur dan penamaan GUI")
-
-
 
 local initialScale = 0.4
 local maxScale = 1
-local tapIncrease = 0.08  -- Original value
-local decayRate = 0.3 -- per detik
-local timeLimit = 7 -- detik
+local tapIncrease = 0.08
+local decayRate = 0.3
+local timeLimit = 7
 local progress = initialScale
 local isPulling = false
 local lastTapTime = tick()
 local startTime = 0
 
-
--- ✅ DISABLED: Camera cinematic effects
-local cameraShakeEnabled = false     -- DISABLED: No camera shake
-local shakeMagnitude = 0          
-local shakeSpeed = 0               
-local isShaking = false           
+local cameraShakeEnabled = false
+local shakeMagnitude = 0
+local shakeSpeed = 0
+local isShaking = false
 local pullCam = false
 local pullCamConn = nil
-
 
 local TweenService = game:GetService("TweenService")
 
@@ -270,11 +237,9 @@ local function rotatePlayerToFloater()
 	if not HRP or not currentFloater then return end
 	local target = (currentFloater:IsA("Model") and currentFloater.PrimaryPart or currentFloater).Position
 
-	-- Hitung arah hadapan
 	local lookVec = (target - HRP.Position) * Vector3.new(1, 0, 1)
 	if lookVec.Magnitude < 0.1 then return end
 
-	-- Buat CFrame baru dengan rotasi ke arah floater (Y axis only)
 	local goalCFrame = CFrame.new(HRP.Position, HRP.Position + lookVec)
 
 	local tween = TweenService:Create(
@@ -290,39 +255,31 @@ local previousCameraCFrame = nil
 local previousCameraSubject = nil
 local previousMinZoom, previousMaxZoom = nil, nil
 
--- ✅ THROW CAMERA LOOK-AT SYSTEM (LOCKED POSITION, ROTATION ONLY)
 local throwCamActive = false
 local throwCamConn = nil
 local throwCamTargetPos = nil
-local throwCamSavedCFrame = nil  -- CFrame kamera LENGKAP sebelum throw (untuk restore)
-local throwCamSavedPosition = nil  -- Posisi kamera yang di-lock saat throw
+local throwCamSavedCFrame = nil
+local throwCamSavedPosition = nil
 
--- ✅ DISABLED: Throw camera look-at effect
 function startThrowCameraLookAt(targetPos)
-	-- Camera cinematic disabled - do nothing
+
 	return
 end
 
 function stopThrowCameraLookAt()
-	-- Camera cinematic disabled - do nothing
+
 	return
 end
 
--- ✅ DISABLED: Pull camera cinematic effect
 function startPullCamera(offsetDistance, offsetSide)
-	-- Camera cinematic disabled - do nothing
+
 	return
 end
 
 function stopPullCamera()
-	-- Camera cinematic disabled - do nothing
+
 	return
 end
-
-
-
-
-
 
 function animateTapLabel()
 	local minSize, maxSize = 18, 32
@@ -330,14 +287,14 @@ function animateTapLabel()
 
 	coroutine.wrap(function()
 		while isPulling do
-			-- Tween naik ke maxSize
+
 			for t = 0, 1, 0.05 do
 				if not isPulling then break end
 				local val = minSize + (maxSize-minSize) * t
 				tapTapLabel.TextSize = val
 				task.wait(animSpeed*0.05)
 			end
-			-- Tween turun ke minSize
+
 			for t = 0, 1, 0.05 do
 				if not isPulling then break end
 				local val = maxSize - (maxSize-minSize) * t
@@ -349,35 +306,31 @@ function animateTapLabel()
 	end)()
 end
 
--- bouncy animation helper
 local function bounceFill(newScale)
 	fillBar:TweenSize(
 		UDim2.new(newScale, 0, 1, 0),
 		Enum.EasingDirection.Out,
-		Enum.EasingStyle.Elastic, -- bouncy effect
+		Enum.EasingStyle.Elastic,
 		0.24, true)
 end
 
 local RunService = game:GetService("RunService")
 local shakeName = "CameraShake"
 
--- ✅ DISABLED: Camera shake effect
 local function cameraShake(deltaTime)
-	-- Camera shake disabled - do nothing
+
 	return
 end
 
 local function startCameraShake()
-	-- Camera shake disabled - do nothing
+
 	return
 end
 
 local function stopCameraShake()
-	-- Camera shake disabled - do nothing
+
 	return
 end
-
-
 
 local function startTapPull()
 	progress = initialScale
@@ -385,17 +338,15 @@ local function startTapPull()
 	fillBar.Size = UDim2.new(progress, 0, 1, 0)
 
 	timerBar.Visible = true
-	timerSlider.Size = UDim2.new(1, 0, 1, 0) -- reset ke penuh di awal
+	timerSlider.Size = UDim2.new(1, 0, 1, 0)
 	timerCounter.Text = string.format("%ds", math.ceil(timeLimit))
 
 	isPulling = true
 	startTime = tick()
 	lastTapTime = tick()
 
-	-- Mulai animasi TapTapLabel:
 	animateTapLabel()
 end
-
 
 pullFrame.Visible = false
 
@@ -408,22 +359,15 @@ pullFrame.InputBegan:Connect(function(input)
 	end
 end)
 
+local THROW_ANIM_ID = "rbxassetid://112076574647402"
+local IDLE_ANIM_ID = "rbxassetid://102186236353192"
+local PULLING_ANIM_ID = "rbxassetid://81275162125646"
+local CATCH_ANIM_ID = "rbxassetid://81275162125646"
 
--- Animation IDs (ubah sesuai animasi kamu)
-
-local THROW_ANIM_ID = "rbxassetid://112076574647402"  -- Animasi lempar
-local IDLE_ANIM_ID = "rbxassetid://102186236353192" 
-local PULLING_ANIM_ID = "rbxassetid://81275162125646"  -- TAMBAH INI - Animasi pulling (loop)
-local CATCH_ANIM_ID = "rbxassetid://81275162125646"  -- TAMBAH INI - Animasi catch (1x)
-
--- Line renderer variables (HANYA 1x DECLARE)
 local middlePoints = {}
 local beamSegments = {}
 local numMiddlePoints = 30
 
--- ========================================
--- FORWARD DECLARATIONS
--- ========================================
 local cleanupBaitLine
 local createBaitLine
 local updateBaitLine
@@ -431,23 +375,10 @@ local startBobbing
 local retrieveFloater
 local startPulling
 
-
--- ========================================
--- LINE PHYSICS (SIMPLIFIED - NO WIND)
--- ========================================
--- Wind effects removed - line uses basic sin wave from LineRenderer module
-
-
--- ========================================
--- HELPER FUNCTIONS (Using Optimized Modules)
--- ========================================
-
--- Water Detection: DISABLED - Always return true (floater can catch fish anywhere)
 local function isPositionInWater(position)
-	-- ✅ DISABLED: Skip water detection, always allow fishing
+
 	return true
 end
-
 
 local function findEdgePart(tool)
 	local handle = tool:FindFirstChild("Handle")
@@ -476,36 +407,30 @@ local function loadFishingAnimations()
 		animator.Parent = humanoid
 	end
 
-	-- Create and load throw animation (TIDAK LOOP)
 	local throwAnim = Instance.new("Animation")
 	throwAnim.AnimationId = THROW_ANIM_ID
 	throwAnimation = animator:LoadAnimation(throwAnim)
 	throwAnimation.Looped = false
 	throwAnimation.Priority = Enum.AnimationPriority.Action
 
-	-- Create and load idle animation (LOOP)
 	local idleAnim = Instance.new("Animation")
 	idleAnim.AnimationId = IDLE_ANIM_ID
 	idleAnimation = animator:LoadAnimation(idleAnim)
 	idleAnimation.Looped = true
 	idleAnimation.Priority = Enum.AnimationPriority.Idle
 
-	-- Create and load pulling animation (LOOP) - TAMBAH INI
 	local pullingAnim = Instance.new("Animation")
 	pullingAnim.AnimationId = PULLING_ANIM_ID
 	pullingAnimation = animator:LoadAnimation(pullingAnim)
-	pullingAnimation.Looped = true -- Loop terus saat pulling
+	pullingAnimation.Looped = true
 	pullingAnimation.Priority = Enum.AnimationPriority.Action
 
-	-- Create and load catch animation (TIDAK LOOP) - TAMBAH INI
 	local catchAnim = Instance.new("Animation")
 	catchAnim.AnimationId = CATCH_ANIM_ID
 	catchAnimation = animator:LoadAnimation(catchAnim)
-	catchAnimation.Looped = false -- Play 1x saja
+	catchAnimation.Looped = false
 	catchAnimation.Priority = Enum.AnimationPriority.Action
 end
-
-
 
 local function cleanupAnimations()
 	if throwAnimation then
@@ -514,16 +439,13 @@ local function cleanupAnimations()
 	if idleAnimation then
 		idleAnimation:Stop()
 	end
-	if pullingAnimation then  -- TAMBAH INI
+	if pullingAnimation then
 		pullingAnimation:Stop()
 	end
-	if catchAnimation then    -- TAMBAH INI
+	if catchAnimation then
 		catchAnimation:Stop()
 	end
 end
-
-
-
 
 local function cleanupConnections()
 	if bobConnection then
@@ -536,7 +458,6 @@ local function cleanupConnections()
 		beamUpdateConnection = nil
 	end
 
-	-- TAMBAH INI
 	if pullConnection then
 		pullConnection:Disconnect()
 		pullConnection = nil
@@ -545,17 +466,16 @@ local function cleanupConnections()
 	isPulling = false
 end
 
-
 local function cleanupFishingLine()
 	for _, beam in ipairs(beamSegments) do
-		if beam then 
+		if beam then
 			pcall(function() beam:Destroy() end)
 		end
 	end
 	beamSegments = {}
 
 	for _, point in ipairs(middlePoints) do
-		if point then 
+		if point then
 			pcall(function() point:Destroy() end)
 		end
 	end
@@ -574,7 +494,6 @@ local function cleanupFishingLine()
 		fishingBeam = nil
 	end
 end
-
 
 local function cleanupBaitLine()
 	if baitLineBeam then
@@ -597,11 +516,8 @@ end
 
 local function cleanupFishing()
 
-
-	-- ✅ Stop throw camera look-at if active
 	stopThrowCameraLookAt()
 
-	-- Disconnect semua connection
 	if bobConnection then
 		bobConnection:Disconnect()
 		bobConnection = nil
@@ -616,7 +532,6 @@ local function cleanupFishing()
 	end
 	isPulling = false
 
-	-- Destroy fishing line (beam/attachments/middle points)
 	for _, beam in ipairs(beamSegments) do
 		if beam then pcall(function() beam:Destroy() end) end
 	end
@@ -629,60 +544,44 @@ local function cleanupFishing()
 	if beamAttachment1 then pcall(function() beamAttachment1:Destroy() end) beamAttachment1 = nil end
 	fishingBeam = nil
 
-	-- Destroy bait line (beam/parts/attachments)
 	if baitLineBeam then pcall(function() baitLineBeam:Destroy() end) baitLineBeam = nil end
 	if baitLineAttachment0 then pcall(function() baitLineAttachment0:Destroy() end) baitLineAttachment0 = nil end
 	if baitLineAttachment1 then pcall(function() baitLineAttachment1:Destroy() end) baitLineAttachment1 = nil end
 	if baitLinePart then pcall(function() baitLinePart:Destroy() end) baitLinePart = nil end
 
-	-- Destroy floater (bobber) utama
 	if currentFloater then
 		pcall(function() currentFloater:Destroy() end)
 		currentFloater = nil
 	end
 
-	-- ##### Tambahan: Destroy semua FLoater orphan di workspace #####
 	for _, obj in ipairs(workspace:GetChildren()) do
-		if obj:IsA("Model") and obj.Name == "Floater" then -- GANTI dengan nama model bobber kamu jika PERLU!
+		if obj:IsA("Model") and obj.Name == "Floater" then
 			if obj ~= currentFloater then
 				pcall(function() obj:Destroy() end)
 			end
 		end
 	end
-	-- ##### Tambahan: Destroy Beam orphan di workspace (tanpa parent/parent workspace) #####
+
 	for _, obj in ipairs(workspace:GetChildren()) do
 		if obj:IsA("Beam") and (not obj.Parent or obj.Parent == workspace) then
 			pcall(function() obj:Destroy() end)
 		end
 	end
 
-
-	
-	-- ✅ REPLICATION: Notify server that fishing stopped
 	notifyReplication("NotifyStopFishing")
 end
-
-
 
 local function calculateParabolicPosition(startPos, targetPos, height, alpha)
 	if LineRenderer and LineRenderer.CalculateParabolicPosition then
 		return LineRenderer.CalculateParabolicPosition(startPos, targetPos, height, alpha)
 	end
-	-- Fallback basic calculation
+
 	local x = startPos.X + (targetPos.X - startPos.X) * alpha
 	local z = startPos.Z + (targetPos.Z - startPos.Z) * alpha
 	local baseY = startPos.Y + (targetPos.Y - startPos.Y) * alpha
 	return Vector3.new(x, baseY, z)
 end
 
-
-
-
--- ========================================
--- FISHING LINE CREATION (Delegated to Module)
--- ========================================
-
--- Update bait line position helper
 local function updateBaitLine()
 	if not baitLinePart or not currentFloater then return end
 	local floaterPart = currentFloater:IsA("Model") and currentFloater.PrimaryPart or currentFloater
@@ -691,28 +590,26 @@ local function updateBaitLine()
 	baitLinePart.Position = floaterPos - Vector3.new(0, BAIT_LINE_LENGTH, 0)
 end
 
--- Create fishing line using optimized module
 local function createFishingLine()
 	cleanupFishingLine()
-	
+
 	if not edgePart or not currentFloater then return end
-	
+
 	local floaterPart = currentFloater:IsA("Model") and currentFloater.PrimaryPart or currentFloater
 	if not floaterPart then return end
-	
-	-- Use module to create complete fishing line with physics
+
 	if LineRenderer and LineRenderer.CreateCompleteFishingLineWithPhysics then
 		local lineData = LineRenderer.CreateCompleteFishingLineWithPhysics(
-			edgePart, 
-			floaterPart, 
-			LineStyle, 
-			numMiddlePoints, 
-			Character, 
+			edgePart,
+			floaterPart,
+			LineStyle,
+			numMiddlePoints,
+			Character,
 			currentFloater
 		)
-		
+
 		if lineData then
-			-- Store returned data to local variables for cleanup
+
 			beamAttachment0 = lineData.attachment0
 			beamAttachment1 = lineData.attachment1
 			middlePoints = lineData.middlePoints
@@ -723,25 +620,17 @@ local function createFishingLine()
 	end
 end
 
-
--- ========================================
--- FISHING ACTIONS
--- ========================================
-
-
--- Create bait line using optimized module
 local function createBaitLine()
 	cleanupBaitLine()
-	
+
 	if not currentFloater then return end
-	
+
 	local floaterPart = currentFloater:IsA("Model") and currentFloater.PrimaryPart or currentFloater
 	if not floaterPart then return end
-	
-	-- Use module to create bait line
+
 	if LineRenderer and LineRenderer.CreateBaitLine then
 		local baitData = LineRenderer.CreateBaitLine(floaterPart, LineStyle, BAIT_LINE_LENGTH)
-		
+
 		if baitData then
 			baitLineAttachment0 = baitData.attachment0
 			baitLineAttachment1 = baitData.attachment1
@@ -751,13 +640,12 @@ local function createBaitLine()
 	end
 end
 
-
 local function retrieveFloater()
-	isRetrieving = true  -- START LOCK
+	isRetrieving = true
 
 	if not currentFloater or not edgePart then
 		cleanupFishing()
-		isRetrieving = false    -- RELEASE LOCK (penting)
+		isRetrieving = false
 		isFishing = false
 		isPulling = false
 		isThrowing = false
@@ -765,12 +653,10 @@ local function retrieveFloater()
 		isRecovering = true
 		task.delay(3, function()
 			isRecovering = false
-			print("⏳ Jeda recovery selesai, boleh lempar lagi.")
 		end)
 		return
 	end
 
-	-- Matikan baitline dulu
 	cleanupBaitLine()
 
 	if idleAnimation and idleAnimation.IsPlaying then
@@ -784,8 +670,6 @@ local function retrieveFloater()
 		beamUpdateConnection:Disconnect()
 		beamUpdateConnection = nil
 	end
-
-	print("↩️ Menarik kembali - tali tegang...")
 
 	for _, beam in ipairs(beamSegments) do
 		if beam then
@@ -832,7 +716,7 @@ local function retrieveFloater()
 		if not currentFloater or not edgePart then
 			retrieveConnection:Disconnect()
 			cleanupFishing()
-			isRetrieving = false    -- RELEASE LOCK (penting)
+			isRetrieving = false
 			isFishing = false
 			isPulling = false
 			isThrowing = false
@@ -840,7 +724,6 @@ local function retrieveFloater()
 			isRecovering = true
 			task.delay(Cooldown, function()
 				isRecovering = false
-				print("⏳ Jeda recovery selesai, boleh lempar lagi.")
 			end)
 			return
 		end
@@ -857,7 +740,7 @@ local function retrieveFloater()
 		if alpha >= 1 then
 			retrieveConnection:Disconnect()
 			cleanupFishing()
-			isRetrieving = false    -- RELEASE LOCK (penting)
+			isRetrieving = false
 			isFishing = false
 			isPulling = false
 			isThrowing = false
@@ -865,74 +748,61 @@ local function retrieveFloater()
 			isRecovering = true
 			task.delay(Cooldown, function()
 				isRecovering = false
-				print("⏳ Jeda recovery selesai, boleh lempar lagi.")
 			end)
 		end
 	end)
 end
 
-
 local function startPulling()
-	-- Performance throttle check
+
 	if _getSM() < 0.5 then return end
-	
+
 	if isPulling or not currentFloater then
 		return
 	end
 	isPulling = true
 	rotatePlayerToFloater()
 	startTime = tick()
-	print("🎣 STRIKE! Ikan melawan!")
-	
-	-- ✅ AUTO CLOSE ALL UIs WHEN TAPTAP STARTS (keep screen clean)
+
 	if _G.closeAllUIsOnFishCaught then
 		_G.closeAllUIsOnFishCaught()
 	end
-	
-	-- ✅ FIX: Freeze player movement during pulling/taptap
+
 	if Humanoid then
 		Humanoid.WalkSpeed = 0
 		Humanoid.JumpPower = 0
-		print("🚫 [FISHING] Player movement frozen during pulling")
 	end
-	
+
 	if cameraShakeEnabled then
 		startCameraShake()
 	end
 	startPullCamera(7, 10)
-	-- Cleanup baitline saat pull
+
 	cleanupBaitLine()
 
-	-- Stop bobbing
 	if bobConnection then
 		bobConnection:Disconnect()
 		bobConnection = nil
 	end
 
-	-- STOP IDLE & PLAY PULLING ANIMATION
 	if idleAnimation and idleAnimation.IsPlaying then
 		idleAnimation:Stop()
 	end
 
 	if pullingAnimation then
 		pullingAnimation:Play()
-		print("🎣 Playing pulling animation (loop)")
 	end
 
-	-- ✅ REPLICATION: Notify server that pulling started
 	notifyReplication("NotifyStartPulling")
-	
-	-- ✅ Play fish bite sound at floater position (3D)
+
 	local floaterPos = currentFloater:IsA("Model") and currentFloater.PrimaryPart.Position or currentFloater.Position
 	SoundConfig.PlaySoundAtPosition("FishBite", floaterPos)
-	
-	-- ✅ Start looping pulling sound (will stop when pulling ends)
+
 	if currentPullingSound then
 		SoundConfig.StopSound(currentPullingSound)
 	end
 	currentPullingSound = SoundConfig.PlayLocalSound("Pulling")
 
-	-- Tampilkan UI PullFrame dan jalankan tapTap pulling
 	pullFrame.Visible = true
 	startTapPull()
 
@@ -982,7 +852,6 @@ local function startPulling()
 		beamUpdateConnection:Disconnect()
 	end
 
-	-- Simplified pulling line physics - straight line with tension
 	beamUpdateConnection = RunService.Heartbeat:Connect(function(dt)
 		if not edgePart or not currentFloater or not isPulling then return end
 		if #middlePoints == 0 then return end
@@ -992,9 +861,8 @@ local function startPulling()
 		local endPos = beamAttachment1.WorldPosition
 		local totalDist = (endPos - startPos).Magnitude
 
-		-- High tension during pulling = nearly straight line
 		local baseSag = math.clamp(totalDist * 0.1, 0.5, 3)
-		local currentSag = baseSag * (1 - currentTensionLevel * 0.9)  -- Almost straight
+		local currentSag = baseSag * (1 - currentTensionLevel * 0.9)
 
 		for i, point in ipairs(middlePoints) do
 			if point and point.Parent then
@@ -1005,7 +873,6 @@ local function startPulling()
 				local parabolaFactor = -4 * (alpha - 0.5) * (alpha - 0.5) + 1
 				local yOffset = currentSag * parabolaFactor
 
-				-- No wind/wave during pulling - straight line
 				local calculatedPos = Vector3.new(midX, baseY - yOffset, midZ)
 				point.Position = calculatedPos
 			end
@@ -1025,7 +892,6 @@ local function startPulling()
 		bobTime = bobTime + dt
 		local elapsedTime = tick() - pullStartTime
 
-		-- Tap-tap decay progress
 		local elapsed = tick() - startTime
 		local timeSinceTap = tick() - lastTapTime
 		if timeSinceTap > 0.05 then
@@ -1033,7 +899,6 @@ local function startPulling()
 			bounceFill(progress)
 		end
 
-		-- === BEGIN: UI Countdown TimerBar ===
 		local timeLeft = math.max(0, timeLimit - elapsed)
 		timerSlider:TweenSize(
 			UDim2.new(timeLeft / timeLimit, 0, 1, 0),
@@ -1042,12 +907,9 @@ local function startPulling()
 			0.18, true
 		)
 		timerCounter.Text = string.format("%ds", math.ceil(timeLeft))
-		-- === END: UI Countdown TimerBar ===
 
 		if progress <= 0 or elapsed > timeLimit then
-			print("gagal mendapatkan ikan")
 
-			-- FIRE TO SERVER (RemoteEvent) with floater position
 			local FishingSuccessEvent = ReplicatedStorage:FindFirstChild("FishingSuccessEvent")
 			if FishingSuccessEvent then
 				local floaterPos = nil
@@ -1057,21 +919,18 @@ local function startPulling()
 						floaterPos = floaterPart.Position
 					end
 				end
-				print("📡 [DEBUG CLIENT] Firing FishingSuccessEvent to server (FAIL)")
-				FishingSuccessEvent:FireServer(false, floaterPos) -- Include floater position
+				FishingSuccessEvent:FireServer(false, floaterPos)
 			else
 				warn("⚠️ FishingSuccessEvent not found!")
 			end
 
-			-- Stop animasi pulling
 			if pullingAnimation and pullingAnimation.IsPlaying then
 				pullingAnimation:Stop()
 			end
 
 			stopCameraShake()
 			stopPullCamera()
-			
-			-- ✅ Stop pulling sound when pulling ends
+
 			if currentPullingSound then
 				SoundConfig.StopSound(currentPullingSound)
 				currentPullingSound = nil
@@ -1079,12 +938,10 @@ local function startPulling()
 
 			isPulling = false
 			isFishing = false
-			
-			-- ✅ Restore player movement after pulling ends (FAIL)
+
 			if Humanoid then
 				Humanoid.WalkSpeed = 16
 				Humanoid.JumpPower = 50
-				print("✅ [FISHING] Player movement restored (pull failed)")
 			end
 
 			if inputConn then
@@ -1104,13 +961,8 @@ local function startPulling()
 			return
 		end
 
-
 		if progress >= maxScale then
-			print("berhasil mendapatkan ikan")
 
-			-- (UIs sudah di-close saat pulling start)
-
-			-- FIRE TO SERVER (RemoteEvent) with floater position
 			local FishingSuccessEvent = ReplicatedStorage:FindFirstChild("FishingSuccessEvent")
 			if FishingSuccessEvent then
 				local floaterPos = nil
@@ -1120,21 +972,18 @@ local function startPulling()
 						floaterPos = floaterPart.Position
 					end
 				end
-				print("📡 [DEBUG CLIENT] Firing FishingSuccessEvent to server (SUCCESS) at position:", floaterPos)
-				FishingSuccessEvent:FireServer(true, floaterPos) -- Include floater position
+				FishingSuccessEvent:FireServer(true, floaterPos)
 			else
 				warn("⚠️ FishingSuccessEvent not found!")
 			end
 
-			-- Stop animasi pulling
 			if pullingAnimation and pullingAnimation.IsPlaying then
 				pullingAnimation:Stop()
 			end
 
 			stopCameraShake()
 			stopPullCamera()
-			
-			-- ✅ Stop pulling sound and play fish caught sound
+
 			if currentPullingSound then
 				SoundConfig.StopSound(currentPullingSound)
 				currentPullingSound = nil
@@ -1143,12 +992,10 @@ local function startPulling()
 
 			isPulling = false
 			isFishing = false
-			
-			-- ✅ Restore player movement after pulling ends (SUCCESS)
+
 			if Humanoid then
 				Humanoid.WalkSpeed = 16
 				Humanoid.JumpPower = 50
-				print("✅ [FISHING] Player movement restored (pull success)")
 			end
 
 			if inputConn then
@@ -1167,8 +1014,6 @@ local function startPulling()
 			return
 		end
 
-
-		-- Smooth transition tegangan tali
 		if elapsedTime < tensionTransitionTime then
 			local transitionAlpha = elapsedTime / tensionTransitionTime
 			currentTensionLevel = transitionAlpha * 0.7
@@ -1180,7 +1025,6 @@ local function startPulling()
 			currentTensionLevel = currentTensionLevel + (targetTensionLevel - currentTensionLevel) * dt * 3
 		end
 
-		-- Update intensitas tarik secara acak
 		if tick() - pullIntensityChangeTime >= pullIntensityChangeDuration then
 			currentPullIntensity = math.random(60, 100) / 100
 			pullIntensityChangeTime = tick()
@@ -1189,7 +1033,6 @@ local function startPulling()
 		local floaterPart = currentFloater:IsA("Model") and currentFloater.PrimaryPart or currentFloater
 		local currentPos = floaterPart.Position
 
-		-- Cek jarak horizontal ke player, auto retrieve kalau terlalu jauh
 		if Character and Character.PrimaryPart and edgePart then
 			local playerPos = Character.PrimaryPart.Position
 			local floaterPos = currentPos
@@ -1212,12 +1055,10 @@ local function startPulling()
 			end
 		end
 
-		-- Gerakan vertikal naik turun (tarikan)
 		local pullWave = math.abs(math.sin(bobTime * verticalPullSpeed)) * maxPullDepth * currentPullIntensity
 		local verticalOffset = -pullWave
 		local targetY = math.min(pullStartPos.Y + verticalOffset, pullStartPos.Y)
 
-		-- Logika pause gerak ikan
 		if isPaused then
 			if tick() - pauseStartTime >= currentPauseDuration then
 				isPaused = false
@@ -1226,7 +1067,6 @@ local function startPulling()
 					pullStartPos.Y,
 					pullStartPos.Z + math.random(-maxRandomDistance, maxRandomDistance)
 				)
-				print("🐟 Fish moving again!")
 			else
 				local pausePos = Vector3.new(currentPos.X, targetY, currentPos.Z)
 
@@ -1246,14 +1086,12 @@ local function startPulling()
 					isPaused = true
 					pauseStartTime = tick()
 					currentPauseDuration = math.random(30, 120) / 100
-					print("🐟 Fish paused for", currentPauseDuration, "seconds")
 				else
 					currentTarget = Vector3.new(
 						pullStartPos.X + math.random(-maxRandomDistance, maxRandomDistance),
 						pullStartPos.Y,
 						pullStartPos.Z + math.random(-maxRandomDistance, maxRandomDistance)
 					)
-					print("🐟 Fish keeps moving!")
 				end
 			else
 				local direction = (currentTarget - currentPos).Unit
@@ -1269,24 +1107,19 @@ local function startPulling()
 			end
 		end
 
-		-- Cek durasi tarik, stop dan proses hasil
 		if elapsedTime >= pullDuration then
-			print("🎣 PULL DURATION REACHED - Starting cleanup sequence")
 
 			if pullConnection then
 				pullConnection:Disconnect()
 				pullConnection = nil
 			end
 
-			-- Jangan disconnect beamUpdateConnection dulu supaya animasi tali tetap update
-
 			if pullingAnimation and pullingAnimation.IsPlaying then
 				pullingAnimation:Stop()
 			end
 
 			if catchAnimation then
-				-- Jangan play animasi catch, cukup stop pulling animasi.
-				-- Jika ingin diputar, bisa ditambahkan manual di sini.
+
 			end
 
 			if beamUpdateConnection then
@@ -1301,34 +1134,26 @@ local function startPulling()
 
 			retrieveFloater()
 
-			print("🎣 Cleanup sequence complete")
 		end
 	end)
 end
 
-
-
-
 local function startBobbing()
-	-- Optimization: skip if resources not ready
+
 	if _getSM() < 0.5 then return end
 	if not currentFloater then return end
 
 	local basePos = currentFloater:IsA("Model") and currentFloater.PrimaryPart.Position or currentFloater.Position
 	local bobTime = 0
-	local distanceWarned = false -- Flag untuk warning
-	
-	-- ✅ NEW: Check if floater is in water
+	local distanceWarned = false
+
 	local floaterInWater = isPositionInWater(basePos)
-	isFloating = floaterInWater -- Only set floating if actually in water
-	
+	isFloating = floaterInWater
+
 	if not floaterInWater then
-		print("⚠️ [FISHING] Floater tidak di atas air! Tidak ada ikan yang bisa ditangkap.")
 	else
-		print("🌊 [FISHING] Floater di atas air - fishing dimulai!")
 	end
 
-	-- Timer auto-pull random (only if in water)
 	local pullAutoTimer = math.random(5, 10)
 	local pullTimerElapsed = 0
 	local pullingStarted = false
@@ -1347,12 +1172,9 @@ local function startBobbing()
 			isFloating = false
 			return
 		end
-		
-		-- Get current floater position
+
 		local currentPos = currentFloater:IsA("Model") and currentFloater.PrimaryPart.Position or currentFloater.Position
-		
-		-- ✅ FIX #5: DISTANCE CHECK FIRST (before water check)
-		-- This ensures auto-retrieve works even when floater is not in water
+
 		if Character and Character.PrimaryPart and edgePart then
 			local playerPos = Character.PrimaryPart.Position
 			local floaterPos = currentPos
@@ -1360,10 +1182,8 @@ local function startBobbing()
 			local horizontalDistance = (Vector3.new(playerPos.X, 0, playerPos.Z) - Vector3.new(floaterPos.X, 0, floaterPos.Z)).Magnitude
 			local maxAllowedDistance = currentConfig.MaxThrowDistance * 1.3
 
-			-- AUTO RETRIEVE if too far (regardless of water status)
 			if horizontalDistance > maxAllowedDistance then
 				if not isPulling then
-					print("🎣 Too far! Auto-retrieving... Distance:", math.floor(horizontalDistance))
 
 					if bobConnection then
 						bobConnection:Disconnect()
@@ -1379,27 +1199,23 @@ local function startBobbing()
 				end
 			end
 		end
-		
-		-- ✅ Recheck water status periodically
+
 		floaterInWater = isPositionInWater(currentPos)
-		
-		-- ✅ Only do bobbing and fish detection if in water
+
 		if not floaterInWater then
-			-- Floater not in water - just stay still, no fish, but keep distance check running
+
 			isFloating = false
 			return
 		end
-		
-		isFloating = true -- In water, can catch fish
 
-		-- Auto Pull Timer aktif selama floating (only if in water)
+		isFloating = true
+
 		if not isPulling and isFloating and not pullingStarted then
 			pullTimerElapsed = pullTimerElapsed + dt
 			if pullTimerElapsed >= pullAutoTimer then
 				pullingStarted = true
 				isFloating = false
-				print("⏰ Auto pulling dimulai (random timer)")
-				startPulling() -- Mulai pulling otomatis
+				startPulling()
 				return
 			end
 		end
@@ -1418,26 +1234,23 @@ local function startBobbing()
 	end)
 end
 
-
 local isThrowing = false
 
 local function throwFloater()
-	-- Frame rate limiter check
+
 	if _getSM() < 0.5 then return end
-	
-	-- ✅ FIX #4: Check if character exists (may not exist right after respawn)
+
 	if not Character or not Character.Parent then
 		return
 	end
-	
+
 	if not HRP or not HRP.Parent then
 		HRP = Character:FindFirstChild("HumanoidRootPart")
 		if not HRP then
 			return
 		end
 	end
-	
-	-- ✅ FIXED: Reset stuck states first (no floater = reset states)
+
 	if not currentFloater then
 		if isFloating then
 			isFloating = false
@@ -1446,18 +1259,17 @@ local function throwFloater()
 			isFishing = false
 		end
 	end
-	
+
 	if isThrowing or isPulling then
 		warn("Sedang proses lempar/pulling, abaikan double call")
 		return
 	end
-	
-	-- If there's already a floater, retrieve it first
+
 	if currentFloater then
 		warn("Ada floater aktif, retrieve dulu sebelum throw baru")
 		return
 	end
-	
+
 	isThrowing = true
 
 	if not currentConfig or not currentConfig.ThrowHeight then
@@ -1469,27 +1281,25 @@ local function throwFloater()
 	cleanupFishing()
 	isFishing = true
 
-	if not edgePart or not currentConfig then 
+	if not edgePart or not currentConfig then
 		warn("Edge part atau config tidak ditemukan!")
 		isFishing = false
 		isThrowing = false
-		return 
+		return
 	end
 
 	Character = Player.Character
-	if not Character or not Character.PrimaryPart then 
+	if not Character or not Character.PrimaryPart then
 		warn("Character tidak tersedia!")
 		isFishing = false
 		isThrowing = false
-		return 
+		return
 	end
 
-	-- Play animation
 	if idleAnimation and idleAnimation.IsPlaying then
 		idleAnimation:Stop()
 	end
 
-	-- ✅ Play throw sound IMMEDIATELY (before animation wait)
 	SoundConfig.PlayLocalSound("Throw")
 
 	if throwAnimation then
@@ -1501,12 +1311,10 @@ local function throwFloater()
 		task.wait(0.3)
 	end
 
-	-- CALCULATE TARGET POSITION
 	local startPos = edgePart.Position
 	local lookDirection = Character.PrimaryPart.CFrame.LookVector
 	local horizontalTarget = startPos + (lookDirection * currentConfig.MaxThrowDistance)
 
-	-- RAYCAST untuk cari ground/water surface
 	local rayParams = RaycastParams.new()
 	rayParams.FilterDescendantsInstances = {Character}
 	rayParams.FilterType = Enum.RaycastFilterType.Exclude
@@ -1517,7 +1325,6 @@ local function throwFloater()
 
 	local targetPos
 	if rayResult then
-		print("✅ Surface detected at Y:", rayResult.Position.Y)
 		local debugPart = Instance.new("Part")
 		debugPart.Size = Vector3.new(2, 0.5, 2)
 		debugPart.Position = rayResult.Position
@@ -1535,46 +1342,35 @@ local function throwFloater()
 		return
 	end
 
-	-- CLONE FLOATER (Use equipped floater from player data, fallback to default floater)
-	local defaultFloaterId = FloaterConfig.DefaultFloater -- "FloaterDoll"
-	print("🎈 [FISHING DEBUG] equippedFloaterId:", equippedFloaterId or "nil")
-	print("🎈 [FISHING DEBUG] defaultFloaterId:", defaultFloaterId)
-	
+	local defaultFloaterId = FloaterConfig.DefaultFloater
+
 	local floaterToUse = nil
 	local floaterTemplate = nil
-	
-	-- First try to find by equipped floater ID (if player has equipped one)
+
 	if equippedFloaterId and equippedFloaterId ~= "" then
 		floaterTemplate = FloatersFolder:FindFirstChild(equippedFloaterId)
 		if floaterTemplate then
 			floaterToUse = equippedFloaterId
-			print("🎈 [FISHING] Using EQUIPPED floater:", equippedFloaterId)
 		else
-			print("⚠️ [FISHING] Equipped floater not found in folder:", equippedFloaterId)
-			-- List available floaters for debugging
-			print("📁 [FISHING] Available floaters:")
+
 			for _, child in ipairs(FloatersFolder:GetChildren()) do
-				print("  -", child.Name)
 			end
 		end
 	end
-	
-	-- Fallback to default floater from FloaterConfig
+
 	if not floaterTemplate then
 		floaterTemplate = FloatersFolder:FindFirstChild(defaultFloaterId)
 		if floaterTemplate then
 			floaterToUse = defaultFloaterId
-			print("🎈 [FISHING] Using DEFAULT floater:", defaultFloaterId)
 		else
-			print("⚠️ [FISHING] Default floater not found:", defaultFloaterId)
 		end
 	end
-	
-	if not floaterTemplate then 
+
+	if not floaterTemplate then
 		warn("Floater tidak ditemukan! Equipped:", equippedFloaterId or "nil", "| Default:", defaultFloaterId)
 		isFishing = false
 		isThrowing = false
-		return 
+		return
 	end
 
 	currentFloater = floaterTemplate:Clone()
@@ -1598,14 +1394,11 @@ local function throwFloater()
 	end
 
 	createFishingLine()
-	
-	-- ✅ REPLICATION: Notify server IMMEDIATELY when throw starts (before animation)
+
 	notifyReplication("NotifyThrowFloater", startPos, targetPos, currentTool and currentTool.Name, floaterToUse, LineStyle, currentConfig.ThrowHeight)
 
-	-- ✅ START CAMERA LOOK-AT EFFECT
 	startThrowCameraLookAt(targetPos)
 
-	-- ANIMASI THROW: lakukan force cleanup orphan bobber SETELAH semua transition selesai
 	local throwDuration = 1.5
 	local elapsed = 0
 
@@ -1626,15 +1419,13 @@ local function throwFloater()
 
 		if alpha >= 1 then
 			throwConnection:Disconnect()
-			isThrowing = false -- biar click lain bisa diterima di sesi berikutnya
-			isFloating = true -- bobbing dimulai (disable klik)
-			
-			-- ✅ Play water splash sound at floater position
+			isThrowing = false
+			isFloating = true
+
 			SoundConfig.PlaySoundAtPosition("WaterSplash", targetPos)
-			
-			-- ✅ STOP CAMERA LOOK-AT EFFECT (floater landed)
+
 			stopThrowCameraLookAt()
-			
+
 			startBobbing()
 			createBaitLine()
 
@@ -1642,7 +1433,7 @@ local function throwFloater()
 				if idleAnimation and isFishing then
 					idleAnimation:Play()
 				end
-				-- Force cleanup orphan bobber, 1 frame setelah semua pasti selesai!!
+
 				for _, obj in ipairs(workspace:GetChildren()) do
 					if obj:IsA("Model") and obj.Name == "Floater" and obj ~= currentFloater then
 						pcall(function() obj:Destroy() end)
@@ -1653,77 +1444,59 @@ local function throwFloater()
 	end)
 end
 
--- ========================================
--- EVENT HANDLERS
--- ========================================
-
 _G = _G or {}
 _G.afkLoopTask = nil
 
 local function startAfkLoop()
-	if _G.afkLoopTask then return end -- jangan run double loop
+	if _G.afkLoopTask then return end
 	_G.afkLoopTask = task.spawn(function()
-		print("[AFK] Loop started")
 		while _G.afkMode do
 			task.wait(0.1)
 
-			-- ✅ NEW: Skip if any UI is open
 			if isAnyUIOpen then
 				task.wait(0.5)
 				continue
 			end
-			
-			-- ✅ NEW: Wait 5 seconds after new fish UI appears
+
 			if isNewFishUIVisible then
-				print("[AFK] Waiting for new fish UI to close...")
-				task.wait(5) -- Wait 5 seconds
-				
-				-- Try to auto-close the new fish UI
+				task.wait(5)
+
 				local playerGui = player.PlayerGui
 				local fishRewardUI = playerGui:FindFirstChild("NewFishDiscovery")
-					or playerGui:FindFirstChild("NewFishDiscoveryGUI") 
-					or playerGui:FindFirstChild("FishRewardUI") 
+					or playerGui:FindFirstChild("NewFishDiscoveryGUI")
+					or playerGui:FindFirstChild("FishRewardUI")
 					or playerGui:FindFirstChild("FishCaughtUI")
 					or playerGui:FindFirstChild("SimpleFishNotif")
-				
+
 				if fishRewardUI then
-					print("[AFK] Found fish UI:", fishRewardUI.Name, "- attempting to close...")
-					
-					-- The NewFishDiscovery UI has a fullscreen invisible TextButton as closeButton
-					-- Find any TextButton with transparent background (the close button)
+
 					for _, child in ipairs(fishRewardUI:GetChildren()) do
 						if child:IsA("TextButton") and child.BackgroundTransparency >= 0.9 then
-							print("[AFK] Found fullscreen close button, activating...")
 							pcall(function() child:Activate() end)
 							break
 						end
 					end
-					
-					-- If that didn't work, just destroy the UI
+
 					task.wait(0.2)
 					if fishRewardUI and fishRewardUI.Parent then
-						print("[AFK] Force destroying fish UI...")
 						pcall(function() fishRewardUI:Destroy() end)
 					end
 				end
-				
+
 				isNewFishUIVisible = false
 				task.wait(0.5)
 				continue
 			end
 
-			-- Pastikan player pegang tool rod
 			local isRod = (currentTool and currentConfig and FishingRodConfig.Rods[currentTool.Name])
 			if isRod then
-				-- Cek lemparan otomatis jika idle
+
 				if not isThrowing and not isFishing and not isFloating and not isPulling and not isRecovering and not isRetrieving then
-					print("[AFK] Auto throw triggered")
 					throwFloater()
 				end
 
-				-- Auto tap tap saat isPulling
 				if isPulling then
-					-- kode tap tap adaptif sesuai diskusi sebelumnya
+
 					local elapsed = tick() - startTime
 					local timeLeft = math.max(0, timeLimit - elapsed)
 					local progressLeft = maxScale - progress
@@ -1741,55 +1514,44 @@ local function startAfkLoop()
 					task.wait(dt)
 				end
 			else
-				print("[AFK] Not holding rod, idle.")
 			end
 		end
-		print("[AFK] Loop stopped")
 		_G.afkLoopTask = nil
 	end)
 end
-
-
 
 local function stopAfkLoop()
 	afkMode = false
 	_G.afkMode = false
 end
 
--- Expose functions globally
 _G.startAfkLoop = startAfkLoop
 _G.stopAfkLoop = stopAfkLoop
 
--- ✅ Toggle AFK function for button
 local function toggleAfkMode()
 	afkMode = not afkMode
 	_G.afkMode = afkMode
-	
+
 	if afkMode then
-		print("🤖 [AFK] AFK Mode ENABLED")
 		startAfkLoop()
 	else
-		print("🤖 [AFK] AFK Mode DISABLED")
 		stopAfkLoop()
 	end
-	
+
 	return afkMode
 end
 
 _G.toggleAfkMode = toggleAfkMode
 
--- ✅ CREATE AFK BUTTON (USING HUD TEMPLATE)
 local function createAfkButton()
 	local playerGui = Player:WaitForChild("PlayerGui")
-	
-	-- ✅ Remove ANY old AFK GUIs (switch, button, etc)
+
 	local existingGui = playerGui:FindFirstChild("AfkButtonGUI")
 	if existingGui then existingGui:Destroy() end
-	
+
 	local oldSwitchGui = playerGui:FindFirstChild("AfkSwitchGUI")
 	if oldSwitchGui then oldSwitchGui:Destroy() end
-	
-	-- Also check for any GUI with "Afk" in name
+
 	for _, gui in ipairs(playerGui:GetChildren()) do
 		if gui:IsA("ScreenGui") and (gui.Name:lower():find("afk") or gui.Name:lower():find("switch")) then
 			if gui.Name ~= "AfkButtonGUI" then
@@ -1797,54 +1559,49 @@ local function createAfkButton()
 			end
 		end
 	end
-	
-	-- ✅ Use HUD template
+
 	local hudGui = playerGui:WaitForChild("HUD", 10)
 	local leftFrame = hudGui and hudGui:FindFirstChild("Left")
 	local buttonTemplate = leftFrame and leftFrame:FindFirstChild("ButtonTemplate")
-	
+
 	local afkButton = nil
 	local label = nil
-	
+
 	if buttonTemplate then
-		-- ✅ Hide the original template
+
 		buttonTemplate.Visible = false
-		
-		-- Clone the template
+
 		local buttonContainer = buttonTemplate:Clone()
 		buttonContainer.Name = "AfkButton"
 		buttonContainer.Visible = true
-		buttonContainer.LayoutOrder = 3 -- Third button on left
-		buttonContainer.BackgroundTransparency = 1 -- ✅ Transparent container
+		buttonContainer.LayoutOrder = 3
+		buttonContainer.BackgroundTransparency = 1
 		buttonContainer.Parent = leftFrame
-		
-		-- Get references
+
 		afkButton = buttonContainer:FindFirstChild("ImageButton")
 		label = buttonContainer:FindFirstChild("TextLabel")
-		
-		-- Set button properties
+
 		if afkButton then
-			afkButton.Image = "rbxassetid://98033273507939" -- AFK icon
-			afkButton.BackgroundTransparency = 1 -- ✅ Transparent button
+			afkButton.Image = "rbxassetid://98033273507939"
+			afkButton.BackgroundTransparency = 1
 		end
-		
+
 		if label then
 			label.Text = "AFK"
 		end
-		
 
 	else
-		-- Fallback: Create button manually if template not found
+
 		warn("[FISHING] HUD template not found, creating AFK button manually")
-		
+
 		local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
-		
+
 		local screenGui = Instance.new("ScreenGui")
 		screenGui.Name = "AfkButtonGUI"
 		screenGui.ResetOnSpawn = false
 		screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 		screenGui.Parent = playerGui
-		
+
 		afkButton = Instance.new("ImageButton")
 		afkButton.Name = "AfkButton"
 		afkButton.Size = UDim2.new(0.1, 0, 0.1, 0)
@@ -1854,11 +1611,11 @@ local function createAfkButton()
 		afkButton.Image = "rbxassetid://98033273507939"
 		afkButton.ScaleType = Enum.ScaleType.Fit
 		afkButton.Parent = screenGui
-		
+
 		local aspect = Instance.new("UIAspectRatioConstraint")
 		aspect.AspectRatio = 1
 		aspect.Parent = afkButton
-		
+
 		label = Instance.new("TextLabel")
 		label.Size = UDim2.new(1, 0, 0.3, 0)
 		label.Position = UDim2.new(0, 0, 1, 2)
@@ -1869,13 +1626,13 @@ local function createAfkButton()
 		label.TextScaled = true
 		label.Parent = afkButton
 	end
-	
+
 	local function updateButtonVisual()
 		if afkButton then
 			if afkMode then
-				afkButton.ImageColor3 = Color3.fromRGB(0, 255, 100) -- Green tint
+				afkButton.ImageColor3 = Color3.fromRGB(0, 255, 100)
 			else
-				afkButton.ImageColor3 = Color3.fromRGB(255, 255, 255) -- Normal
+				afkButton.ImageColor3 = Color3.fromRGB(255, 255, 255)
 			end
 		end
 		if label then
@@ -1886,24 +1643,20 @@ local function createAfkButton()
 			end
 		end
 	end
-	
-	-- ✅ Support both mouse AND touch
+
 	if afkButton then
 		afkButton.MouseButton1Click:Connect(function()
 			toggleAfkMode()
 			updateButtonVisual()
 		end)
 	end
-	
 
 end
 
--- Create AFK button after setup
 task.delay(2, createAfkButton)
 
 local function onMouseClick()
 
-	-- ✅ NEW: Block throwing if any UI is open
 	if isAnyUIOpen then
 		warn("Klik diabaikan: UI sedang terbuka")
 		return
@@ -1919,7 +1672,6 @@ local function onMouseClick()
 		return
 	end
 
-	-- ✅ FIXED: If floater exists, handle retrieval
 	if currentFloater then
 		if not isPulling then
 			warn("Player klik, ada floater aktif - RETRIEVE!")
@@ -1933,13 +1685,12 @@ local function onMouseClick()
 			return
 		end
 	end
-	
-	-- ✅ FIXED: Reset stuck state - if isFloating but no currentFloater, reset state
+
 	if isFloating and not currentFloater then
 		warn("State stuck - isFloating true tapi tidak ada floater, reset...")
 		isFloating = false
 	end
-	
+
 	if isFishing and not currentFloater then
 		warn("State stuck - isFishing true tapi tidak ada floater, reset...")
 		isFishing = false
@@ -1952,21 +1703,16 @@ local function onMouseClick()
 
 	if not currentTool or not currentConfig then return end
 
-
 	throwFloater()
 end
 
-
-
-
-
 local function onToolEquipped(tool)
-	
+
 	if afkMode == true then
-		
+
 		task.wait(2)
 		startAfkLoop()
-		
+
 	end
 
 	cleanupFishing()
@@ -1987,60 +1733,46 @@ local function onToolEquipped(tool)
 		return
 	end
 
-	-- Update line style based on rod config
 	updateLineStyle()
-	
-	-- Refresh equipped floater from server
+
 	fetchEquippedFloater()
 
-	-- Load dan play idle
 	loadFishingAnimations()
 	if idleAnimation then
 		idleAnimation:Play()
 	end
 
-	-- ✅ REPLICATION: Notify server that we started fishing
 	notifyReplication("NotifyStartFishing", tool.Name, equippedFloaterId)
-
 
 end
 
-
-
 local function onToolUnequipped()
-	
-	-- ✅ FIX: Force cancel pulling immediately
+
 	if isPulling then
-		print("⚠️ [FISHING] Force canceling pulling state!")
 		isPulling = false
 		pullingStarted = false
-		
-		-- Hide pull UI
+
 		if pullFrame then
 			pullFrame.Visible = false
 		end
-		
-		-- Stop pull camera and restore normal camera IMMEDIATELY
+
 		stopPullCamera()
-		
-		-- Force restore camera to normal (in case tween fails)
+
 		task.delay(0.1, function()
 			camera.CameraType = Enum.CameraType.Custom
 			camera.CameraSubject = Character and Character:FindFirstChild("Humanoid") or nil
 		end)
-		
-		-- Restore player movement
+
 		if Humanoid then
-			Humanoid.WalkSpeed = 16 -- Default walk speed
-			Humanoid.JumpPower = 50 -- Default jump power
+			Humanoid.WalkSpeed = 16
+			Humanoid.JumpPower = 50
 		end
-		
-		-- Stop animations
+
 		if pullingAnimation and pullingAnimation.IsPlaying then
 			pullingAnimation:Stop()
 		end
 	end
-	
+
 	if isFishing then
 		retrieveFloater()
 	end
@@ -2054,15 +1786,12 @@ local function onToolUnequipped()
 	isPulling = false
 	isThrowing = false
 	isFloating = false
-	
-	-- Restore movement (in case it was frozen)
+
 	if Humanoid then
 		Humanoid.WalkSpeed = 16
 		Humanoid.JumpPower = 50
 	end
 end
-
-
 
 local function setupCharacterMonitor()
 	Character = Player.Character or Player.CharacterAdded:Wait()
@@ -2094,22 +1823,17 @@ end
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed then return end
 
-	-- ✅ FIX: Support both Mouse AND Touch for Android
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 		onMouseClick()
 	end
 end)
 
--- ✅ FIX #4: Complete state reset on respawn/death
 Player.CharacterAdded:Connect(function(newCharacter)
-	print("🔄 [FISHING] Character respawned, resetting all state...")
-	
-	-- Update character references
+
 	Character = newCharacter
 	HRP = newCharacter:WaitForChild("HumanoidRootPart", 5)
 	Humanoid = newCharacter:WaitForChild("Humanoid", 5)
-	
-	-- Disconnect all connections safely
+
 	if bobConnection then
 		pcall(function() bobConnection:Disconnect() end)
 		bobConnection = nil
@@ -2122,12 +1846,10 @@ Player.CharacterAdded:Connect(function(newCharacter)
 		pcall(function() pullConnection:Disconnect() end)
 		pullConnection = nil
 	end
-	
-	-- Cleanup all visuals
+
 	cleanupFishing()
 	cleanupAnimations()
-	
-	-- ✅ FIX: Force stop pull camera and restore normal camera on respawn
+
 	stopPullCamera()
 	task.delay(0.2, function()
 		camera.CameraType = Enum.CameraType.Custom
@@ -2135,13 +1857,11 @@ Player.CharacterAdded:Connect(function(newCharacter)
 			camera.CameraSubject = newCharacter.Humanoid
 		end
 	end)
-	
-	-- ✅ FIX: Hide pull UI if visible
+
 	if pullFrame then
 		pullFrame.Visible = false
 	end
-	
-	-- Reset ALL state variables
+
 	isFishing = false
 	isThrowing = false
 	isFloating = false
@@ -2149,88 +1869,75 @@ Player.CharacterAdded:Connect(function(newCharacter)
 	pullingStarted = false
 	distanceWarned = false
 	floaterInWater = false
-	
+
 	currentTool = nil
 	currentConfig = nil
 	edgePart = nil
 	currentFloater = nil
-	
-	-- Reset animation references
+
 	throwAnimation = nil
 	idleAnimation = nil
 	pullingAnimation = nil
 	catchAnimation = nil
 	animator = nil
-	
-	-- Reset timer variables
+
 	pullTimerElapsed = 0
 	pullAutoTimer = 0
-	
-	-- Notify server that fishing stopped
+
 	notifyReplication("NotifyStopFishing")
-	
-	-- ✅ FIX: Restore player movement on respawn (in case character died while pulling)
+
 	task.delay(0.5, function()
 		if Humanoid then
 			Humanoid.WalkSpeed = 16
 			Humanoid.JumpPower = 50
 		end
 	end)
-	
-	-- Re-setup character monitor
+
 	setupCharacterMonitor()
-	
-	print("✅ [FISHING] State reset complete")
+
 end)
 
 setupCharacterMonitor()
 
--- ==================== UI TRACKING ====================
--- Track when any UI is opened to prevent throwing
-
 local function checkAnyUIOpen()
 	local playerGui = player.PlayerGui
-	
-	-- List of UI panels to check (GUI name -> Panel name)
-	-- NOTE: Music Player is EXCLUDED - widget should not block fishing
+
 	local uiChecks = {
-		-- Fishing-related UIs
+
 		{gui = "EquipmentGUI", panel = "MainPanel"},
 		{gui = "FishCollectionGUI", panel = "MainPanel"},
 		{gui = "FishermanShopGUI", panel = "ShopPanel"},
 		{gui = "RodShopGUI", panel = "MainPanel"},
-		-- Inventory UIs
+
 		{gui = "InventoryGUI", panel = "MainPanel"},
 		{gui = "InventoryGUI_V3", panel = "MainPanel"},
 		{gui = "InventorySystemGUI", panel = "MainPanel"},
-		-- Settings
+
 		{gui = "SettingsGUI", panel = "MainPanel"},
-		-- Shop UIs
+
 		{gui = "RedeemGui", panel = "MainPanel"},
 		{gui = "DonateGUI", panel = "MainPanel"},
 		{gui = "DonateGui", panel = "MainPanel"},
 		{gui = "Shop", panel = "MainPanel"},
 		{gui = "ShopGUI", panel = "MainPanel"},
-		-- NOTE: MusicPlayer EXCLUDED - music widget should NOT block fishing
+
 	}
-	
+
 	for _, check in ipairs(uiChecks) do
 		local ui = playerGui:FindFirstChild(check.gui)
 		if ui then
-			-- Only check the EXACT panel name, not fallbacks
+
 			local panel = ui:FindFirstChild(check.panel)
 			if panel and panel:IsA("GuiObject") and panel.Visible then
-				-- Debug: uncomment to see which UI is blocking
-				-- print("🚫 [UI CHECK] Blocking UI detected:", check.gui, "/", check.panel)
+
 				return true
 			end
 		end
 	end
-	
+
 	return false
 end
 
--- Continuously check UI state
 task.spawn(function()
 	while true do
 		isAnyUIOpen = checkAnyUIOpen()
@@ -2238,33 +1945,27 @@ task.spawn(function()
 	end
 end)
 
--- ==================== AUTO-CLOSE UI FUNCTION ====================
 local function closeAllUIsOnFishCaught()
-	print("🐟 [FISHING] Closing all UIs (fish caught/pulling success)...")
-	
+
 	local playerGui = player.PlayerGui
 	local closedCount = 0
-	
-	-- List of all UIs to close (except Music Widget)
-	-- Note: Some GUIs use different names (RedeemGui vs RedeemGUI)
+
 	local uisToClose = {
 		{gui = "EquipmentGUI", panel = "MainPanel"},
 		{gui = "FishCollectionGUI", panel = "MainPanel"},
 		{gui = "FishermanShopGUI", panel = "ShopPanel"},
 		{gui = "RodShopGUI", panel = "MainPanel"},
 		{gui = "InventoryGUI", panel = "MainPanel"},
-		-- TopbarPlus UIs (need to disable ScreenGui.Enabled)
+
 		{gui = "RedeemGui", panel = "MainPanel", disableGui = true},
 		{gui = "DonateGUI", panel = "MainPanel", disableGui = true},
 		{gui = "ShopGUI", panel = "MainPanel", disableGui = true},
-		-- Music main panel (but NOT widget)
+
 		{gui = "MusicPlayer", panel = "MainPanel"},
 		{gui = "MusicPlayer", panel = "MyLibraryPanel"},
 		{gui = "MusicPlayer", panel = "PlaylistPopupPanel"},
 	}
-	
-	print("  📋 [DEBUG] Checking", #uisToClose, "UI configurations...")
-	
+
 	for _, uiInfo in ipairs(uisToClose) do
 		local gui = playerGui:FindFirstChild(uiInfo.gui)
 		if gui then
@@ -2273,38 +1974,33 @@ local function closeAllUIsOnFishCaught()
 				if panel:IsA("GuiObject") then
 					if panel.Visible then
 						panel.Visible = false
-						-- Also disable ScreenGui for TopbarPlus panels
+
 						if uiInfo.disableGui and gui:IsA("ScreenGui") then
 							gui.Enabled = false
 						end
 						closedCount = closedCount + 1
-						print("  ✅ [CLOSED]", uiInfo.gui, "/", uiInfo.panel)
 					else
-						print("  ⚪ [ALREADY HIDDEN]", uiInfo.gui, "/", uiInfo.panel)
 					end
 				end
 			else
-				print("  ⚠️ [PANEL NOT FOUND]", uiInfo.gui, "/", uiInfo.panel)
 			end
 		end
 	end
-	
-	-- ✅ TopbarPlus icons - try to deselect all active icons
-	-- TopbarPlus stores icons in a global table
+
 	local IconModule = ReplicatedStorage:FindFirstChild("Icon")
 	if IconModule then
 		local success, iconLib = pcall(function()
 			return require(IconModule)
 		end)
-		
+
 		if success and iconLib and iconLib.getIcons then
 			local getIconsSuccess, icons = pcall(function()
 				return iconLib.getIcons()
 			end)
-			
+
 			if getIconsSuccess and icons then
 				for _, icon in pairs(icons) do
-					-- isSelected can be a property OR a method, handle both
+
 					local isSelected = false
 					pcall(function()
 						if type(icon.isSelected) == "function" then
@@ -2313,26 +2009,22 @@ local function closeAllUIsOnFishCaught()
 							isSelected = icon.isSelected
 						end
 					end)
-					
+
 					if isSelected and icon.deselect then
 						pcall(function()
 							icon:deselect()
 							closedCount = closedCount + 1
-							print("  ✅ [DESELECTED] TopbarPlus icon")
 						end)
 					end
 				end
 			end
 		end
 	end
-	
 
 end
 
--- Expose globally so pulling success can call it
 _G.closeAllUIsOnFishCaught = closeAllUIsOnFishCaught
 
--- ==================== FISH CAUGHT EVENT LISTENER ====================
 local FishCaughtEvent = ReplicatedStorage:FindFirstChild("FishCaughtEvent")
 
 if FishCaughtEvent then
@@ -2344,7 +2036,7 @@ if FishCaughtEvent then
 		closeAllUIsOnFishCaught()
 	end)
 else
-	
+
 	task.spawn(function()
 		local event = ReplicatedStorage:WaitForChild("FishCaughtEvent", 10)
 		if event then
@@ -2361,25 +2053,12 @@ else
 	end)
 end
 
-print("🎣 Fishing System Handler Loaded!")
-
--- ================================================================================
---                     SECTION: CAMERA CINEMATIC (PHOTO MODE)
--- ================================================================================
---[[
-    Allows players to take cinematic screenshots by hiding UI
-    - Hide all UI elements
-    - Press P or click Photo button to toggle
-]]
-
--- Define playerGui for this section
 local playerGui = Player.PlayerGui
 
 local isCinematicMode = false
 local hiddenGuis = {}
 local originalCoreGuiState = {}
 
--- Create Cinematic GUI
 local cinematicGui = Instance.new("ScreenGui")
 cinematicGui.Name = "CameraCinematicGUI"
 cinematicGui.ResetOnSpawn = false
@@ -2387,7 +2066,6 @@ cinematicGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 cinematicGui.DisplayOrder = 100
 cinematicGui.Parent = playerGui
 
--- Try to use HUD template for Photo button
 local hudGuiCinematic = playerGui:FindFirstChild("HUD")
 local rightFrame = hudGuiCinematic and hudGuiCinematic:FindFirstChild("Right")
 local cinematicButtonTemplate = rightFrame and rightFrame:FindFirstChild("ButtonTemplate")
@@ -2402,21 +2080,20 @@ if cinematicButtonTemplate then
 	buttonContainer.LayoutOrder = 3
 	buttonContainer.BackgroundTransparency = 1
 	buttonContainer.Parent = rightFrame
-	
+
 	cinematicButton = buttonContainer:FindFirstChild("ImageButton")
 	cinematicButtonText = buttonContainer:FindFirstChild("TextLabel")
-	
+
 	if cinematicButton then
 		cinematicButton.Image = "rbxassetid://139242732181104"
 		cinematicButton.BackgroundTransparency = 1
 	end
-	
+
 	if cinematicButtonText then
 		cinematicButtonText.Text = "Photo"
 	end
 end
 
--- Mode Indicator
 local cinematicModeIndicator = Instance.new("TextLabel")
 cinematicModeIndicator.Name = "ModeIndicator"
 cinematicModeIndicator.Size = UDim2.new(0.3, 0, 0.05, 0)
@@ -2435,7 +2112,6 @@ local indicatorCorner = Instance.new("UICorner")
 indicatorCorner.CornerRadius = UDim.new(0, 8)
 indicatorCorner.Parent = cinematicModeIndicator
 
--- CoreGui types to hide in photo mode
 local cinematicCoreGuiTypes = {
 	Enum.CoreGuiType.PlayerList,
 	Enum.CoreGuiType.Health,
@@ -2448,7 +2124,7 @@ local StarterGui = game:GetService("StarterGui")
 
 local function hideAllUIForPhoto()
 	hiddenGuis = {}
-	
+
 	for _, gui in ipairs(playerGui:GetChildren()) do
 		if gui:IsA("ScreenGui") and gui ~= cinematicGui then
 			if gui.Enabled then
@@ -2457,7 +2133,7 @@ local function hideAllUIForPhoto()
 			end
 		end
 	end
-	
+
 	originalCoreGuiState = {}
 	for _, coreType in ipairs(cinematicCoreGuiTypes) do
 		local success, enabled = pcall(function()
@@ -2481,7 +2157,7 @@ local function showAllUIAfterPhoto()
 		end
 	end
 	hiddenGuis = {}
-	
+
 	for coreType, wasEnabled in pairs(originalCoreGuiState) do
 		if wasEnabled then
 			pcall(function()
@@ -2494,7 +2170,7 @@ end
 
 local function toggleCinematicMode()
 	isCinematicMode = not isCinematicMode
-	
+
 	if isCinematicMode then
 		hideAllUIForPhoto()
 		cinematicModeIndicator.Visible = true
@@ -2504,7 +2180,7 @@ local function toggleCinematicMode()
 		if cinematicButtonText then
 			cinematicButtonText.TextColor3 = Color3.fromRGB(100, 255, 100)
 		end
-		
+
 		task.delay(3, function()
 			if isCinematicMode then
 				TweenService:Create(cinematicModeIndicator, TweenInfo.new(0.5), {
@@ -2531,20 +2207,18 @@ if cinematicButton then
 	cinematicButton.MouseButton1Click:Connect(toggleCinematicMode)
 end
 
--- P key for photo mode
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed then return end
-	
+
 	if input.KeyCode == Enum.KeyCode.P then
 		toggleCinematicMode()
 	end
-	
+
 	if input.KeyCode == Enum.KeyCode.Escape and isCinematicMode then
 		toggleCinematicMode()
 	end
 end)
 
--- Exit photo mode on respawn
 Player.CharacterAdded:Connect(function()
 	if isCinematicMode then
 		isCinematicMode = false
@@ -2558,18 +2232,6 @@ Player.CharacterAdded:Connect(function()
 		end
 	end
 end)
-
-print("📷 [CAMERA CINEMATIC] Section Loaded")
-
--- ================================================================================
---                     SECTION: NEW FISH DISCOVERY UI
--- ================================================================================
---[[
-    Shows premium UI when player catches a new fish type
-    - Cinematic banner with 3D model
-    - Rotating rays effect
-    - Simple notification for regular catches
-]]
 
 local FishDiscoveryColors = {
 	Background = Color3.fromRGB(18, 18, 22),
@@ -2665,8 +2327,7 @@ local function showNewDiscoveryBanner(fishID, fishData, quantity)
 
 	local rarityColor = FishDiscoveryColors[fishData.Rarity] or FishDiscoveryColors.Common
 	local rarityText = fishData.Rarity:upper()
-	
-	-- Rarity glow colors (brighter for glow effects)
+
 	local rarityGlow = {
 		Common = Color3.fromRGB(200, 200, 210),
 		Uncommon = Color3.fromRGB(100, 220, 160),
@@ -2676,7 +2337,6 @@ local function showNewDiscoveryBanner(fishID, fishData, quantity)
 	}
 	local glowColor = rarityGlow[fishData.Rarity] or rarityGlow.Common
 
-	-- ========== BACKDROP WITH RADIAL GRADIENT ==========
 	local backdrop = Instance.new("Frame")
 	backdrop.Size = UDim2.new(1, 0, 1, 0)
 	backdrop.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -2684,7 +2344,6 @@ local function showNewDiscoveryBanner(fishID, fishData, quantity)
 	backdrop.BorderSizePixel = 0
 	backdrop.Parent = bannerGui
 
-	-- ========== ANIMATED ROTATING RAYS ==========
 	local raysContainer = Instance.new("Frame")
 	raysContainer.Size = UDim2.new(2, 0, 2, 0)
 	raysContainer.Position = UDim2.new(0.5, 0, 0.5, 0)
@@ -2693,7 +2352,6 @@ local function showNewDiscoveryBanner(fishID, fishData, quantity)
 	raysContainer.Parent = bannerGui
 	raysContainer.ClipsDescendants = false
 
-	-- Create rotating rays
 	local numRays = 12
 	for i = 1, numRays do
 		local ray = Instance.new("Frame")
@@ -2704,8 +2362,7 @@ local function showNewDiscoveryBanner(fishID, fishData, quantity)
 		ray.BackgroundTransparency = 0.85
 		ray.BorderSizePixel = 0
 		ray.Parent = raysContainer
-		
-		-- Gradient for ray
+
 		local rayGradient = Instance.new("UIGradient")
 		rayGradient.Color = ColorSequence.new({
 			ColorSequenceKeypoint.new(0, glowColor),
@@ -2720,7 +2377,6 @@ local function showNewDiscoveryBanner(fishID, fishData, quantity)
 		rayGradient.Parent = ray
 	end
 
-	-- Animate rays rotation
 	task.spawn(function()
 		local rotation = 0
 		while raysContainer.Parent do
@@ -2730,7 +2386,6 @@ local function showNewDiscoveryBanner(fishID, fishData, quantity)
 		end
 	end)
 
-	-- ========== MAIN CARD - GLASSMORPHISM STYLE ==========
 	local card = Instance.new("Frame")
 	card.Size = UDim2.new(0.5, 0, 0.42, 0)
 	card.Position = UDim2.new(0.5, 0, 0.5, 0)
@@ -2755,14 +2410,12 @@ local function showNewDiscoveryBanner(fishID, fishData, quantity)
 	cardCorner.CornerRadius = UDim.new(0, 20)
 	cardCorner.Parent = card
 
-	-- Glowing border stroke
 	local cardStroke = Instance.new("UIStroke")
 	cardStroke.Color = glowColor
 	cardStroke.Thickness = 3
 	cardStroke.Transparency = 0.3
 	cardStroke.Parent = card
 
-	-- Inner glow gradient overlay
 	local innerGlow = Instance.new("Frame")
 	innerGlow.Size = UDim2.new(1, 0, 1, 0)
 	innerGlow.BackgroundTransparency = 1
@@ -2783,7 +2436,6 @@ local function showNewDiscoveryBanner(fishID, fishData, quantity)
 	innerGlowGradient.Rotation = 45
 	innerGlowGradient.Parent = innerGlow
 
-	-- ========== SHINE SWEEP EFFECT ==========
 	local shine = Instance.new("Frame")
 	shine.Size = UDim2.new(0.3, 0, 1.5, 0)
 	shine.Position = UDim2.new(-0.3, 0, -0.25, 0)
@@ -2803,13 +2455,11 @@ local function showNewDiscoveryBanner(fishID, fishData, quantity)
 	})
 	shineGradient.Parent = shine
 
-	-- ========== LEFT SIDE - 3D MODEL SHOWCASE ==========
 	local visualContainer = Instance.new("Frame")
 	visualContainer.Size = UDim2.new(0.45, 0, 1, 0)
 	visualContainer.BackgroundTransparency = 1
 	visualContainer.Parent = card
 
-	-- Circular glow behind fish
 	local fishGlow = Instance.new("Frame")
 	fishGlow.Size = UDim2.new(0.85, 0, 0.85, 0)
 	fishGlow.Position = UDim2.new(0.5, 0, 0.5, 0)
@@ -2833,7 +2483,6 @@ local function showNewDiscoveryBanner(fishID, fishData, quantity)
 	viewport.LightDirection = Vector3.new(-1, -1, -0.5)
 	viewport.Parent = visualContainer
 
-	-- ========== RIGHT SIDE - INFO PANEL ==========
 	local infoContainer = Instance.new("Frame")
 	infoContainer.Size = UDim2.new(0.55, 0, 1, 0)
 	infoContainer.Position = UDim2.new(0.45, 0, 0, 0)
@@ -2854,7 +2503,6 @@ local function showNewDiscoveryBanner(fishID, fishData, quantity)
 	listLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 	listLayout.Parent = infoContainer
 
-	-- ========== HEADER - "NEW DISCOVERY" WITH SPARKLE ANIMATION ==========
 	local headerContainer = Instance.new("Frame")
 	headerContainer.Size = UDim2.new(1, 0, 0, 26)
 	headerContainer.BackgroundTransparency = 1
@@ -2871,7 +2519,6 @@ local function showNewDiscoveryBanner(fishID, fishData, quantity)
 	headerLabel.TextXAlignment = Enum.TextXAlignment.Left
 	headerLabel.Parent = headerContainer
 
-	-- Animate header text glow
 	task.spawn(function()
 		local brightness = 0
 		local direction = 1
@@ -2885,7 +2532,6 @@ local function showNewDiscoveryBanner(fishID, fishData, quantity)
 		end
 	end)
 
-	-- ========== FISH NAME - LARGE BOLD TEXT ==========
 	local nameLabel = Instance.new("TextLabel")
 	nameLabel.Text = fishData.Name
 	nameLabel.Size = UDim2.new(1, 0, 0, 50)
@@ -2899,14 +2545,12 @@ local function showNewDiscoveryBanner(fishID, fishData, quantity)
 	nameLabel.LayoutOrder = 2
 	nameLabel.Parent = infoContainer
 
-	-- Text stroke for depth
 	local nameStroke = Instance.new("UIStroke")
 	nameStroke.Color = Color3.fromRGB(0, 0, 0)
 	nameStroke.Thickness = 1.5
 	nameStroke.Transparency = 0.5
 	nameStroke.Parent = nameLabel
 
-	-- ========== RARITY & PRICE BADGES ==========
 	local badgesContainer = Instance.new("Frame")
 	badgesContainer.Size = UDim2.new(1, 0, 0, 32)
 	badgesContainer.BackgroundTransparency = 1
@@ -2919,7 +2563,6 @@ local function showNewDiscoveryBanner(fishID, fishData, quantity)
 	badgesLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 	badgesLayout.Parent = badgesContainer
 
-	-- Rarity Badge with gradient
 	local rarityBadge = Instance.new("Frame")
 	rarityBadge.BackgroundColor3 = rarityColor
 	rarityBadge.Size = UDim2.new(0, 95, 1, 0)
@@ -2957,7 +2600,6 @@ local function showNewDiscoveryBanner(fishID, fishData, quantity)
 	rarityTextStroke.Transparency = 0.5
 	rarityTextStroke.Parent = rarityTextLabel
 
-	-- Price Tag with coin icon
 	local priceTag = Instance.new("Frame")
 	priceTag.Size = UDim2.new(0, 100, 1, 0)
 	priceTag.BackgroundColor3 = Color3.fromRGB(40, 45, 55)
@@ -2976,7 +2618,6 @@ local function showNewDiscoveryBanner(fishID, fishData, quantity)
 	priceText.TextColor3 = Color3.fromRGB(100, 220, 150)
 	priceText.Parent = priceTag
 
-	-- ========== HINT TEXT AT BOTTOM ==========
 	local hintLabel = Instance.new("TextLabel")
 	hintLabel.Text = "🎣 TAP ANYWHERE TO CONTINUE"
 	hintLabel.Size = UDim2.new(1, 0, 0, 22)
@@ -2989,20 +2630,18 @@ local function showNewDiscoveryBanner(fishID, fishData, quantity)
 	hintLabel.TextTransparency = 0.3
 	hintLabel.Parent = card
 
-	-- Pulse animation for hint
 	task.spawn(function()
 		while hintLabel.Parent do
-			TweenService:Create(hintLabel, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), 
+			TweenService:Create(hintLabel, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut),
 				{TextTransparency = 0.6}):Play()
 			task.wait(0.8)
-			TweenService:Create(hintLabel, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), 
+			TweenService:Create(hintLabel, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut),
 				{TextTransparency = 0.2}):Play()
 			task.wait(0.8)
 		end
 	end)
 
-	-- ========== LOAD 3D FISH MODEL ==========
-	local FishModelsFolder = ReplicatedStorage:FindFirstChild("FishModels") 
+	local FishModelsFolder = ReplicatedStorage:FindFirstChild("FishModels")
 		or (ReplicatedStorage:FindFirstChild("Models") and ReplicatedStorage.Models:FindFirstChild("Fish"))
 		or (ReplicatedStorage:FindFirstChild("Assets") and ReplicatedStorage.Assets:FindFirstChild("FishModels"))
 		or workspace:FindFirstChild("FishModels")
@@ -3012,36 +2651,35 @@ local function showNewDiscoveryBanner(fishID, fishData, quantity)
 		if fishModel then
 			local worldModel = Instance.new("WorldModel")
 			worldModel.Parent = viewport
-			
+
 			local clonedModel = fishModel:Clone()
 			clonedModel.Parent = worldModel
 
-			if clonedModel:IsA("Model") then 
+			if clonedModel:IsA("Model") then
 				clonedModel:PivotTo(CFrame.new(0, 0, 0))
-			elseif clonedModel:IsA("BasePart") then 
-				clonedModel.CFrame = CFrame.new(0, 0, 0) 
+			elseif clonedModel:IsA("BasePart") then
+				clonedModel.CFrame = CFrame.new(0, 0, 0)
 			end
 
 			local modelSize = clonedModel:GetExtentsSize()
 			local maxDim = math.max(modelSize.X, modelSize.Y, modelSize.Z)
-			
+
 			local fov = 60
 			local fillFactor = 1.2
 			local distance = (maxDim / 2) / math.tan(math.rad(fov / 2)) * fillFactor
-			
+
 			local cam = Instance.new("Camera")
 			cam.FieldOfView = fov
-			
+
 			local angle = math.rad(25)
 			local camX = distance * math.cos(angle) * 0.85
 			local camY = maxDim * 0.1
 			local camZ = distance * math.sin(angle) * 0.85 + distance * 0.4
-			
+
 			cam.CFrame = CFrame.new(Vector3.new(camX, camY, camZ), Vector3.new(0, 0, 0))
 			cam.Parent = viewport
 			viewport.CurrentCamera = cam
 
-			-- Smooth fish rotation
 			task.spawn(function()
 				while viewport.Parent do
 					if clonedModel and clonedModel.Parent then
@@ -3054,21 +2692,17 @@ local function showNewDiscoveryBanner(fishID, fishData, quantity)
 		end
 	end
 
-	-- ========== ENTRANCE ANIMATIONS ==========
-	-- Fade in backdrop
 	TweenService:Create(backdrop, TweenInfo.new(0.4, Enum.EasingStyle.Quad), {BackgroundTransparency = 0.5}):Play()
 
-	-- Scale up card with bounce
 	card.Size = UDim2.new(0, 0, 0, 0)
 	card.Visible = true
-	
-	local popTween = TweenService:Create(card, 
+
+	local popTween = TweenService:Create(card,
 		TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
 		{Size = UDim2.new(0.5, 0, 0.42, 0)}
 	)
 	popTween:Play()
 
-	-- Shine sweep animation (delayed)
 	task.delay(0.5, function()
 		if shine.Parent then
 			TweenService:Create(shine, TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
@@ -3076,7 +2710,6 @@ local function showNewDiscoveryBanner(fishID, fishData, quantity)
 		end
 	end)
 
-	-- Animate stroke glow
 	task.spawn(function()
 		local pulseDir = 1
 		local transparency = 0.3
@@ -3089,7 +2722,6 @@ local function showNewDiscoveryBanner(fishID, fishData, quantity)
 		end
 	end)
 
-	-- ========== CLOSE BUTTON (FULLSCREEN) ==========
 	local closeButton = Instance.new("TextButton")
 	closeButton.Size = UDim2.new(1, 0, 1, 0)
 	closeButton.BackgroundTransparency = 1
@@ -3101,23 +2733,21 @@ local function showNewDiscoveryBanner(fishID, fishData, quantity)
 	closeButton.MouseButton1Click:Connect(function()
 		if closing then return end
 		closing = true
-		
-		-- Exit animations
+
 		TweenService:Create(backdrop, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
 		TweenService:Create(raysContainer, TweenInfo.new(0.3), {Size = UDim2.new(0, 0, 0, 0)}):Play()
-		
-		local closeTween = TweenService:Create(card, 
-			TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.In), 
+
+		local closeTween = TweenService:Create(card,
+			TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.In),
 			{Size = UDim2.new(0, 0, 0, 0)}
 		)
 		closeTween:Play()
-		
+
 		closeTween.Completed:Wait()
 		bannerGui:Destroy()
 	end)
 end
 
--- Hook into FishCaughtEvent for discovery UI (may already be connected, but safe to add)
 local FishCaughtEventForDiscovery = ReplicatedStorage:FindFirstChild("FishCaughtEvent")
 if not FishCaughtEventForDiscovery then
 	FishCaughtEventForDiscovery = ReplicatedStorage:WaitForChild("FishCaughtEvent", 10)
@@ -3125,30 +2755,16 @@ end
 
 if FishCaughtEventForDiscovery then
 	FishCaughtEventForDiscovery.OnClientEvent:Connect(function(data)
-		print("📩 [FISH DISCOVERY] Received FishCaughtEvent on client!")
-		print("📩 [FISH DISCOVERY] Fish:", data.FishData and data.FishData.Name or "nil", "| New Discovery:", tostring(data.IsNewDiscovery))
-		
+
 		if data.IsNewDiscovery then
 			showNewDiscoveryBanner(data.FishID, data.FishData, data.Quantity)
 		else
 			showSimpleFishNotification(data.FishData, data.Quantity)
 		end
 	end)
-	print("✅ [FISH DISCOVERY] Connected to FishCaughtEvent")
 else
 	warn("⚠️ [FISH DISCOVERY] FishCaughtEvent not found!")
 end
-
-print("🐟 [FISH DISCOVERY UI] Section Loaded")
-
--- ================================================================================
---                     SECTION: FISHING REPLICATION CLIENT
--- ================================================================================
---[[
-    Handles visual replication of OTHER players' fishing actions
-    - Creates floaters and fishing lines for other players
-    - All animations run locally for smooth appearance
-]]
 
 local FishingRemotes = ReplicatedStorage:WaitForChild("FishingRemotes", 5)
 if FishingRemotes then
@@ -3156,12 +2772,12 @@ if FishingRemotes then
 	local PlayerStartedPullingEvent = FishingRemotes:FindFirstChild("PlayerStartedPulling")
 	local PlayerStoppedFishingEvent = FishingRemotes:FindFirstChild("PlayerStoppedFishing")
 
-	local otherPlayersFishing = {} -- [player] = {floater, line, etc}
+	local otherPlayersFishing = {}
 
 	local function cleanupPlayerFishing(targetPlayer)
 		local data = otherPlayersFishing[targetPlayer]
 		if not data then return end
-		
+
 		if data.floater then
 			pcall(function() data.floater:Destroy() end)
 		end
@@ -3184,25 +2800,24 @@ if FishingRemotes then
 		if data.attachment1 then
 			pcall(function() data.attachment1:Destroy() end)
 		end
-		
+
 		otherPlayersFishing[targetPlayer] = nil
 	end
 
 	if PlayerThrewFloaterEvent then
 		PlayerThrewFloaterEvent.OnClientEvent:Connect(function(sourcePlayer, eventData)
 			if sourcePlayer == player then return end
-			
+
 			cleanupPlayerFishing(sourcePlayer)
-			
+
 			local targetPos = eventData.TargetPos
 			if not targetPos then return end
 
-			-- Create floater for other player
 			local floaterTemplate = FloatersFolder:FindFirstChild(eventData.FloaterId or "Floater_Doll")
 			if floaterTemplate then
 				local floater = floaterTemplate:Clone()
 				floater.Name = "ReplicatedFloater_" .. sourcePlayer.Name
-				
+
 				if floater:IsA("Model") then
 					for _, part in ipairs(floater:GetDescendants()) do
 						if part:IsA("BasePart") then
@@ -3219,9 +2834,9 @@ if FishingRemotes then
 					floater.CanCollide = false
 					floater.CFrame = CFrame.new(targetPos)
 				end
-				
+
 				floater.Parent = workspace
-				
+
 				otherPlayersFishing[sourcePlayer] = {
 					floater = floater,
 					targetPos = targetPos
@@ -3236,12 +2851,8 @@ if FishingRemotes then
 		end)
 	end
 
-	-- Cleanup when player leaves
 	Players.PlayerRemoving:Connect(function(leavingPlayer)
 		cleanupPlayerFishing(leavingPlayer)
 	end)
 
-	print("🎣 [FISHING REPLICATION] Section Loaded")
 end
-
-print("✅ [FISHING CLIENT] Fully Loaded (Combined Script)")

@@ -1,7 +1,5 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-print("[FLY ABILITY INIT] Client initializer starting...")
-
 local Modules = ReplicatedStorage:WaitForChild("Modules", 10)
 if not Modules then
     warn("[FLY ABILITY INIT] Modules folder not found!")
@@ -15,5 +13,3 @@ if not FlyAbilityModule then
 end
 
 local FlyAbility = require(FlyAbilityModule)
-
-print("[FLY ABILITY INIT] Client initialization complete!")

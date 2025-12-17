@@ -1105,5 +1105,3 @@ task.spawn(function()
 	task.wait(2)
 	refreshShopData()
 end)
-
-print("✓ Shop System Client loaded successfully")

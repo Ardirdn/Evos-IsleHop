@@ -1,10 +1,3 @@
---[[
-    INVENTORY CLIENT v3.0 - WITH TITLES TAB & EQUIP SYSTEM
-    Place in StarterPlayerScripts/InventoryClientV3
-    
-    PENTING: Hapus script InventorySystemClient yang lama!
-]]
-
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
@@ -14,7 +7,6 @@ local StarterGui = game:GetService("StarterGui")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- Hide default Roblox backpack/hotbar (we use custom inventory)
 StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, false)
 
 local HUDButtonHelper = require(script.Parent:WaitForChild("HUDButtonHelper"))
@@ -22,7 +14,6 @@ local PanelManager = require(script.Parent:WaitForChild("PanelManager"))
 local InventoryConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("InventoryConfig"))
 local TitleConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("TitleConfig"))
 
--- RemoteEvents
 local inventoryRemotes = ReplicatedStorage:WaitForChild("InventoryRemotes", 10)
 if not inventoryRemotes then
 	warn("[INVENTORY CLIENT v3] InventoryRemotes not found!")
@@ -31,13 +22,11 @@ end
 
 local getInventoryFunc = inventoryRemotes:WaitForChild("GetInventory", 5)
 
--- Use the correct RemoteEvent names that match the server
 local equipAuraEvent = inventoryRemotes:FindFirstChild("EquipAura")
 local unequipAuraEvent = inventoryRemotes:FindFirstChild("UnequipAura")
 local equipToolEvent = inventoryRemotes:FindFirstChild("EquipTool")
 local unequipToolEvent = inventoryRemotes:FindFirstChild("UnequipTool")
 
--- Check if inventory remotes exist (optional for backward compatibility)
 if not equipAuraEvent then
 	warn("[INVENTORY CLIENT v3] EquipAura not found - Aura equip disabled")
 end
@@ -55,7 +44,6 @@ local getUnlockedTitlesFunc = titleRemotes:WaitForChild("GetUnlockedTitles", 5)
 local equipTitleEvent = titleRemotes:WaitForChild("EquipTitle", 5)
 local unequipTitleEvent = titleRemotes:WaitForChild("UnequipTitle", 5)
 
--- State
 local currentCategory = "All"
 local currentTitleFilter = "All"
 local inventoryData = {
@@ -70,16 +58,10 @@ local titleData = {
 	EquippedTitle = nil
 }
 
--- Colors
 local COLORS = InventoryConfig.Colors
 
--- Forward declarations (defined later)
 local isInventoryOpen = false
 local toggleInventory
-
-print("✅ [INVENTORY CLIENT v3] Starting initialization...")
-
--- ==================== HELPER FUNCTIONS ====================
 
 local function createCorner(radius)
 	local corner = Instance.new("UICorner")
@@ -108,8 +90,6 @@ local function createTextSizeConstraint(minSize, maxSize)
 	return constraint
 end
 
--- ==================== CREATE GUI ====================
-
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "InventoryGUI_V3"
 screenGui.ResetOnSpawn = false
@@ -117,7 +97,6 @@ screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 screenGui.Enabled = true
 screenGui.Parent = playerGui
 
--- Main Container (untuk aspect ratio)
 local mainContainer = Instance.new("Frame")
 mainContainer.Size = UDim2.new(0.55, 0, 0.8, 0)
 mainContainer.Position = UDim2.new(0.5, 0, 0.5, 0)
@@ -125,14 +104,12 @@ mainContainer.AnchorPoint = Vector2.new(0.5, 0.5)
 mainContainer.BackgroundTransparency = 1
 mainContainer.Parent = screenGui
 
--- Aspect Ratio Constraint
 local aspectRatio = Instance.new("UIAspectRatioConstraint")
 aspectRatio.AspectRatio = 1.4
 aspectRatio.AspectType = Enum.AspectType.ScaleWithParentSize
 aspectRatio.DominantAxis = Enum.DominantAxis.Width
 aspectRatio.Parent = mainContainer
 
--- Main Panel
 local mainPanel = Instance.new("Frame")
 mainPanel.Size = UDim2.new(1, 0, 1, 0)
 mainPanel.Position = UDim2.new(0, 0, 0, 0)
@@ -144,7 +121,6 @@ mainPanel.Parent = mainContainer
 createScaledCorner(0.02).Parent = mainPanel
 createStroke(COLORS.Border, 2).Parent = mainPanel
 
--- Main Panel Padding
 local mainPadding = Instance.new("UIPadding")
 mainPadding.PaddingLeft = UDim.new(0.025, 0)
 mainPadding.PaddingRight = UDim.new(0.025, 0)
@@ -152,7 +128,6 @@ mainPadding.PaddingTop = UDim.new(0.02, 0)
 mainPadding.PaddingBottom = UDim.new(0.025, 0)
 mainPadding.Parent = mainPanel
 
--- Header
 local header = Instance.new("Frame")
 header.Size = UDim2.new(1, 0, 0.12, 0)
 header.BackgroundColor3 = COLORS.Panel
@@ -161,7 +136,6 @@ header.Parent = mainPanel
 
 createScaledCorner(0.15).Parent = header
 
--- Header Padding
 local headerPadding = Instance.new("UIPadding")
 headerPadding.PaddingLeft = UDim.new(0.02, 0)
 headerPadding.PaddingRight = UDim.new(0.02, 0)
@@ -180,7 +154,6 @@ headerTitle.Parent = header
 
 createTextSizeConstraint(14, 24).Parent = headerTitle
 
--- Close Button
 local closeBtn = Instance.new("TextButton")
 closeBtn.Size = UDim2.new(0.06, 0, 0.7, 0)
 closeBtn.Position = UDim2.new(0.97, 0, 0.5, 0)
@@ -211,7 +184,6 @@ closeBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
--- Category Frame
 local categoryFrame = Instance.new("Frame")
 categoryFrame.Size = UDim2.new(1, 0, 0.08, 0)
 categoryFrame.Position = UDim2.new(0, 0, 0.14, 0)
@@ -224,14 +196,11 @@ categoryLayout.Padding = UDim.new(0.015, 0)
 categoryLayout.SortOrder = Enum.SortOrder.LayoutOrder
 categoryLayout.Parent = categoryFrame
 
--- Content Frame
 local contentFrame = Instance.new("Frame")
 contentFrame.Size = UDim2.new(1, 0, 0.74, 0)
 contentFrame.Position = UDim2.new(0, 0, 0.24, 0)
 contentFrame.BackgroundTransparency = 1
 contentFrame.Parent = mainPanel
-
--- ==================== CATEGORY TABS ====================
 
 local categoryTabs = {}
 
@@ -250,8 +219,7 @@ local function createCategoryTab(categoryName, order)
 
 	createScaledCorner(0.2).Parent = tab
 	createTextSizeConstraint(10, 16).Parent = tab
-	
-	-- Tab padding
+
 	local tabPadding = Instance.new("UIPadding")
 	tabPadding.PaddingLeft = UDim.new(0.1, 0)
 	tabPadding.PaddingRight = UDim.new(0.1, 0)
@@ -293,8 +261,6 @@ local aurasContent = createCategoryTab("Auras", 2)
 local toolsContent = createCategoryTab("Tools", 3)
 local titlesContent = createCategoryTab("Titles", 4)
 
--- ==================== ALL TAB ====================
-
 local allScroll = Instance.new("ScrollingFrame")
 allScroll.Size = UDim2.new(1, 0, 1, 0)
 allScroll.BackgroundTransparency = 1
@@ -316,8 +282,6 @@ allGrid.CellPadding = UDim2.new(0.025, 0, 0, 12)
 allGrid.SortOrder = Enum.SortOrder.LayoutOrder
 allGrid.HorizontalAlignment = Enum.HorizontalAlignment.Center
 allGrid.Parent = allScroll
-
--- ==================== AURAS TAB ====================
 
 local aurasScroll = Instance.new("ScrollingFrame")
 aurasScroll.Size = UDim2.new(1, 0, 1, 0)
@@ -341,8 +305,6 @@ aurasGrid.SortOrder = Enum.SortOrder.LayoutOrder
 aurasGrid.HorizontalAlignment = Enum.HorizontalAlignment.Center
 aurasGrid.Parent = aurasScroll
 
--- ==================== TOOLS TAB ====================
-
 local toolsScroll = Instance.new("ScrollingFrame")
 toolsScroll.Size = UDim2.new(1, 0, 1, 0)
 toolsScroll.BackgroundTransparency = 1
@@ -365,9 +327,6 @@ toolsGrid.SortOrder = Enum.SortOrder.LayoutOrder
 toolsGrid.HorizontalAlignment = Enum.HorizontalAlignment.Center
 toolsGrid.Parent = toolsScroll
 
--- ==================== TITLES TAB ====================
-
--- Filter Frame
 local titleFilterFrame = Instance.new("Frame")
 titleFilterFrame.Size = UDim2.new(1, 0, 0.1, 0)
 titleFilterFrame.BackgroundTransparency = 1
@@ -411,7 +370,6 @@ createTitleFilterBtn("All", "All")
 createTitleFilterBtn("Special", "Special")
 createTitleFilterBtn("Summit", "Summit")
 
--- Titles Scroll
 local titlesScroll = Instance.new("ScrollingFrame")
 titlesScroll.Size = UDim2.new(1, 0, 0.88, 0)
 titlesScroll.Position = UDim2.new(0, 0, 0.12, 0)
@@ -447,11 +405,9 @@ titlesEmptyLabel.Parent = titlesScroll
 
 createTextSizeConstraint(12, 18).Parent = titlesEmptyLabel
 
--- ==================== ITEM CREATION ====================
-
 local function createAuraItem(auraId, parentFrame)
 	if not equipAuraEvent or not unequipAuraEvent then
-		return nil -- Skip if remotes don't exist
+		return nil
 	end
 
 	local frame = Instance.new("Frame")
@@ -482,7 +438,7 @@ local function createAuraItem(auraId, parentFrame)
 		badgeLabel.TextColor3 = COLORS.Text
 		badgeLabel.TextScaled = true
 		badgeLabel.Parent = equippedBadge
-		
+
 		createTextSizeConstraint(8, 12).Parent = badgeLabel
 	end
 
@@ -495,7 +451,7 @@ local function createAuraItem(auraId, parentFrame)
 	icon.TextColor3 = COLORS.Accent
 	icon.TextScaled = true
 	icon.Parent = frame
-	
+
 	createTextSizeConstraint(20, 36).Parent = icon
 
 	local nameLabel = Instance.new("TextLabel")
@@ -508,7 +464,7 @@ local function createAuraItem(auraId, parentFrame)
 	nameLabel.TextScaled = true
 	nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	nameLabel.Parent = frame
-	
+
 	createTextSizeConstraint(9, 14).Parent = nameLabel
 
 	local btn = Instance.new("TextButton")
@@ -530,14 +486,14 @@ local function createAuraItem(auraId, parentFrame)
 	btn.MouseButton1Click:Connect(function()
 		if isEquipped then
 			unequipAuraEvent:FireServer()
-			-- Update local state immediately for responsive UI
+
 			inventoryData.EquippedAura = nil
 		else
 			equipAuraEvent:FireServer(auraId)
-			-- Update local state immediately for responsive UI
+
 			inventoryData.EquippedAura = auraId
 		end
-		-- Refresh UI after short delay to let server process
+
 		task.delay(0.1, function()
 			updateInventory()
 		end)
@@ -579,7 +535,7 @@ local function createToolItem(toolId, parentFrame)
 		badgeLabel.TextColor3 = COLORS.Text
 		badgeLabel.TextScaled = true
 		badgeLabel.Parent = equippedBadge
-		
+
 		createTextSizeConstraint(8, 12).Parent = badgeLabel
 	end
 
@@ -592,7 +548,7 @@ local function createToolItem(toolId, parentFrame)
 	icon.TextColor3 = COLORS.Success
 	icon.TextScaled = true
 	icon.Parent = frame
-	
+
 	createTextSizeConstraint(20, 36).Parent = icon
 
 	local nameLabel = Instance.new("TextLabel")
@@ -605,7 +561,7 @@ local function createToolItem(toolId, parentFrame)
 	nameLabel.TextScaled = true
 	nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	nameLabel.Parent = frame
-	
+
 	createTextSizeConstraint(9, 14).Parent = nameLabel
 
 	local btn = Instance.new("TextButton")
@@ -627,14 +583,14 @@ local function createToolItem(toolId, parentFrame)
 	btn.MouseButton1Click:Connect(function()
 		if isEquipped then
 			unequipToolEvent:FireServer()
-			-- Update local state immediately for responsive UI
+
 			inventoryData.EquippedTool = nil
 		else
 			equipToolEvent:FireServer(toolId)
-			-- Update local state immediately for responsive UI
+
 			inventoryData.EquippedTool = toolId
 		end
-		-- Refresh UI after short delay to let server process
+
 		task.delay(0.1, function()
 			updateInventory()
 		end)
@@ -694,7 +650,7 @@ local function createTitleItem(titleName)
 		badgeLabel.TextColor3 = COLORS.Text
 		badgeLabel.TextScaled = true
 		badgeLabel.Parent = equippedBadge
-		
+
 		createTextSizeConstraint(8, 12).Parent = badgeLabel
 	end
 
@@ -708,7 +664,7 @@ local function createTitleItem(titleName)
 	icon.TextColor3 = titleInfo.Color
 	icon.TextScaled = true
 	icon.Parent = frame
-	
+
 	createTextSizeConstraint(16, 28).Parent = icon
 
 	local nameLabel = Instance.new("TextLabel")
@@ -723,7 +679,7 @@ local function createTitleItem(titleName)
 	nameLabel.TextXAlignment = Enum.TextXAlignment.Left
 	nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	nameLabel.Parent = frame
-	
+
 	createTextSizeConstraint(10, 16).Parent = nameLabel
 
 	local btn = Instance.new("TextButton")
@@ -745,14 +701,14 @@ local function createTitleItem(titleName)
 	btn.MouseButton1Click:Connect(function()
 		if isEquipped then
 			unequipTitleEvent:FireServer()
-			-- Update local state immediately for responsive UI
+
 			titleData.EquippedTitle = nil
 		else
 			equipTitleEvent:FireServer(titleName)
-			-- Update local state immediately for responsive UI
+
 			titleData.EquippedTitle = titleName
 		end
-		-- Refresh UI after short delay to let server process
+
 		task.delay(0.1, function()
 			updateTitlesTab()
 		end)
@@ -760,8 +716,6 @@ local function createTitleItem(titleName)
 
 	return frame
 end
-
--- ==================== UPDATE FUNCTIONS ====================
 
 function updateInventory()
 	for _, child in ipairs(allScroll:GetChildren()) do
@@ -799,8 +753,7 @@ function updateInventory()
 			end
 		end
 	end
-	
-	-- ✅ AdminWing is now part of OwnedTools for admins, handled by the loop above
+
 end
 
 function updateTitlesTab()
@@ -838,8 +791,8 @@ function updateTitlesTab()
 
 	if #itemsToShow == 0 then
 		titlesEmptyLabel.Visible = true
-		titlesEmptyLabel.Text = currentTitleFilter == "All" 
-			and "No titles unlocked yet" 
+		titlesEmptyLabel.Text = currentTitleFilter == "All"
+			and "No titles unlocked yet"
 			or ("No " .. currentTitleFilter .. " titles unlocked")
 	else
 		titlesEmptyLabel.Visible = false
@@ -848,8 +801,6 @@ function updateTitlesTab()
 		end
 	end
 end
-
--- ==================== FETCH DATA ====================
 
 local function fetchInventory()
 	if not getInventoryFunc then return end
@@ -879,8 +830,6 @@ local function fetchTitles()
 	end
 end
 
--- ==================== HUD BUTTON ====================
-
 local function closeInventory()
 	isInventoryOpen = false
 	mainPanel.Visible = false
@@ -888,7 +837,7 @@ local function closeInventory()
 end
 
 local function openInventory()
-	PanelManager:Open("InventoryPanel") -- This closes other panels first
+	PanelManager:Open("InventoryPanel")
 	isInventoryOpen = true
 	mainPanel.Visible = true
 	fetchInventory()
@@ -903,7 +852,6 @@ toggleInventory = function()
 	end
 end
 
--- Register with PanelManager
 PanelManager:Register("InventoryPanel", closeInventory)
 
 local inventoryButton = HUDButtonHelper.Create({
@@ -914,8 +862,6 @@ local inventoryButton = HUDButtonHelper.Create({
 	OnClick = toggleInventory
 })
 
--- ==================== KEYBIND ====================
-
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed then return end
 
@@ -924,14 +870,12 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	end
 end)
 
--- ✅ LISTEN FOR INVENTORY UPDATE EVENT (admin gave items)
 local inventoryUpdatedEvent = inventoryRemotes:FindFirstChild("InventoryUpdated")
 if inventoryUpdatedEvent then
 	inventoryUpdatedEvent.OnClientEvent:Connect(function(updatedData)
-		print("📦 [INVENTORY CLIENT] Received inventory update from server")
 		if updatedData then
 			inventoryData = updatedData
-			-- Refresh UI if inventory is open
+
 			if isInventoryOpen then
 				if currentCategory == "Titles" then
 					updateTitlesTab()
@@ -941,7 +885,4 @@ if inventoryUpdatedEvent then
 			end
 		end
 	end)
-	print("✅ [INVENTORY CLIENT v3] InventoryUpdated listener connected")
 end
-
-print("✅ [INVENTORY CLIENT v3] Loaded with Titles tab")

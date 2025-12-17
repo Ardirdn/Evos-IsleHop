@@ -10,10 +10,6 @@ local PlayerInfoRemotes = ReplicatedStorage:WaitForChild("PlayerInfoRemotes")
 local GiveGamepassEvent = PlayerInfoRemotes:WaitForChild("GiveGamepass")
 
 GiveGamepassEvent.OnServerEvent:Connect(function(buyerPlayer, targetUserId, gamepassType)
-	print("🎁 [SERVER] Gift request received!")
-	print("  Buyer:", buyerPlayer.Name)
-	print("  Target UserId:", targetUserId)
-	print("  Type:", gamepassType)
 
 	if not buyerPlayer or not targetUserId or not gamepassType then
 		warn("⚠️ Invalid gift request!")
@@ -34,7 +30,6 @@ GiveGamepassEvent.OnServerEvent:Connect(function(buyerPlayer, targetUserId, game
 		end
 
 		VIPStore:SetAsync(tostring(targetUserId), currentData)
-		print("✅ [SERVER] VIP status saved to DataStore")
 	end)
 
 	if not saveSuccess then
@@ -45,7 +40,6 @@ GiveGamepassEvent.OnServerEvent:Connect(function(buyerPlayer, targetUserId, game
 	local targetPlayer = Players:GetPlayerByUserId(targetUserId)
 
 	if targetPlayer then
-		print("✅ [SERVER] Target player is ONLINE:", targetPlayer.Name)
 
 		task.spawn(function()
 			task.wait(0.5)
@@ -66,7 +60,6 @@ GiveGamepassEvent.OnServerEvent:Connect(function(buyerPlayer, targetUserId, game
 
 			local setSuccess = pcall(function()
 				SetTitle:InvokeClient(targetPlayer, titleName)
-				print("✅ [SERVER] Title set to:", titleName)
 			end)
 
 			if setSuccess then
@@ -79,13 +72,11 @@ GiveGamepassEvent.OnServerEvent:Connect(function(buyerPlayer, targetUserId, game
 					})
 				end
 
-				print("✅ [SERVER] Title assigned and notification sent")
 			else
 				warn("⚠️ Failed to set title")
 			end
 		end)
 	else
-		print("ℹ️ [SERVER] Target player is OFFLINE")
 	end
 end)
 
@@ -94,15 +85,9 @@ if not GiveItemEvent then
 	GiveItemEvent = Instance.new("RemoteEvent")
 	GiveItemEvent.Name = "GiveItem"
 	GiveItemEvent.Parent = PlayerInfoRemotes
-	print("✅ [SERVER] GiveItem RemoteEvent created")
 end
 
 GiveItemEvent.OnServerEvent:Connect(function(buyerPlayer, targetUserId, rewardType, rewardId)
-	print("🎁 [SERVER] Item gift request received!")
-	print("  Buyer:", buyerPlayer.Name)
-	print("  Target UserId:", targetUserId)
-	print("  Type:", rewardType)
-	print("  ID:", rewardId)
 
 	if not buyerPlayer or not targetUserId or not rewardType or not rewardId then
 		warn("⚠️ Invalid item gift request!")
@@ -112,10 +97,8 @@ GiveItemEvent.OnServerEvent:Connect(function(buyerPlayer, targetUserId, rewardTy
 	local targetPlayer = Players:GetPlayerByUserId(targetUserId)
 
 	if targetPlayer then
-		print("✅ [SERVER] Target player is ONLINE:", targetPlayer.Name)
 
 		if rewardType == "Aura" then
-			print("🌟 [SERVER] Giving aura:", rewardId)
 
 			local AuraStore = DataStoreService:GetDataStore(DataStoreConfig.AuraData)
 			local saveSuccess = pcall(function()
@@ -124,7 +107,6 @@ GiveItemEvent.OnServerEvent:Connect(function(buyerPlayer, targetUserId, rewardTy
 				if not table.find(currentData.UnlockedAuras, rewardId) then
 					table.insert(currentData.UnlockedAuras, rewardId)
 					AuraStore:SetAsync(tostring(targetUserId), currentData)
-					print("✅ [SERVER] Aura unlocked in DataStore")
 				end
 			end)
 
@@ -133,12 +115,10 @@ GiveItemEvent.OnServerEvent:Connect(function(buyerPlayer, targetUserId, rewardTy
 				local UnlockAuraEvent = AuraRemotes:FindFirstChild("UnlockAura")
 				if UnlockAuraEvent then
 					UnlockAuraEvent:FireClient(targetPlayer, rewardId)
-					print("✅ [SERVER] Aura unlock event sent to client")
 				end
 			end
 
 		elseif rewardType == "Tool" then
-			print("⚔️ [SERVER] Giving tool:", rewardId)
 
 			local tool = game:GetService("ServerStorage"):FindFirstChild(rewardId)
 
@@ -149,18 +129,13 @@ GiveItemEvent.OnServerEvent:Connect(function(buyerPlayer, targetUserId, rewardTy
 			if tool then
 				local toolClone = tool:Clone()
 				toolClone.Parent = targetPlayer.Backpack
-				print("✅ [SERVER] Tool given to player")
 			else
 				warn("⚠️ Tool not found:", rewardId)
 			end
 
 		elseif rewardType == "Gamepass" then
-			print("👑 [SERVER] Giving gamepass:", rewardId)
 		end
 
 	else
-		print("ℹ️ [SERVER] Target player is OFFLINE")
 	end
 end)
-
-print("✓ Player Info Server loaded successfully")

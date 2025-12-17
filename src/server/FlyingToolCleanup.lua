@@ -33,8 +33,6 @@ end
 function FlyingToolCleanup:CleanupAdminWing(player)
     if not player then return end
 
-    print(string.format("[CLEANUP] Cleaning up AdminWing for %s", player.Name))
-
     if FlyAbility and FlyAbility.ForceCleanup then
         FlyAbility:ForceCleanup(player)
         return
@@ -64,13 +62,10 @@ function FlyingToolCleanup:CleanupAdminWing(player)
         humanoid.PlatformStand = false
     end
 
-    print(string.format("[CLEANUP] AdminWing cleanup complete for %s", player.Name))
 end
 
 function FlyingToolCleanup:CleanupFlyingSpeed(player)
     if not player then return end
-
-    print(string.format("[CLEANUP] Cleaning up FlyingSpeed for %s", player.Name))
 
     local character = player.Character
     if not character then return end
@@ -80,14 +75,12 @@ function FlyingToolCleanup:CleanupFlyingSpeed(player)
         local bp = hrp:FindFirstChild(FLYING_SPEED_BODY_POSITION_NAME)
         if bp then
             bp:Destroy()
-            print("[CLEANUP] Removed HeightBodyPosition")
         end
     end
 
     for _, child in ipairs(character:GetChildren()) do
         if child:IsA("Accessory") and child.Name == FLYING_SPEED_ACCESSORY_NAME then
             child:Destroy()
-            print("[CLEANUP] Removed FlyingSpeed accessory")
         end
     end
 
@@ -98,13 +91,11 @@ function FlyingToolCleanup:CleanupFlyingSpeed(player)
             for _, track in ipairs(animator:GetPlayingAnimationTracks()) do
                 if track.Animation and track.Animation.AnimationId == FLYING_SPEED_ANIMATION_ID then
                     track:Stop()
-                    print("[CLEANUP] Stopped levitation animation")
                 end
             end
         end
     end
 
-    print(string.format("[CLEANUP] FlyingSpeed cleanup complete for %s", player.Name))
 end
 
 function FlyingToolCleanup:CleanupByToolId(player, toolId)
@@ -128,14 +119,9 @@ end
 function FlyingToolCleanup:CleanupAll(player)
     if not player then return end
 
-    print(string.format("[CLEANUP] Full cleanup for %s", player.Name))
-
     self:CleanupAdminWing(player)
     self:CleanupFlyingSpeed(player)
 
-    print(string.format("[CLEANUP] Full cleanup complete for %s", player.Name))
 end
-
-print("✅ [FLYING TOOL CLEANUP] Module loaded")
 
 return FlyingToolCleanup

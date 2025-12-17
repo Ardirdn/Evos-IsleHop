@@ -72,8 +72,6 @@ local function createNotification(data)
 		else
 			finalColor = data.CustomColor
 		end
-		print(string.format("🎨 [NOTIFICATION CLIENT] Custom color applied: R=%.2f G=%.2f B=%.2f",
-			finalColor.R, finalColor.G, finalColor.B))
 	end
 
 	local notif = Instance.new("Frame")
@@ -228,13 +226,8 @@ showNotificationEvent.OnClientEvent:Connect(function(data)
 		return
 	end
 
-	print(string.format("📥 [NOTIFICATION CLIENT] Received: %s (%s)", data.Message, data.Type or "info"))
-
 	if data.CustomColor then
-		print("📥 [NOTIFICATION CLIENT] CustomColor received:", data.CustomColor)
 	end
 
 	showNotification(data)
 end)
-
-print("✅ [NOTIFICATION CLIENT] Loaded")

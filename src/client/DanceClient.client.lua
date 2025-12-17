@@ -607,7 +607,6 @@ local danceIcon = Icon.new()
 
 			if success and loaded then
 				favorites = loaded
-				print(string.format("💃 [DANCE CLIENT] Loaded %d favorites", #favorites))
 				if mainPanel.Visible then
 					updateAnimList()
 				end
@@ -625,5 +624,3 @@ local danceIcon = Icon.new()
 			mainPanel.Size = UDim2.new(1, 0, 0.8, 0)
 		end)
 	end)
-
-print("✅ [DANCE CLIENT] System loaded")

@@ -1,20 +1,16 @@
--- Services
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
--- Remotes
 local REMOTE_NAME = "CarryRemote"
 local CarryRemote = ReplicatedStorage:FindFirstChild(REMOTE_NAME) or Instance.new("RemoteEvent")
 CarryRemote.Name = REMOTE_NAME
 CarryRemote.Parent = ReplicatedStorage
 
--- Config
 local PENDING_TIMEOUT = 8
 local MAX_DISTANCE = 20
 local MAX_CARRY = 30
-local DEBUG = true  -- ✅ Enable debug logging
+local DEBUG = true
 
--- Formation
 local BASE_Z = 1.6
 local SPACING_Z = 1.1
 local Y_OFFSET = 0.9
@@ -33,7 +29,6 @@ local function slotOffset(i: number): CFrame
 	return CFrame.new(0, Y_OFFSET + extraY, z)
 end
 
--- State
 local pending: {[number]: {requester: Player, target: Player, time: number, requestType: string, originator: Player}} = {}
 local carryingByCarrier: {[number]: {[number]: Player}} = {}
 local carriedByTarget: {[number]: Player} = {}
@@ -41,11 +36,9 @@ local slotByCarrier: {[number]: {[number]: number}} = {}
 local lockMap: {[number]: boolean} = {}
 local detachGuard: {[number]: boolean} = {}
 
--- Save/Restore
 local savedProps: {[number]: {[BasePart]: {cc:boolean, ml:boolean}}} = {}
 local savedHum: {[number]: {ws:number, useJP:boolean, jp:number, jh:number, autoRotate:boolean, jumpEnabled:boolean, platformStand:boolean}} = {}
 
--- Helpers
 local function getCharHRP(p: Player)
 	local char = p.Character
 	if not char then return end
@@ -55,10 +48,9 @@ local function getCharHRP(p: Player)
 	return char, hrp, hum
 end
 
--- ✅ FIX: Add timeout to prevent infinite lock wait (deadlock prevention)
 local function acquireLock(uid: number)
 	local startTime = tick()
-	local timeout = 5 -- 5 seconds max wait
+	local timeout = 5
 	while lockMap[uid] do
 		if tick() - startTime > timeout then
 			warn(string.format("[CARRY] Lock timeout for user %d - forcing release", uid))
@@ -97,7 +89,6 @@ local function isBeingCarried(p: Player) return carriedByTarget[p.UserId] ~= nil
 local function canCarrierRequest(p: Player) return not isBeingCarried(p) end
 local function targetAvailable(p: Player) return not isBeingCarried(p) end
 
--- Save/Restore Humanoid
 local function saveHumState(uid: number, hum: Humanoid)
 	savedHum[uid] = {
 		ws = hum.WalkSpeed,
@@ -127,7 +118,6 @@ local function restoreHumState(uid: number, hum: Humanoid)
 	end
 end
 
--- Lighten carried
 local function makeCarriedLight(char: Model, userId: number)
 	local map: {[BasePart]: {cc:boolean, ml:boolean}} = {}
 	for _, d in ipairs(char:GetDescendants()) do
@@ -150,7 +140,6 @@ local function restoreCarriedLight(userId: number)
 	savedProps[userId] = nil
 end
 
--- Network ownership
 local function setHRPOwnerTo(p: Player, owner: Player?)
 	local _, hrp = getCharHRP(p)
 	if not hrp then return end
@@ -165,7 +154,6 @@ end
 local function giveSelfOwnership(p: Player) setHRPOwnerTo(p, p) end
 local function giveCarrierOwnership(target: Player, carrier: Player) setHRPOwnerTo(target, carrier) end
 
--- Weld helpers
 local function clearCarryWeldsForChar(char: Model)
 	if not char then return end
 	local hrp = char:FindFirstChild("HumanoidRootPart")
@@ -201,7 +189,6 @@ local function removeCarryWeldBetween(carrierHRP: BasePart, targetHRP: BasePart)
 	if w then w:Destroy() end
 end
 
--- UI Snapshot
 local function buildCarriedList(carrier: Player)
 	local list = {}
 	local cmap = carryingByCarrier[carrier.UserId]
@@ -215,7 +202,6 @@ local function sendCarrierList(carrier: Player)
 	CarryRemote:FireClient(carrier, "CarrierList", {list = buildCarriedList(carrier)})
 end
 
--- Reindex slots
 local function reindexSlots(carrier: Player)
 	acquireLock(carrier.UserId)
 	local ok = pcall(function()
@@ -244,7 +230,6 @@ local function reindexSlots(carrier: Player)
 	releaseLock(carrier.UserId)
 end
 
--- Notify
 local function sendStart(carrier: Player, target: Player)
 	local total = countCarried(carrier)
 	CarryRemote:FireClient(carrier, "Start", {
@@ -281,7 +266,6 @@ local function sendEndPair(carrier: Player, target: Player, reason: string?)
 	CarryRemote:FireClient(target, "End", {reason = reason or "end", youAreCarrier = false, yourCarryCount = still})
 end
 
--- Detach
 local function detachPair(carrier: Player, target: Player, reason: string?)
 	local cUID = carrier.UserId
 	local tUID = target.UserId
@@ -353,7 +337,6 @@ local function safeDetachIfAny(p: Player, reason: string?)
 	end)
 end
 
--- Transfer
 local function transferPassengersToAtomic(newCarrier: Player, oldCarrier: Player)
 	local oldMap = carryingByCarrier[oldCarrier.UserId]; if not oldMap then return end
 	local smapOld = slotByCarrier[oldCarrier.UserId] or {}
@@ -412,7 +395,6 @@ local function transferPassengersToAtomic(newCarrier: Player, oldCarrier: Player
 	sendCarrierList(oldCarrier)
 end
 
--- Pending cleanup loop
 task.spawn(function()
 	while true do
 		task.wait(2)
@@ -446,15 +428,12 @@ local function hasPendingOutgoing(p: Player)
 	return false
 end
 
--- Start Carry
 local function startCarry(carrier: Player, target: Player)
-	if DEBUG then print(string.format("[CARRY DEBUG] startCarry called: carrier=%s, target=%s", carrier.Name, target.Name)) end
 
 	local cChar, cHRP = getCharHRP(carrier)
 	local tChar, tHRP, tHum = getCharHRP(target)
-	if not (cChar and cHRP and tChar and tHRP and tHum) then 
-		if DEBUG then print("[CARRY DEBUG] startCarry FAILED: missing character parts") end
-		return false, "character missing" 
+	if not (cChar and cHRP and tChar and tHRP and tHum) then
+		return false, "character missing"
 	end
 
 	acquireLock(carrier.UserId)
@@ -475,13 +454,11 @@ local function startCarry(carrier: Player, target: Player)
 		tHRP.CFrame = cHRP.CFrame * slotOffset(slotIdx)
 		ensureCarryWeldBetween(cHRP, tHRP)
 
-		-- ✅ AUTO-UNEQUIP: Unequip tools before carry
 		if tHum then
-			tHum:UnequipTools()  -- Triggers Unequipped event
-			task.wait()  -- ✅ FIX: Wait for tool scripts (like SpeedCoil) to finish onUnequip
+			tHum:UnequipTools()
+			task.wait()
 		end
-		
-		-- ✅ Cleanup flying effects (FlyingSpeed, AdminWing)
+
 		local FlyingToolCleanup = nil
 		pcall(function()
 			FlyingToolCleanup = require(script.Parent.FlyingToolCleanup)
@@ -490,11 +467,9 @@ local function startCarry(carrier: Player, target: Player)
 			FlyingToolCleanup:CleanupAll(target)
 		end
 
-		-- ✅ FIX: Reset WalkSpeed to default BEFORE saving, to prevent speed exploits
-		-- This ensures any boosted speed from tools is cleared
 		local currentSpeed = tHum.WalkSpeed
 		if currentSpeed > 16 then
-			tHum.WalkSpeed = 16  -- Reset to default before saving
+			tHum.WalkSpeed = 16
 		end
 
 		saveHumState(target.UserId, tHum)
@@ -542,12 +517,10 @@ local function startCarry(carrier: Player, target: Player)
 		bindCleanupForCharacter(tChar, target, false)
 
 		sendStart(carrier, target)
-		if DEBUG then print(string.format("[CARRY DEBUG] startCarry SUCCESS: %s carrying %s", carrier.Name, target.Name)) end
 	end)
 	releaseLock(carrier.UserId)
-	if not ok then 
-		if DEBUG then print(string.format("[CARRY DEBUG] startCarry FAILED: %s", tostring(err))) end
-		return false, tostring(err) 
+	if not ok then
+		return false, tostring(err)
 	end
 
 	if countCarried(target) > 0 then transferPassengersToAtomic(carrier, target) end
@@ -555,168 +528,112 @@ local function startCarry(carrier: Player, target: Player)
 	return true
 end
 
--- ==================== REMOTE HANDLERS (FULLY FIXED WITH DEBUG) ====================
 CarryRemote.OnServerEvent:Connect(function(player: Player, action: string, data)
 	if action == "Request" then
 		local targetId = data and data.targetId
 		local requestType = data and data.requestType or "carry"
 
-		if DEBUG then print(string.format("\n[CARRY DEBUG] === REQUEST START ===")) end
-		if DEBUG then print(string.format("[CARRY DEBUG] Requester: %s (ID: %d)", player.Name, player.UserId)) end
-		if DEBUG then print(string.format("[CARRY DEBUG] TargetId: %s", tostring(targetId))) end
-		if DEBUG then print(string.format("[CARRY DEBUG] RequestType: %s", requestType)) end
-
 		if type(targetId) ~= "number" then return end
 		local target = Players:GetPlayerByUserId(targetId)
 		if not target or target == player then return end
 
-		-- ✅ FIX: Track originator (player who clicked button)
 		local actualCarrier, actualTarget, promptReceiver, promptMessage, originator
 
 		if requestType == "be_carried" then
-			actualCarrier = target  -- B becomes carrier
-			actualTarget = player   -- A becomes target
-			promptReceiver = target -- Prompt to B
-			originator = player     -- ✅ A is originator!
+			actualCarrier = target
+			actualTarget = player
+			promptReceiver = target
+			originator = player
 			promptMessage = string.format("%s wants you to carry them. Accept?", player.DisplayName)
 
-			if DEBUG then print(string.format("[CARRY DEBUG] Mode: BE_CARRIED")) end
-			if DEBUG then print(string.format("[CARRY DEBUG] Originator: %s (who clicked)", originator.Name)) end
-			if DEBUG then print(string.format("[CARRY DEBUG] ActualCarrier: %s (who will carry)", actualCarrier.Name)) end
-			if DEBUG then print(string.format("[CARRY DEBUG] ActualTarget: %s (who will be carried)", actualTarget.Name)) end
-			if DEBUG then print(string.format("[CARRY DEBUG] PromptReceiver: %s", promptReceiver.Name)) end
 		else
-			actualCarrier = player  -- A becomes carrier
-			actualTarget = target   -- B becomes target
-			promptReceiver = target -- Prompt to B
-			originator = player     -- ✅ A is originator!
+			actualCarrier = player
+			actualTarget = target
+			promptReceiver = target
+			originator = player
 			promptMessage = string.format("%s wants to carry you. Accept?", player.DisplayName)
 
-			if DEBUG then print(string.format("[CARRY DEBUG] Mode: CARRY")) end
-			if DEBUG then print(string.format("[CARRY DEBUG] Originator: %s", originator.Name)) end
-			if DEBUG then print(string.format("[CARRY DEBUG] ActualCarrier: %s", actualCarrier.Name)) end
-			if DEBUG then print(string.format("[CARRY DEBUG] ActualTarget: %s", actualTarget.Name)) end
-			if DEBUG then print(string.format("[CARRY DEBUG] PromptReceiver: %s", promptReceiver.Name)) end
 		end
 
 		local _, cHRP = getCharHRP(actualCarrier)
 		local _, tHRP = getCharHRP(actualTarget)
-		if not (cHRP and tHRP) then 
-			if DEBUG then print("[CARRY DEBUG] REJECTED: Missing HRP") end
-			return 
+		if not (cHRP and tHRP) then
+			return
 		end
 
 		if (cHRP.Position - tHRP.Position).Magnitude > MAX_DISTANCE then
-			if DEBUG then print("[CARRY DEBUG] REJECTED: Too far") end
 			CarryRemote:FireClient(player, "TooFar", {targetId=targetId})
 			return
 		end
 
 		local extra = countCarried(actualTarget)
 		if (countCarried(actualCarrier) + 1 + extra) > MAX_CARRY then
-			if DEBUG then print("[CARRY DEBUG] REJECTED: Limit exceeded") end
 			CarryRemote:FireClient(player, "Limit", {max = MAX_CARRY, reason = "transfer"})
 			return
 		end
 
 		if not canCarrierRequest(actualCarrier) or not targetAvailable(actualTarget) then
-			if DEBUG then print("[CARRY DEBUG] REJECTED: Busy") end
 			CarryRemote:FireClient(player, "Busy", {})
 			return
 		end
 
 		if hasPendingIncoming(promptReceiver) or hasPendingOutgoing(originator) then
-			if DEBUG then print("[CARRY DEBUG] REJECTED: Pending exists") end
 			CarryRemote:FireClient(player, "Busy", {})
 			return
 		end
 
-		-- ✅ FIX: Store with promptReceiver as key (who needs to accept)
 		pending[promptReceiver.UserId] = {
-			requester = actualCarrier,      -- Who will be carrier
-			target = actualTarget,           -- Who will be carried
+			requester = actualCarrier,
+			target = actualTarget,
 			time = os.clock(),
 			requestType = requestType,
-			originator = originator          -- ✅ Who clicked the button
+			originator = originator
 		}
 
-		if DEBUG then print(string.format("[CARRY DEBUG] Pending stored: pending[%d (%s)]", promptReceiver.UserId, promptReceiver.Name)) end
-		if DEBUG then print(string.format("[CARRY DEBUG]   - requester (carrier): %s", actualCarrier.Name)) end
-		if DEBUG then print(string.format("[CARRY DEBUG]   - target (carried): %s", actualTarget.Name)) end
-		if DEBUG then print(string.format("[CARRY DEBUG]   - originator (clicked): %s", originator.Name)) end
-
-		-- ✅ FIX: Send originator ID for avatar, not carrier ID!
 		CarryRemote:FireClient(promptReceiver, "Prompt", {
-			fromId = originator.UserId,           -- ✅ Show originator's avatar!
+			fromId = originator.UserId,
 			fromName = originator.DisplayName,
 			customMessage = promptMessage
 		})
-
-		if DEBUG then print(string.format("[CARRY DEBUG] Prompt sent to %s", promptReceiver.Name)) end
-		if DEBUG then print(string.format("[CARRY DEBUG] Avatar will show: %s (ID: %d)", originator.Name, originator.UserId)) end
-		if DEBUG then print(string.format("[CARRY DEBUG] === REQUEST END ===\n")) end
 
 	elseif action == "Response" then
 		local accept = data and data.accept == true
 		local requesterId = data and data.requesterId
 
-		if DEBUG then print(string.format("\n[CARRY DEBUG] === RESPONSE START ===")) end
-		if DEBUG then print(string.format("[CARRY DEBUG] Responder: %s (ID: %d)", player.Name, player.UserId)) end
-		if DEBUG then print(string.format("[CARRY DEBUG] RequesterId: %s", tostring(requesterId))) end
-		if DEBUG then print(string.format("[CARRY DEBUG] Accept: %s", tostring(accept))) end
-
-		if type(requesterId) ~= "number" then 
-			if DEBUG then print("[CARRY DEBUG] FAILED: Invalid requesterId type") end
-			return 
+		if type(requesterId) ~= "number" then
+			return
 		end
 
-		-- ✅ FIX: Check pending[player.UserId] since prompt was sent to player
 		local pend = pending[player.UserId]
 
-		if DEBUG then print(string.format("[CARRY DEBUG] Checking pending[%d (%s)]", player.UserId, player.Name)) end
-		if DEBUG then 
+		if DEBUG then
 			if pend then
-				print(string.format("[CARRY DEBUG] Pending found!"))
-				print(string.format("[CARRY DEBUG]   - requester: %s", pend.requester and pend.requester.Name or "nil"))
-				print(string.format("[CARRY DEBUG]   - target: %s", pend.target and pend.target.Name or "nil"))
-				print(string.format("[CARRY DEBUG]   - originator: %s", pend.originator and pend.originator.Name or "nil"))
 			else
-				print(string.format("[CARRY DEBUG] NO PENDING FOUND!"))
-				print(string.format("[CARRY DEBUG] Current pending table:"))
 				for uid, info in pairs(pending) do
 					local p = Players:GetPlayerByUserId(uid)
-					print(string.format("[CARRY DEBUG]   pending[%d] = %s", uid, p and p.Name or "unknown"))
 				end
 			end
 		end
 
-		if not pend then 
-			if DEBUG then print("[CARRY DEBUG] FAILED: No pending request") end
-			return 
+		if not pend then
+			return
 		end
 
-		-- ✅ Validate that requesterId matches
 		if pend.originator and pend.originator.UserId ~= requesterId then
-			if DEBUG then print(string.format("[CARRY DEBUG] FAILED: RequesterId mismatch (expected %d, got %d)", pend.originator.UserId, requesterId)) end
 			return
 		end
 
 		pending[player.UserId] = nil
-		if DEBUG then print("[CARRY DEBUG] Pending cleared") end
 
 		if not accept then
-			if DEBUG then print("[CARRY DEBUG] Request declined") end
 			CarryRemote:FireClient(pend.originator, "Declined", {targetId = player.UserId})
 			CarryRemote:FireClient(player, "PromptClose", {})
-			if DEBUG then print(string.format("[CARRY DEBUG] === RESPONSE END ===\n")) end
 			return
 		end
 
-		if DEBUG then print(string.format("[CARRY DEBUG] Executing startCarry(%s, %s)", pend.requester.Name, pend.target.Name)) end
 		local ok2, err2 = startCarry(pend.requester, pend.target)
 
 		if not ok2 then
-			if DEBUG then print(string.format("[CARRY DEBUG] startCarry FAILED: %s", tostring(err2))) end
 			if tostring(err2) == "limit_transfer" then
 				CarryRemote:FireClient(pend.originator, "Limit", {max = MAX_CARRY, reason = "transfer"})
 				CarryRemote:FireClient(player, "Failed", {reason="limit_transfer"})
@@ -725,10 +642,7 @@ CarryRemote.OnServerEvent:Connect(function(player: Player, action: string, data)
 				CarryRemote:FireClient(player, "Failed", {reason=err2})
 			end
 		else
-			if DEBUG then print("[CARRY DEBUG] startCarry SUCCESS!") end
 		end
-
-		if DEBUG then print(string.format("[CARRY DEBUG] === RESPONSE END ===\n")) end
 
 	elseif action == "Stop" then
 		local targetId = data and data.targetId
@@ -750,20 +664,18 @@ CarryRemote.OnServerEvent:Connect(function(player: Player, action: string, data)
 	end
 end)
 
--- Respawn - FORCE CLEANUP ALL STATES
 local function onCharacterAdded(p: Player, char: Model)
 	task.defer(function()
 		local uid = p.UserId
-		
-		-- ✅ FIX: Force clear ALL locks and states for this player
+
 		lockMap[uid] = nil
 		detachGuard[uid] = nil
-		
+
 		clearCarryWeldsForChar(char)
-		
+
 		local hum = char:FindFirstChildOfClass("Humanoid")
 		if hum then
-			-- ✅ FIX: Force reset ALL humanoid properties
+
 			hum.Sit = false
 			hum.AutoRotate = true
 			hum.WalkSpeed = 16
@@ -773,20 +685,17 @@ local function onCharacterAdded(p: Player, char: Model)
 			hum:SetStateEnabled(Enum.HumanoidStateType.GettingUp, true)
 			hum.PlatformStand = false
 			hum.Jump = false
-			
-			-- ✅ FIX: Force change state to Running
+
 			hum:ChangeState(Enum.HumanoidStateType.Running)
 		end
-		
-		-- ✅ FIX: Clear ALL cached data for this player
+
 		savedProps[uid] = nil
 		savedHum[uid] = nil
-		carriedByTarget[uid] = nil  -- Player is no longer being carried
-		
+		carriedByTarget[uid] = nil
+
 		giveSelfOwnership(p)
 		safeDetachIfAny(p, "respawn")
-		
-		print(string.format("✅ [CARRY] Character respawn cleanup complete for %s", p.Name))
+
 	end)
 end
 
@@ -796,17 +705,15 @@ end)
 
 Players.PlayerRemoving:Connect(function(p: Player)
 	local uid = p.UserId
-	
-	-- Clear any pending where this player is involved
+
 	for pendingUid, info in pairs(pending) do
 		if info.originator == p or info.requester == p or info.target == p then
 			pending[pendingUid] = nil
 		end
 	end
-	
+
 	detachIfAny(p, "left")
-	
-	-- ✅ FIX: Cleanup all remaining caches for this player
+
 	savedProps[uid] = nil
 	savedHum[uid] = nil
 	lockMap[uid] = nil
@@ -815,5 +722,3 @@ Players.PlayerRemoving:Connect(function(p: Player)
 	carriedByTarget[uid] = nil
 	slotByCarrier[uid] = nil
 end)
-
-print("✅ [CARRY SERVER] Loaded with FULL DEBUG + ALL FIXES")

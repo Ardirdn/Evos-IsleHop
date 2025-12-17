@@ -4,8 +4,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TitleServer = require(script.Parent:WaitForChild("TitleServer"))
 local DataHandler = require(script.Parent:WaitForChild("DataHandler"))
 
-print("✅ [CHAT TITLE SERVER] Initializing...")
-
 local titleRemotes = ReplicatedStorage:FindFirstChild("TitleRemotes")
 if not titleRemotes then
 	titleRemotes = Instance.new("Folder")
@@ -54,9 +52,7 @@ Players.PlayerAdded:Connect(function(player)
 			local title = getPlayerTitle(data)
 			if title then
 				chatTitleUpdate:FireAllClients(player.UserId, title)
-				print(string.format("[CHAT TITLE] Sent initial title for %s: %s", player.Name, title))
 			else
-				print(string.format("[CHAT TITLE] No title to send for %s", player.Name))
 			end
 		else
 			warn(string.format("[CHAT TITLE] Failed to get data for %s after %d attempts", player.Name, attempts))
@@ -84,8 +80,5 @@ Players.PlayerAdded:Connect(function(newPlayer)
 			end
 		end
 
-		print(string.format("[CHAT TITLE] Sent %d existing player titles to %s", sentCount, newPlayer.Name))
 	end)
 end)
-
-print("✅ [CHAT TITLE SERVER] Loaded with initial title sync")

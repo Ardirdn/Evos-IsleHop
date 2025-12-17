@@ -1,14 +1,3 @@
---[[
-    CINEMATIC CAMERA CLIENT
-    Place in StarterPlayerScripts
-    
-    Features:
-    - TopbarPlus icon
-    - Confirmation dialog
-    - Exit instructions (PC: Space, Mobile: Button)
-    - Full Android support with intuitive controls
-]]
-
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
@@ -20,12 +9,11 @@ local playerGui = player:WaitForChild("PlayerGui")
 local HUDButtonHelper = require(script.Parent:WaitForChild("HUDButtonHelper"))
 local Freecam = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("Freecam"))
 
-local spaceConnection = nil -- Tambahkan di bagian atas bersama variable lain
+local spaceConnection = nil
 
 local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 local isActive = false
 
--- ==================== COLORS ====================
 local COLORS = {
 	Background = Color3.fromRGB(20, 20, 23),
 	Panel = Color3.fromRGB(25, 25, 28),
@@ -39,7 +27,6 @@ local COLORS = {
 	Border = Color3.fromRGB(50, 50, 55),
 }
 
--- ==================== HELPER FUNCTIONS ====================
 local function createCorner(radius)
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0, radius)
@@ -54,7 +41,6 @@ local function createStroke(color, thickness)
 	return stroke
 end
 
--- ==================== CREATE MAIN GUI ====================
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "CinematicCameraGui"
 screenGui.ResetOnSpawn = false
@@ -63,7 +49,6 @@ screenGui.DisplayOrder = 200
 screenGui.Enabled = false
 screenGui.Parent = playerGui
 
--- ==================== CONFIRMATION DIALOG ====================
 local confirmationFrame = Instance.new("Frame")
 confirmationFrame.Name = "ConfirmationDialog"
 confirmationFrame.Size = UDim2.new(0, 400, 0, 200)
@@ -77,7 +62,6 @@ confirmationFrame.Parent = screenGui
 createCorner(15).Parent = confirmationFrame
 createStroke(COLORS.Border, 2).Parent = confirmationFrame
 
--- Blur background
 local blurFrame = Instance.new("Frame")
 blurFrame.Name = "BlurBackground"
 blurFrame.Size = UDim2.new(1, 0, 1, 0)
@@ -88,7 +72,6 @@ blurFrame.Visible = false
 blurFrame.ZIndex = confirmationFrame.ZIndex - 1
 blurFrame.Parent = screenGui
 
--- Icon
 local iconLabel = Instance.new("TextLabel")
 iconLabel.Size = UDim2.new(0, 60, 0, 60)
 iconLabel.Position = UDim2.new(0.5, 0, 0, 25)
@@ -100,7 +83,6 @@ iconLabel.TextSize = 40
 iconLabel.TextColor3 = COLORS.Accent
 iconLabel.Parent = confirmationFrame
 
--- Title
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Size = UDim2.new(1, -40, 0, 30)
 titleLabel.Position = UDim2.new(0, 20, 0, 90)
@@ -112,7 +94,6 @@ titleLabel.TextColor3 = COLORS.Text
 titleLabel.TextXAlignment = Enum.TextXAlignment.Center
 titleLabel.Parent = confirmationFrame
 
--- Button Container
 local buttonContainer = Instance.new("Frame")
 buttonContainer.Size = UDim2.new(1, -40, 0, 45)
 buttonContainer.Position = UDim2.new(0, 20, 1, -65)
@@ -125,7 +106,6 @@ buttonLayout.Padding = UDim.new(0, 10)
 buttonLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 buttonLayout.Parent = buttonContainer
 
--- Cancel Button
 local cancelBtn = Instance.new("TextButton")
 cancelBtn.Size = UDim2.new(0, 165, 1, 0)
 cancelBtn.BackgroundColor3 = COLORS.Button
@@ -139,7 +119,6 @@ cancelBtn.Parent = buttonContainer
 
 createCorner(8).Parent = cancelBtn
 
--- Confirm Button
 local confirmBtn = Instance.new("TextButton")
 confirmBtn.Size = UDim2.new(0, 165, 1, 0)
 confirmBtn.BackgroundColor3 = COLORS.Accent
@@ -153,7 +132,6 @@ confirmBtn.Parent = buttonContainer
 
 createCorner(8).Parent = confirmBtn
 
--- ==================== EXIT INSTRUCTION (PC) ====================
 local exitInstruction = Instance.new("Frame")
 exitInstruction.Name = "ExitInstruction"
 exitInstruction.Size = UDim2.new(0, 350, 0, 50)
@@ -177,7 +155,6 @@ instructionText.TextColor3 = COLORS.Text
 instructionText.TextStrokeTransparency = 0.5
 instructionText.Parent = exitInstruction
 
--- ==================== EXIT BUTTON (MOBILE) ====================
 local mobileExitBtn = Instance.new("TextButton")
 mobileExitBtn.Name = "MobileExitButton"
 mobileExitBtn.Size = UDim2.new(0, 100, 0, 50)
@@ -195,14 +172,11 @@ mobileExitBtn.Parent = screenGui
 createCorner(10).Parent = mobileExitBtn
 createStroke(Color3.fromRGB(200, 50, 50), 2).Parent = mobileExitBtn
 
--- ==================== FUNCTIONS ====================
-
 local function showConfirmation()
 	screenGui.Enabled = true
 	blurFrame.Visible = true
 	confirmationFrame.Visible = true
 
-	-- Animation
 	confirmationFrame.Size = UDim2.new(0, 0, 0, 0)
 	TweenService:Create(confirmationFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back), {
 		Size = UDim2.new(0, 400, 0, 200)
@@ -231,13 +205,11 @@ local function stopCinematicCamera()
 	mobileExitBtn.Visible = false
 	screenGui.Enabled = false
 
-	-- ✅ Disconnect space listener
 	if spaceConnection then
 		spaceConnection:Disconnect()
 		spaceConnection = nil
 	end
 end
-
 
 local function startCinematicCamera()
 	if isActive then return end
@@ -245,22 +217,19 @@ local function startCinematicCamera()
 
 	hideConfirmation()
 
-	-- Start freecam
 	Freecam:Start(function()
-		-- Callback when freecam ends
+
 		isActive = false
 		exitInstruction.Visible = false
 		mobileExitBtn.Visible = false
 		screenGui.Enabled = false
 
-		-- ✅ Disconnect space listener
 		if spaceConnection then
 			spaceConnection:Disconnect()
 			spaceConnection = nil
 		end
 	end)
 
-	-- ✅ Listen for Space key press
 	if not isMobile then
 		spaceConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
 			if gameProcessed then return end
@@ -271,28 +240,25 @@ local function startCinematicCamera()
 		end)
 	end
 
-	-- Show exit UI
 	task.wait(0.3)
 	screenGui.Enabled = true
 
 	if isMobile then
 		mobileExitBtn.Visible = true
-		-- Fade in animation
+
 		mobileExitBtn.BackgroundTransparency = 1
 		TweenService:Create(mobileExitBtn, TweenInfo.new(0.3), {
 			BackgroundTransparency = 0
 		}):Play()
 	else
 		exitInstruction.Visible = true
-		-- Slide up animation
+
 		exitInstruction.Position = UDim2.new(0.5, 0, 1, 0)
 		TweenService:Create(exitInstruction, TweenInfo.new(0.4, Enum.EasingStyle.Back), {
 			Position = UDim2.new(0.5, 0, 1, -70)
 		}):Play()
 	end
 end
-
--- ==================== EVENT CONNECTIONS ====================
 
 cancelBtn.MouseButton1Click:Connect(function()
 	hideConfirmation()
@@ -306,7 +272,6 @@ mobileExitBtn.MouseButton1Click:Connect(function()
 	stopCinematicCamera()
 end)
 
--- Hover effects
 local function addHoverEffect(button, normalColor, hoverColor)
 	button.MouseEnter:Connect(function()
 		TweenService:Create(button, TweenInfo.new(0.2), {
@@ -331,7 +296,7 @@ local freecamButton = HUDButtonHelper.Create({
 	Icon = "rbxassetid://84135978863201",
 	Text = "Freecam",
 	OnClick = function()
-		-- Toggle behavior: if dialog is visible, hide it; otherwise show it
+
 		if confirmationFrame.Visible then
 			hideConfirmation()
 		else
@@ -339,5 +304,3 @@ local freecamButton = HUDButtonHelper.Create({
 		end
 	end
 })
-
-print("✅ [CINEMATIC CAMERA] Client loaded (HUD Template style)")

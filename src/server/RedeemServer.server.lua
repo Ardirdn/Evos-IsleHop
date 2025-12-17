@@ -9,10 +9,7 @@ local TitleConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChi
 local ShopConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("ShopConfig"))
 local DataStoreConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("DataStoreConfig"))
 
-print("🔍 [REDEEM DEBUG] ShopConfig:", ShopConfig)
 if ShopConfig then
-	print("🔍 [REDEEM DEBUG] ShopConfig.Auras:", ShopConfig.Auras and #ShopConfig.Auras or "NIL")
-	print("🔍 [REDEEM DEBUG] ShopConfig.Tools:", ShopConfig.Tools and #ShopConfig.Tools or "NIL")
 end
 
 local RedeemCodesStore = DataStoreService:GetDataStore(DataStoreConfig.RedeemCodes)
@@ -58,8 +55,6 @@ if not getAllCodesFunc then
 	getAllCodesFunc.Name = "GetAllCodes"
 	getAllCodesFunc.Parent = remoteFolder
 end
-
-print("✅ [REDEEM SERVER] Initialized")
 
 local function isAdmin(player)
 	local data = DataHandler:GetData(player)
@@ -197,8 +192,6 @@ createCodeEvent.OnServerEvent:Connect(function(player, codeString, rewardType, r
 			Icon = "🎁"
 		})
 
-		print(string.format("🎁 [REDEEM] %s created code: %s (Type: %s, Value: %s, Max: %d)",
-			player.Name, codeString, rewardType, tostring(rewardValue), maxUses))
 	else
 		NotificationService:Send(player, {
 			Message = "Failed to create code. Try again!",
@@ -316,7 +309,6 @@ redeemCodeEvent.OnServerEvent:Connect(function(player, codeString)
 			local summitValue = playerStats:FindFirstChild("Summit")
 			if summitValue then
 				summitValue.Value = summitValue.Value + rewardValue
-				print(string.format("[REDEEM] Updated PlayerStats for %s: %d", player.Name, summitValue.Value))
 			end
 		end
 
@@ -342,14 +334,10 @@ redeemCodeEvent.OnServerEvent:Connect(function(player, codeString)
 		Icon = "🎁"
 	})
 
-	print(string.format("🎁 [REDEEM] %s redeemed code: %s (%s: %s) [%d/%d]",
-		player.Name, codeString, rewardType, tostring(rewardValue), codeData.CurrentUses, codeData.MaxUses))
 end)
 
 getRewardOptionsFunc.OnServerInvoke = function(player, rewardType)
 	if not isAdmin(player) then return {} end
-
-	print(string.format("🔍 [REDEEM] getRewardOptions called: %s", rewardType))
 
 	if rewardType == "Title" then
 		local titles = {}
@@ -376,15 +364,12 @@ getRewardOptionsFunc.OnServerInvoke = function(player, rewardType)
 			end
 		end
 
-		print(string.format("📋 [REDEEM] Loaded %d titles", #titles))
 		return titles
 
 	elseif rewardType == "Aura" or rewardType == "Auras" then
-		print("🔍 [REDEEM] Processing Aura request...")
 		local auras = {}
 
 		if ShopConfig and ShopConfig.Auras then
-			print(string.format("🔍 [REDEEM] Found %d auras in ShopConfig", #ShopConfig.Auras))
 
 			for _, aura in ipairs(ShopConfig.Auras) do
 				table.insert(auras, {
@@ -397,15 +382,12 @@ getRewardOptionsFunc.OnServerInvoke = function(player, rewardType)
 			warn("⚠️ ShopConfig.Auras is nil or empty!")
 		end
 
-		print(string.format("📋 [REDEEM] Loaded %d auras", #auras))
 		return auras
 
 	elseif rewardType == "Tool" or rewardType == "Tools" then
-		print("🔍 [REDEEM] Processing Tool request...")
 		local tools = {}
 
 		if ShopConfig and ShopConfig.Tools then
-			print(string.format("🔍 [REDEEM] Found %d tools in ShopConfig", #ShopConfig.Tools))
 
 			for _, tool in ipairs(ShopConfig.Tools) do
 				table.insert(tools, {
@@ -418,7 +400,6 @@ getRewardOptionsFunc.OnServerInvoke = function(player, rewardType)
 			warn("⚠️ ShopConfig.Tools is nil or empty!")
 		end
 
-		print(string.format("📋 [REDEEM] Loaded %d tools", #tools))
 		return tools
 
 	elseif rewardType == "Money" then
@@ -431,7 +412,6 @@ getRewardOptionsFunc.OnServerInvoke = function(player, rewardType)
 				Value = amount
 			})
 		end
-		print(string.format("📋 [REDEEM] Loaded %d money options", #money))
 		return money
 
 	elseif rewardType == "Summit" then
@@ -444,7 +424,6 @@ getRewardOptionsFunc.OnServerInvoke = function(player, rewardType)
 				Value = amount
 			})
 		end
-		print(string.format("📋 [REDEEM] Loaded %d summit options", #summit))
 		return summit
 	end
 
@@ -481,8 +460,5 @@ getAllCodesFunc.OnServerInvoke = function(player)
 		end
 	end
 
-	print(string.format("📋 [REDEEM] Admin requested all codes: %d found", #allCodes))
 	return allCodes
 end
-
-print("✅ [REDEEM SERVER] System loaded")

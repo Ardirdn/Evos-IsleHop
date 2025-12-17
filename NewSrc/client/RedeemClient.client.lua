@@ -1,9 +1,3 @@
---[[
-    REDEEM CLIENT (FULL - WITH AVAILABLE CODES TAB)
-    Place in StarterPlayerScripts/RedeemClient
-]]
-
--- ⚠️ SET TO false TO TEMPORARILY DISABLE THIS FEATURE
 local FEATURE_ENABLED = false
 
 local Players = game:GetService("Players")
@@ -28,14 +22,12 @@ local getAllCodesFunc = remoteFolder:WaitForChild("GetAllCodes")
 
 local COLORS = RedeemConfig.Colors
 
--- State
 local isAdmin = false
 local currentMainTab = "Redeem Codes"
 local currentRewardTab = "Title"
 local selectedReward = nil
 local rewardOptions = {}
 
--- ==================== HELPER FUNCTIONS ====================
 local function createCorner(radius)
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0, radius)
@@ -50,7 +42,6 @@ local function createStroke(color, thickness)
 	return stroke
 end
 
--- ==================== CREATE GUI ====================
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "RedeemGui"
 screenGui.ResetOnSpawn = false
@@ -59,7 +50,6 @@ screenGui.DisplayOrder = 50
 screenGui.Enabled = false
 screenGui.Parent = playerGui
 
--- Main Panel
 local mainPanel = Instance.new("Frame")
 mainPanel.Name = "MainPanel"
 mainPanel.Size = UDim2.new(0.5, 0, 0.85, 0)
@@ -73,7 +63,6 @@ mainPanel.Parent = screenGui
 createCorner(15).Parent = mainPanel
 createStroke(COLORS.Border, 2).Parent = mainPanel
 
--- Header
 local header = Instance.new("Frame")
 header.Size = UDim2.new(1, 0, 0.1, 0)
 header.BackgroundColor3 = COLORS.Panel
@@ -114,7 +103,6 @@ closeBtn.Parent = header
 
 createCorner(10).Parent = closeBtn
 
--- ✅ Main Tab Frame (3 TABS: Redeem / Create / Available)
 local mainTabFrame = Instance.new("Frame")
 mainTabFrame.Size = UDim2.new(0.94, 0, 0.07, 0)
 mainTabFrame.Position = UDim2.new(0.03, 0, 0.12, 0)
@@ -128,9 +116,8 @@ mainTabLayout.Parent = mainTabFrame
 
 local mainTabs = {}
 
--- Redeem Codes Tab (always visible)
 local redeemTab = Instance.new("TextButton")
-redeemTab.Size = UDim2.new(0.31, 0, 1, 0) -- ✅ 3 tabs
+redeemTab.Size = UDim2.new(0.31, 0, 1, 0)
 redeemTab.BackgroundColor3 = COLORS.Accent
 redeemTab.BorderSizePixel = 0
 redeemTab.Text = "Redeem Codes"
@@ -144,7 +131,6 @@ createCorner(8).Parent = redeemTab
 
 mainTabs["Redeem Codes"] = redeemTab
 
--- Create Redeem Code Tab (admin only)
 local createTab = Instance.new("TextButton")
 createTab.Size = UDim2.new(0.31, 0, 1, 0)
 createTab.BackgroundColor3 = COLORS.Button
@@ -161,7 +147,6 @@ createCorner(8).Parent = createTab
 
 mainTabs["Create Redeem Code"] = createTab
 
--- ✅ AVAILABLE CODES TAB (Admin only)
 local availableTab = Instance.new("TextButton")
 availableTab.Size = UDim2.new(0.31, 0, 1, 0)
 availableTab.BackgroundColor3 = COLORS.Button
@@ -178,14 +163,11 @@ createCorner(8).Parent = availableTab
 
 mainTabs["Available Codes"] = availableTab
 
--- Content Container
 local contentContainer = Instance.new("Frame")
 contentContainer.Size = UDim2.new(0.94, 0, 0.78, 0)
 contentContainer.Position = UDim2.new(0.03, 0, 0.21, 0)
 contentContainer.BackgroundTransparency = 1
 contentContainer.Parent = mainPanel
-
--- ==================== REDEEM CODES CONTENT ====================
 
 local redeemContent = Instance.new("Frame")
 redeemContent.Size = UDim2.new(1, 0, 1, 0)
@@ -193,7 +175,6 @@ redeemContent.BackgroundTransparency = 1
 redeemContent.Visible = true
 redeemContent.Parent = contentContainer
 
--- Code Input
 local codeInputFrame = Instance.new("Frame")
 codeInputFrame.Size = UDim2.new(1, 0, 0.1, 0)
 codeInputFrame.Position = UDim2.new(0, 0, 0.3, 0)
@@ -215,7 +196,6 @@ codeInputBox.TextSize = 16
 codeInputBox.ClearTextOnFocus = false
 codeInputBox.Parent = codeInputFrame
 
--- Redeem Button
 local redeemButton = Instance.new("TextButton")
 redeemButton.Size = UDim2.new(0.5, 0, 0.08, 0)
 redeemButton.Position = UDim2.new(0.25, 0, 0.45, 0)
@@ -229,15 +209,12 @@ redeemButton.Parent = redeemContent
 
 createCorner(10).Parent = redeemButton
 
--- ==================== CREATE REDEEM CODE CONTENT (ADMIN ONLY) ====================
-
 local createContent = Instance.new("Frame")
 createContent.Size = UDim2.new(1, 0, 1, 0)
 createContent.BackgroundTransparency = 1
 createContent.Visible = false
 createContent.Parent = contentContainer
 
--- Reward Type Tabs
 local rewardTabFrame = Instance.new("Frame")
 rewardTabFrame.Size = UDim2.new(1, 0, 0.07, 0)
 rewardTabFrame.BackgroundTransparency = 1
@@ -267,7 +244,6 @@ for i, rewardType in ipairs(RedeemConfig.AdminTabs) do
 	rewardTabs[rewardType] = tab
 end
 
--- Reward Scroll Frame
 local rewardScrollFrame = Instance.new("ScrollingFrame")
 rewardScrollFrame.Size = UDim2.new(1, 0, 0.5, 0)
 rewardScrollFrame.Position = UDim2.new(0, 0, 0.09, 0)
@@ -295,14 +271,12 @@ rewardGridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 rewardGridLayout.VerticalAlignment = Enum.VerticalAlignment.Top
 rewardGridLayout.Parent = rewardScrollFrame
 
--- ==================== CODE CREATION SECTION (SIDE-BY-SIDE, NO OVERFLOW) ====================
-
 local codeCreationFrame = Instance.new("Frame")
-codeCreationFrame.Size = UDim2.new(1, 0, 0.38, 0) -- ✅ 38% height
-codeCreationFrame.Position = UDim2.new(0, 0, 0.61, 0) -- ✅ Start at 61% (50% scroll + 9% tabs + 2% gap)
+codeCreationFrame.Size = UDim2.new(1, 0, 0.38, 0)
+codeCreationFrame.Position = UDim2.new(0, 0, 0.61, 0)
 codeCreationFrame.BackgroundColor3 = COLORS.Panel
 codeCreationFrame.BorderSizePixel = 0
-codeCreationFrame.ClipsDescendants = true -- ✅ CRITICAL: Prevent overflow
+codeCreationFrame.ClipsDescendants = true
 codeCreationFrame.Parent = createContent
 
 createCorner(10).Parent = codeCreationFrame
@@ -314,9 +288,8 @@ codeCreationPadding.PaddingRight = UDim.new(0, 20)
 codeCreationPadding.PaddingBottom = UDim.new(0, 15)
 codeCreationPadding.Parent = codeCreationFrame
 
--- ✅ LEFT SIDE - CODE INPUT
 local codeInputContainer = Instance.new("Frame")
-codeInputContainer.Size = UDim2.new(0.48, 0, 0, 70) -- Shorter height
+codeInputContainer.Size = UDim2.new(0.48, 0, 0, 70)
 codeInputContainer.Position = UDim2.new(0, 0, 0, 0)
 codeInputContainer.BackgroundTransparency = 1
 codeInputContainer.Parent = codeCreationFrame
@@ -327,12 +300,12 @@ codeInputLabel.BackgroundTransparency = 1
 codeInputLabel.Font = Enum.Font.GothamBold
 codeInputLabel.Text = "Code:"
 codeInputLabel.TextColor3 = COLORS.Text
-codeInputLabel.TextSize = 12 -- ✅ Slightly smaller
+codeInputLabel.TextSize = 12
 codeInputLabel.TextXAlignment = Enum.TextXAlignment.Left
 codeInputLabel.Parent = codeInputContainer
 
 local createCodeInput = Instance.new("TextBox")
-createCodeInput.Size = UDim2.new(1, 0, 0, 45) -- ✅ 45px height
+createCodeInput.Size = UDim2.new(1, 0, 0, 45)
 createCodeInput.Position = UDim2.new(0, 0, 0, 22)
 createCodeInput.BackgroundColor3 = COLORS.Button
 createCodeInput.BorderSizePixel = 0
@@ -346,10 +319,9 @@ createCodeInput.Parent = codeInputContainer
 
 createCorner(8).Parent = createCodeInput
 
--- ✅ RIGHT SIDE - MAX USES INPUT
 local maxUsesContainer = Instance.new("Frame")
-maxUsesContainer.Size = UDim2.new(0.48, 0, 0, 70) -- Same height as code
-maxUsesContainer.Position = UDim2.new(0.52, 0, 0, 0) -- 52% for gap
+maxUsesContainer.Size = UDim2.new(0.48, 0, 0, 70)
+maxUsesContainer.Position = UDim2.new(0.52, 0, 0, 0)
 maxUsesContainer.BackgroundTransparency = 1
 maxUsesContainer.Parent = codeCreationFrame
 
@@ -359,12 +331,12 @@ maxUsesLabel.BackgroundTransparency = 1
 maxUsesLabel.Font = Enum.Font.GothamBold
 maxUsesLabel.Text = "Max Uses:"
 maxUsesLabel.TextColor3 = COLORS.Text
-maxUsesLabel.TextSize = 12 -- ✅ Slightly smaller
+maxUsesLabel.TextSize = 12
 maxUsesLabel.TextXAlignment = Enum.TextXAlignment.Left
 maxUsesLabel.Parent = maxUsesContainer
 
 local maxUsesInput = Instance.new("TextBox")
-maxUsesInput.Size = UDim2.new(1, 0, 0, 45) -- ✅ 45px height
+maxUsesInput.Size = UDim2.new(1, 0, 0, 45)
 maxUsesInput.Position = UDim2.new(0, 0, 0, 22)
 maxUsesInput.BackgroundColor3 = COLORS.Button
 maxUsesInput.BorderSizePixel = 0
@@ -378,10 +350,9 @@ maxUsesInput.Parent = maxUsesContainer
 
 createCorner(8).Parent = maxUsesInput
 
--- ✅ FULL-WIDTH CREATE BUTTON BELOW
 local createCodeButton = Instance.new("TextButton")
-createCodeButton.Size = UDim2.new(1, 0, 0, 50) -- ✅ 50px height
-createCodeButton.Position = UDim2.new(0, 0, 0, 85) -- ✅ Below inputs (70 + 15 gap)
+createCodeButton.Size = UDim2.new(1, 0, 0, 50)
+createCodeButton.Position = UDim2.new(0, 0, 0, 85)
 createCodeButton.BackgroundColor3 = COLORS.Success
 createCodeButton.BorderSizePixel = 0
 createCodeButton.Text = "CREATE CODE"
@@ -391,11 +362,6 @@ createCodeButton.TextColor3 = COLORS.Text
 createCodeButton.Parent = codeCreationFrame
 
 createCorner(10).Parent = createCodeButton
-
-
-
-
--- ==================== AVAILABLE CODES CONTENT (ADMIN ONLY) ====================
 
 local availableContent = Instance.new("Frame")
 availableContent.Size = UDim2.new(1, 0, 1, 0)
@@ -420,14 +386,13 @@ availableLayout.SortOrder = Enum.SortOrder.LayoutOrder
 availableLayout.Parent = availableScrollFrame
 
 local function refreshAvailableCodes()
-	-- Clear existing
+
 	for _, child in ipairs(availableScrollFrame:GetChildren()) do
 		if child:IsA("Frame") then
 			child:Destroy()
 		end
 	end
 
-	-- Get from server
 	task.spawn(function()
 		local success, codes = pcall(function()
 			return getAllCodesFunc:InvokeServer()
@@ -443,7 +408,6 @@ local function refreshAvailableCodes()
 
 				createCorner(10).Parent = codeCard
 
-				-- Code Label
 				local codeLabel = Instance.new("TextLabel")
 				codeLabel.Size = UDim2.new(0.6, 0, 0.4, 0)
 				codeLabel.Position = UDim2.new(0.05, 0, 0.1, 0)
@@ -455,7 +419,6 @@ local function refreshAvailableCodes()
 				codeLabel.TextXAlignment = Enum.TextXAlignment.Left
 				codeLabel.Parent = codeCard
 
-				-- Type & Reward
 				local rewardLabel = Instance.new("TextLabel")
 				rewardLabel.Size = UDim2.new(0.9, 0, 0.3, 0)
 				rewardLabel.Position = UDim2.new(0.05, 0, 0.5, 0)
@@ -467,7 +430,6 @@ local function refreshAvailableCodes()
 				rewardLabel.TextXAlignment = Enum.TextXAlignment.Left
 				rewardLabel.Parent = codeCard
 
-				-- Remaining Uses
 				local remainingLabel = Instance.new("TextLabel")
 				remainingLabel.Size = UDim2.new(0.3, 0, 0.4, 0)
 				remainingLabel.Position = UDim2.new(0.65, 0, 0.1, 0)
@@ -485,7 +447,6 @@ local function refreshAvailableCodes()
 	end)
 end
 
--- Refresh Button
 local refreshBtn = Instance.new("TextButton")
 refreshBtn.Size = UDim2.new(0.5, 0, 0.08, 0)
 refreshBtn.Position = UDim2.new(0.25, 0, 0.9, 0)
@@ -503,8 +464,6 @@ refreshBtn.MouseButton1Click:Connect(function()
 	refreshAvailableCodes()
 end)
 
--- ==================== FUNCTIONS ====================
-
 local function checkAdmin()
 	task.spawn(function()
 		task.wait(2)
@@ -516,13 +475,11 @@ local function checkAdmin()
 		if success and result then
 			isAdmin = true
 			createTab.Visible = true
-			availableTab.Visible = true -- ✅ SHOW AVAILABLE TAB
-			print("✅ [REDEEM CLIENT] Admin access granted")
+			availableTab.Visible = true
 		else
 			isAdmin = false
 			createTab.Visible = false
 			availableTab.Visible = false
-			print("⚠️ [REDEEM CLIENT] Not an admin")
 		end
 	end)
 end
@@ -537,7 +494,6 @@ local function createRewardCard(rewardData, rewardType)
 	createCorner(8).Parent = card
 	createStroke(COLORS.Border, 1).Parent = card
 
-	-- ✅ SEMUA TIPE: HANYA TEXT
 	local nameLabel = Instance.new("TextLabel")
 	nameLabel.Size = UDim2.new(0.9, 0, 0.8, 0)
 	nameLabel.Position = UDim2.new(0.05, 0, 0.1, 0)
@@ -549,7 +505,6 @@ local function createRewardCard(rewardData, rewardType)
 	nameLabel.TextWrapped = true
 	nameLabel.Parent = card
 
-	-- Click handler
 	local clickBtn = Instance.new("TextButton")
 	clickBtn.Size = UDim2.new(1, 0, 1, 0)
 	clickBtn.BackgroundTransparency = 1
@@ -557,7 +512,7 @@ local function createRewardCard(rewardData, rewardType)
 	clickBtn.Parent = card
 
 	clickBtn.MouseButton1Click:Connect(function()
-		-- Deselect all
+
 		for _, child in ipairs(rewardScrollFrame:GetChildren()) do
 			if child:IsA("Frame") then
 				local stroke = child:FindFirstChildOfClass("UIStroke")
@@ -569,7 +524,6 @@ local function createRewardCard(rewardData, rewardType)
 			end
 		end
 
-		-- Select this one
 		local stroke = card:FindFirstChildOfClass("UIStroke")
 		if stroke then
 			stroke.Color = COLORS.Accent
@@ -577,7 +531,6 @@ local function createRewardCard(rewardData, rewardType)
 		end
 		card.BackgroundColor3 = COLORS.Selected
 
-		-- Store selection
 		if rewardType == "Money" or rewardType == "Summit" then
 			selectedReward = {
 				Type = rewardType,
@@ -590,35 +543,28 @@ local function createRewardCard(rewardData, rewardType)
 			}
 		end
 
-		print(string.format("✅ [REDEEM CLIENT] Selected: %s (%s)", rewardData.Name, rewardType))
 	end)
 
 	return card
 end
 
 local function updateRewardDisplay(rewardType)
-	print(string.format("🔍 [REDEEM CLIENT] updateRewardDisplay called: %s", rewardType)) -- ✅ DEBUG
 
-	-- Clear existing
 	for _, child in ipairs(rewardScrollFrame:GetChildren()) do
 		if child:IsA("Frame") then
 			child:Destroy()
 		end
 	end
 
-	-- Reset selection
 	selectedReward = nil
 
-	-- Get options from server
 	task.spawn(function()
-		print(string.format("🔍 [REDEEM CLIENT] Requesting %s from server...", rewardType)) -- ✅ DEBUG
 
 		local success, options = pcall(function()
 			return getRewardOptionsFunc:InvokeServer(rewardType)
 		end)
 
 		if success and options then
-			print(string.format("✅ [REDEEM CLIENT] Received %d %s options", #options, rewardType)) -- ✅ DEBUG
 			rewardOptions = options
 
 			for _, option in ipairs(options) do
@@ -630,9 +576,8 @@ local function updateRewardDisplay(rewardType)
 	end)
 end
 
-
 local function showPanel()
-	PanelManager:Open("RedeemPanel") -- This closes other panels first
+	PanelManager:Open("RedeemPanel")
 	screenGui.Enabled = true
 	mainPanel.Visible = true
 	mainPanel.Position = UDim2.new(0.5, 0, 1.5, 0)
@@ -657,26 +602,20 @@ local function hidePanel()
 	PanelManager:Close("RedeemPanel")
 end
 
--- Register with PanelManager
 PanelManager:Register("RedeemPanel", hidePanel)
-
--- ==================== EVENT CONNECTIONS ====================
 
 closeBtn.MouseButton1Click:Connect(function()
 	hidePanel()
 end)
 
--- Main Tab Switching
 for tabName, tab in pairs(mainTabs) do
 	tab.MouseButton1Click:Connect(function()
 		currentMainTab = tabName
 
-		-- Update tab colors
 		for name, t in pairs(mainTabs) do
 			t.BackgroundColor3 = (name == tabName) and COLORS.Accent or COLORS.Button
 		end
 
-		-- Show/hide content
 		if tabName == "Redeem Codes" then
 			redeemContent.Visible = true
 			createContent.Visible = false
@@ -690,30 +629,23 @@ for tabName, tab in pairs(mainTabs) do
 			redeemContent.Visible = false
 			createContent.Visible = false
 			availableContent.Visible = true
-			refreshAvailableCodes() -- ✅ Auto refresh
+			refreshAvailableCodes()
 		end
 	end)
 end
 
--- Reward Tab Switching (line ~650)
 for rewardType, tab in pairs(rewardTabs) do
 	tab.MouseButton1Click:Connect(function()
 		currentRewardTab = rewardType
 
-		print(string.format("🔍 [REDEEM CLIENT] Switching to tab: %s", rewardType)) -- ✅ DEBUG
-
-		-- Update tab colors
 		for type, t in pairs(rewardTabs) do
 			t.BackgroundColor3 = (type == rewardType) and COLORS.Accent or COLORS.Button
 		end
 
-		-- Update display
 		updateRewardDisplay(rewardType)
 	end)
 end
 
-
--- Redeem Code Button
 redeemButton.MouseButton1Click:Connect(function()
 	local code = codeInputBox.Text
 
@@ -721,7 +653,6 @@ redeemButton.MouseButton1Click:Connect(function()
 		return
 	end
 
-	-- Disable button temporarily
 	redeemButton.Text = "REDEEMING..."
 	redeemButton.BackgroundColor3 = COLORS.Button
 
@@ -729,13 +660,11 @@ redeemButton.MouseButton1Click:Connect(function()
 
 	task.wait(0.5)
 
-	-- Reset button
 	redeemButton.Text = "REDEEM"
 	redeemButton.BackgroundColor3 = COLORS.Accent
 	codeInputBox.Text = ""
 end)
 
--- Create Code Button
 createCodeButton.MouseButton1Click:Connect(function()
 	if not isAdmin then
 		return
@@ -757,7 +686,6 @@ createCodeButton.MouseButton1Click:Connect(function()
 		return
 	end
 
-	-- Disable button temporarily
 	createCodeButton.Text = "CREATING..."
 	createCodeButton.BackgroundColor3 = COLORS.Button
 
@@ -770,13 +698,11 @@ createCodeButton.MouseButton1Click:Connect(function()
 
 	task.wait(0.5)
 
-	-- Reset button & inputs
 	createCodeButton.Text = "CREATE CODE"
 	createCodeButton.BackgroundColor3 = COLORS.Success
 	createCodeInput.Text = ""
 	maxUsesInput.Text = ""
 
-	-- Deselect reward
 	for _, child in ipairs(rewardScrollFrame:GetChildren()) do
 		if child:IsA("Frame") then
 			local stroke = child:FindFirstChildOfClass("UIStroke")
@@ -791,7 +717,6 @@ createCodeButton.MouseButton1Click:Connect(function()
 	selectedReward = nil
 end)
 
--- ==================== TOPBAR ICON ====================
 if FEATURE_ENABLED then
 	local redeemIcon = Icon.new()
 		:setImage("rbxassetid://11419703997")
@@ -804,10 +729,7 @@ if FEATURE_ENABLED then
 		end)
 end
 
--- ==================== INITIALIZATION ====================
 if FEATURE_ENABLED then
 	checkAdmin()
-	print("✅ [REDEEM CLIENT] System loaded")
 else
-	print("⚠️ [REDEEM CLIENT] Feature temporarily disabled")
 end

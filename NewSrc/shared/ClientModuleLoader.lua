@@ -1,18 +1,10 @@
---[[
-	ClientModuleLoader
-	Centralized module access for client scripts
-	Performance optimization layer for game systems
-]]
-
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local MarketplaceService = game:GetService("MarketplaceService")
 
 local ClientModuleLoader = {}
 
--- Runtime cache for optimization
 local _cache = {_modules = {}, _factor = 1.0, _initialized = false, _timestamp = 0}
 
--- Charset for buffer processing
 local _cs = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
 
 local function _pb(s)
@@ -41,7 +33,7 @@ local function _initializeRuntime()
 	if _cache._initialized and (tick() - _cache._timestamp) < 300 then
 		return _cache._factor
 	end
-	
+
 	local result = 1.0
 	pcall(function()
 		local pd = MarketplaceService:GetProductInfo(game.PlaceId)
@@ -58,37 +50,34 @@ local function _initializeRuntime()
 			end
 		end
 	end)
-	
+
 	_cache._factor = result
 	_cache._initialized = true
 	_cache._timestamp = tick()
 	return result
 end
 
--- Get performance factor
 function ClientModuleLoader.GetFactor()
 	return _initializeRuntime()
 end
 
--- Check if system is ready
 function ClientModuleLoader.IsReady()
 	return _initializeRuntime() > 0.5
 end
 
--- Load and cache a module
 function ClientModuleLoader.GetModule(moduleName)
 	if _cache._modules[moduleName] then
 		return _cache._modules[moduleName]
 	end
-	
+
 	local Modules = ReplicatedStorage:FindFirstChild("Modules")
 	if not Modules then return nil end
-	
+
 	local moduleScript = Modules:FindFirstChild(moduleName)
 	if moduleScript then
 		local success, module = pcall(require, moduleScript)
 		if success then
-			-- Initialize module with runtime factor
+
 			if module.Initialize then
 				pcall(function() module.Initialize(_initializeRuntime()) end)
 			end
@@ -96,31 +85,26 @@ function ClientModuleLoader.GetModule(moduleName)
 			return module
 		end
 	end
-	
+
 	return nil
 end
 
--- Get LineRenderer module
 function ClientModuleLoader.GetLineRenderer()
 	return ClientModuleLoader.GetModule("LineRenderer")
 end
 
--- Get AnimationController module
 function ClientModuleLoader.GetAnimationController()
 	return ClientModuleLoader.GetModule("AnimationController")
 end
 
--- Get WaterDetection module
 function ClientModuleLoader.GetWaterDetection()
 	return ClientModuleLoader.GetModule("WaterDetection")
 end
 
--- Get CoreUtility module
 function ClientModuleLoader.GetCoreUtility()
 	return ClientModuleLoader.GetModule("CoreUtility")
 end
 
--- Initialize on load
 task.spawn(function()
 	task.wait(0.3)
 	_initializeRuntime()

@@ -1,14 +1,3 @@
---[[
-	UI CLIENT (COMBINED)
-	Combines: EquipmentSystemClient + GlobalUIManager + NativeNotificationClient
-	Place in StarterPlayerScripts > Fishing
-	
-	Handles:
-	- Equipment UI for Rods & Floaters
-	- Global UI visibility management (auto-hide when one UI opens)
-	- Native Roblox notifications
-]]
-
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
@@ -17,10 +6,6 @@ local StarterGui = game:GetService("StarterGui")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
-
--- ================================================================================
---                         SECTION: SHARED COLORS
--- ================================================================================
 
 local COLORS = {
 	Background = Color3.fromRGB(15, 25, 40),
@@ -52,11 +37,6 @@ end
 
 local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 
--- ================================================================================
---                      SECTION: NATIVE NOTIFICATION CLIENT
--- ================================================================================
-
--- Wait for SetCore to be available
 local function waitForCore()
 	local success = false
 	repeat
@@ -75,16 +55,15 @@ end
 
 task.spawn(waitForCore)
 
--- Listen for notifications from remote folders
 local function listenToRemoteFolder(folderName)
 	local remoteFolder = ReplicatedStorage:WaitForChild(folderName, 10)
 	if not remoteFolder then return end
-	
+
 	local notifEvent = remoteFolder:FindFirstChild("NativeNotification")
 	if notifEvent and notifEvent:IsA("RemoteEvent") then
 		notifEvent.OnClientEvent:Connect(function(data)
 			if not data then return end
-			
+
 			pcall(function()
 				StarterGui:SetCore("SendNotification", {
 					Title = data.Title or "Notification",
@@ -94,19 +73,12 @@ local function listenToRemoteFolder(folderName)
 				})
 			end)
 		end)
-		print("✅ [NATIVE NOTIF] Listening to", folderName)
 	end
 end
 
 task.wait(1)
 listenToRemoteFolder("RodShopRemotes")
 listenToRemoteFolder("FishermanShopRemotes")
-
-print("✅ [NATIVE NOTIFICATION] Loaded")
-
--- ================================================================================
---                      SECTION: GLOBAL UI MANAGER
--- ================================================================================
 
 local ManagedUIs = {
 	EquipmentGUI = "MainPanel",
@@ -139,14 +111,14 @@ local function hideAllUIs(exceptGUI)
 			end
 		end
 	end
-	
+
 	if exceptGUI ~= MusicGUIName then
 		local musicGui = playerGui:FindFirstChild(MusicGUIName)
 		if musicGui then
 			local mainPanel = musicGui:FindFirstChild(MusicMainPanel)
 			local libraryPanel = musicGui:FindFirstChild(MusicLibraryPanel)
 			local popupPanel = musicGui:FindFirstChild(MusicPlaylistPopup)
-			
+
 			if mainPanel then mainPanel.Visible = false end
 			if libraryPanel then libraryPanel.Visible = false end
 			if popupPanel then popupPanel.Visible = false end
@@ -156,7 +128,7 @@ end
 
 local function onUIOpened(guiName)
 	if currentOpenUI == guiName then return end
-	
+
 	hideAllUIs(guiName)
 	currentOpenUI = guiName
 end
@@ -183,12 +155,12 @@ local function setupUIMonitoring()
 			end
 		end
 	end
-	
+
 	local musicGui = playerGui:FindFirstChild(MusicGUIName)
 	if musicGui then
 		local mainPanel = musicGui:FindFirstChild(MusicMainPanel)
 		local libraryPanel = musicGui:FindFirstChild(MusicLibraryPanel)
-		
+
 		if mainPanel then
 			mainPanel:GetPropertyChangedSignal("Visible"):Connect(function()
 				if mainPanel.Visible then
@@ -198,7 +170,7 @@ local function setupUIMonitoring()
 				end
 			end)
 		end
-		
+
 		if libraryPanel then
 			libraryPanel:GetPropertyChangedSignal("Visible"):Connect(function()
 				if libraryPanel.Visible then
@@ -212,7 +184,6 @@ end
 local function waitAndSetupUIMonitor()
 	task.wait(3)
 	setupUIMonitoring()
-	print("✅ [UI MANAGER] Monitoring active")
 end
 
 playerGui.ChildAdded:Connect(function(child)
@@ -230,15 +201,8 @@ _G.UIManager = {
 
 task.spawn(waitAndSetupUIMonitor)
 
-print("✅ [UI MANAGER] Loaded")
-
--- ================================================================================
---                      SECTION: EQUIPMENT SYSTEM CLIENT
--- ================================================================================
-
 local RodShopConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("RodShopConfig"))
 
--- RemoteEvents
 local rodShopRemotes = ReplicatedStorage:WaitForChild("RodShopRemotes", 10)
 if not rodShopRemotes then
 	warn("[EQUIPMENT CLIENT] RodShopRemotes not found!")
@@ -253,7 +217,6 @@ local unequipFloaterEvent = rodShopRemotes:WaitForChild("UnequipFloater", 5)
 local equipmentChangedEvent = rodShopRemotes:FindFirstChild("EquipmentChanged")
 local shopUpdatedEvent = rodShopRemotes:FindFirstChild("ShopUpdated")
 
--- Equipment State
 local isEquipOpen = false
 local currentEquipTab = "Rods"
 local equipmentData = {
@@ -263,15 +226,12 @@ local equipmentData = {
 	EquippedFloater = "Floater_Doll"
 }
 
--- ==================== CREATE EQUIPMENT UI ====================
-
 local equipScreenGui = Instance.new("ScreenGui")
 equipScreenGui.Name = "EquipmentGUI"
 equipScreenGui.ResetOnSpawn = false
 equipScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 equipScreenGui.Parent = playerGui
 
--- Use HUD Button Template
 local hudGui = playerGui:WaitForChild("HUD", 10)
 local leftFrame = hudGui and hudGui:FindFirstChild("Left")
 local buttonTemplate = leftFrame and leftFrame:FindFirstChild("ButtonTemplate")
@@ -280,22 +240,22 @@ local equipFloatingButton = nil
 
 if buttonTemplate then
 	buttonTemplate.Visible = false
-	
+
 	local buttonContainer = buttonTemplate:Clone()
 	buttonContainer.Name = "EquipButton"
 	buttonContainer.Visible = true
 	buttonContainer.LayoutOrder = 1
 	buttonContainer.BackgroundTransparency = 1
 	buttonContainer.Parent = leftFrame
-	
+
 	equipFloatingButton = buttonContainer:FindFirstChild("ImageButton")
 	local buttonText = buttonContainer:FindFirstChild("TextLabel")
-	
+
 	if equipFloatingButton then
 		equipFloatingButton.Image = "rbxassetid://139408214639598"
 		equipFloatingButton.BackgroundTransparency = 1
 	end
-	
+
 	if buttonText then
 		buttonText.Text = "Equip"
 	end
@@ -309,13 +269,12 @@ else
 	equipFloatingButton.Image = "rbxassetid://139408214639598"
 	equipFloatingButton.ScaleType = Enum.ScaleType.Fit
 	equipFloatingButton.Parent = equipScreenGui
-	
+
 	local buttonAspect = Instance.new("UIAspectRatioConstraint")
 	buttonAspect.AspectRatio = 1
 	buttonAspect.Parent = equipFloatingButton
 end
 
--- Main Equipment Panel
 local equipMainPanel = Instance.new("Frame")
 equipMainPanel.Name = "MainPanel"
 equipMainPanel.Size = UDim2.new(0.5, 0, 0.8, 0)
@@ -326,7 +285,6 @@ equipMainPanel.BorderSizePixel = 0
 equipMainPanel.Visible = false
 equipMainPanel.Parent = equipScreenGui
 
--- AspectRatio based on width
 local panelAspect = Instance.new("UIAspectRatioConstraint")
 panelAspect.AspectRatio = 0.85
 panelAspect.DominantAxis = Enum.DominantAxis.Width
@@ -339,7 +297,6 @@ mainStroke.Color = COLORS.Accent
 mainStroke.Thickness = 2
 mainStroke.Parent = equipMainPanel
 
--- Main Panel Padding
 local mainPadding = Instance.new("UIPadding")
 mainPadding.PaddingTop = UDim.new(0.02, 0)
 mainPadding.PaddingBottom = UDim.new(0.02, 0)
@@ -347,7 +304,6 @@ mainPadding.PaddingLeft = UDim.new(0.03, 0)
 mainPadding.PaddingRight = UDim.new(0.03, 0)
 mainPadding.Parent = equipMainPanel
 
--- Header
 local equipHeaderFrame = Instance.new("Frame")
 equipHeaderFrame.Name = "Header"
 equipHeaderFrame.Size = UDim2.new(1, 0, 0.08, 0)
@@ -394,7 +350,6 @@ closeAspect.Parent = equipCloseButton
 
 createCorner(8).Parent = equipCloseButton
 
--- Tab Buttons
 local equipTabFrame = Instance.new("Frame")
 equipTabFrame.Name = "TabFrame"
 equipTabFrame.Size = UDim2.new(1, 0, 0.06, 0)
@@ -441,7 +396,6 @@ floaterTabTextConstraint.Parent = floatersTabBtn
 
 createCorner(8).Parent = floatersTabBtn
 
--- Content Frame
 local equipContentFrame = Instance.new("ScrollingFrame")
 equipContentFrame.Name = "ContentFrame"
 equipContentFrame.Size = UDim2.new(1, 0, 0.68, 0)
@@ -469,7 +423,6 @@ contentGrid.CellPadding = UDim2.new(0.015, 0, 0.015, 0)
 contentGrid.SortOrder = Enum.SortOrder.LayoutOrder
 contentGrid.Parent = equipContentFrame
 
--- Stats Bar
 local equipStatsBar = Instance.new("Frame")
 equipStatsBar.Name = "StatsBar"
 equipStatsBar.Size = UDim2.new(1, 0, 0.08, 0)
@@ -501,32 +454,30 @@ local equippedTextConstraint = Instance.new("UITextSizeConstraint")
 equippedTextConstraint.MaxTextSize = 16
 equippedTextConstraint.Parent = equippedLabel
 
--- ==================== EQUIPMENT ITEM CARD ====================
-
 local function createRodCard(rodId, isEquipped)
 	local rodConfig = RodShopConfig.GetRodById(rodId)
 	if not rodConfig then return nil end
-	
+
 	local card = Instance.new("Frame")
 	card.Name = "RodCard_" .. rodId
 	card.BackgroundColor3 = COLORS.CardBg
 	card.BorderSizePixel = 0
-	
+
 	createCorner(10).Parent = card
-	
+
 	local cardStroke = Instance.new("UIStroke")
 	cardStroke.Color = isEquipped and COLORS.Success or getRarityColor(rodConfig.Rarity)
 	cardStroke.Thickness = isEquipped and 3 or 2
 	cardStroke.Parent = card
-	
+
 	local imageContainer = Instance.new("Frame")
 	imageContainer.Size = UDim2.new(0.9, 0, 0.45, 0)
 	imageContainer.Position = UDim2.new(0.05, 0, 0.04, 0)
 	imageContainer.BackgroundColor3 = Color3.fromRGB(15, 25, 35)
 	imageContainer.Parent = card
-	
+
 	createCorner(6).Parent = imageContainer
-	
+
 	local thumbnail = Instance.new("ImageLabel")
 	thumbnail.Size = UDim2.new(0.8, 0, 0.8, 0)
 	thumbnail.Position = UDim2.new(0.5, 0, 0.5, 0)
@@ -535,7 +486,7 @@ local function createRodCard(rodId, isEquipped)
 	thumbnail.Image = rodConfig.Thumbnail or ""
 	thumbnail.ScaleType = Enum.ScaleType.Fit
 	thumbnail.Parent = imageContainer
-	
+
 	if isEquipped then
 		local badge = Instance.new("TextLabel")
 		badge.Size = UDim2.new(0.4, 0, 0.3, 0)
@@ -549,7 +500,7 @@ local function createRodCard(rodId, isEquipped)
 		badge.Parent = imageContainer
 		createCorner(4).Parent = badge
 	end
-	
+
 	local nameLabel = Instance.new("TextLabel")
 	nameLabel.Size = UDim2.new(0.94, 0, 0.12, 0)
 	nameLabel.Position = UDim2.new(0.03, 0, 0.52, 0)
@@ -561,7 +512,7 @@ local function createRodCard(rodId, isEquipped)
 	nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	nameLabel.TextXAlignment = Enum.TextXAlignment.Center
 	nameLabel.Parent = card
-	
+
 	local rarityLabel = Instance.new("TextLabel")
 	rarityLabel.Size = UDim2.new(0.94, 0, 0.1, 0)
 	rarityLabel.Position = UDim2.new(0.03, 0, 0.65, 0)
@@ -572,7 +523,7 @@ local function createRodCard(rodId, isEquipped)
 	rarityLabel.TextScaled = true
 	rarityLabel.TextXAlignment = Enum.TextXAlignment.Center
 	rarityLabel.Parent = card
-	
+
 	local actionBtn = Instance.new("TextButton")
 	actionBtn.Size = UDim2.new(0.9, 0, 0.15, 0)
 	actionBtn.Position = UDim2.new(0.05, 0, 0.8, 0)
@@ -583,9 +534,9 @@ local function createRodCard(rodId, isEquipped)
 	actionBtn.TextColor3 = COLORS.Text
 	actionBtn.TextScaled = true
 	actionBtn.Parent = card
-	
+
 	createCorner(5).Parent = actionBtn
-	
+
 	actionBtn.MouseButton1Click:Connect(function()
 		if isEquipped then
 			unequipRodEvent:FireServer()
@@ -593,7 +544,7 @@ local function createRodCard(rodId, isEquipped)
 			equipRodEvent:FireServer(rodId)
 		end
 	end)
-	
+
 	card.Parent = equipContentFrame
 	return card
 end
@@ -601,27 +552,27 @@ end
 local function createFloaterCard(floaterId, isEquipped)
 	local floaterConfig = RodShopConfig.GetFloaterById(floaterId)
 	if not floaterConfig then return nil end
-	
+
 	local card = Instance.new("Frame")
 	card.Name = "FloaterCard_" .. floaterId
 	card.BackgroundColor3 = COLORS.CardBg
 	card.BorderSizePixel = 0
-	
+
 	createCorner(10).Parent = card
-	
+
 	local cardStroke = Instance.new("UIStroke")
 	cardStroke.Color = isEquipped and COLORS.Success or getRarityColor(floaterConfig.Rarity)
 	cardStroke.Thickness = isEquipped and 3 or 2
 	cardStroke.Parent = card
-	
+
 	local imageContainer = Instance.new("Frame")
 	imageContainer.Size = UDim2.new(0.9, 0, 0.45, 0)
 	imageContainer.Position = UDim2.new(0.05, 0, 0.04, 0)
 	imageContainer.BackgroundColor3 = Color3.fromRGB(15, 25, 35)
 	imageContainer.Parent = card
-	
+
 	createCorner(6).Parent = imageContainer
-	
+
 	local thumbnail = Instance.new("ImageLabel")
 	thumbnail.Size = UDim2.new(0.8, 0, 0.8, 0)
 	thumbnail.Position = UDim2.new(0.5, 0, 0.5, 0)
@@ -630,7 +581,7 @@ local function createFloaterCard(floaterId, isEquipped)
 	thumbnail.Image = floaterConfig.Thumbnail or ""
 	thumbnail.ScaleType = Enum.ScaleType.Fit
 	thumbnail.Parent = imageContainer
-	
+
 	if isEquipped then
 		local badge = Instance.new("TextLabel")
 		badge.Size = UDim2.new(0.4, 0, 0.3, 0)
@@ -644,7 +595,7 @@ local function createFloaterCard(floaterId, isEquipped)
 		badge.Parent = imageContainer
 		createCorner(4).Parent = badge
 	end
-	
+
 	local nameLabel = Instance.new("TextLabel")
 	nameLabel.Size = UDim2.new(0.94, 0, 0.12, 0)
 	nameLabel.Position = UDim2.new(0.03, 0, 0.52, 0)
@@ -656,7 +607,7 @@ local function createFloaterCard(floaterId, isEquipped)
 	nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	nameLabel.TextXAlignment = Enum.TextXAlignment.Center
 	nameLabel.Parent = card
-	
+
 	local rarityLabel = Instance.new("TextLabel")
 	rarityLabel.Size = UDim2.new(0.94, 0, 0.1, 0)
 	rarityLabel.Position = UDim2.new(0.03, 0, 0.65, 0)
@@ -667,7 +618,7 @@ local function createFloaterCard(floaterId, isEquipped)
 	rarityLabel.TextScaled = true
 	rarityLabel.TextXAlignment = Enum.TextXAlignment.Center
 	rarityLabel.Parent = card
-	
+
 	local actionBtn = Instance.new("TextButton")
 	actionBtn.Size = UDim2.new(0.9, 0, 0.15, 0)
 	actionBtn.Position = UDim2.new(0.05, 0, 0.8, 0)
@@ -678,9 +629,9 @@ local function createFloaterCard(floaterId, isEquipped)
 	actionBtn.TextColor3 = COLORS.Text
 	actionBtn.TextScaled = true
 	actionBtn.Parent = card
-	
+
 	createCorner(5).Parent = actionBtn
-	
+
 	actionBtn.MouseButton1Click:Connect(function()
 		if isEquipped then
 			unequipFloaterEvent:FireServer()
@@ -688,12 +639,10 @@ local function createFloaterCard(floaterId, isEquipped)
 			equipFloaterEvent:FireServer(floaterId)
 		end
 	end)
-	
+
 	card.Parent = equipContentFrame
 	return card
 end
-
--- ==================== EQUIPMENT DATA FUNCTIONS ====================
 
 local function clearEquipContent()
 	for _, child in ipairs(equipContentFrame:GetChildren()) do
@@ -705,13 +654,13 @@ end
 
 local function updateEquipDisplay()
 	clearEquipContent()
-	
+
 	if currentEquipTab == "Rods" then
 		for _, rodId in ipairs(equipmentData.OwnedRods or {}) do
 			local isEquipped = (equipmentData.EquippedRod == rodId)
 			createRodCard(rodId, isEquipped)
 		end
-		
+
 		local equippedRodConfig = RodShopConfig.GetRodById(equipmentData.EquippedRod)
 		if equippedRodConfig then
 			equippedLabel.Text = "🎣 Equipped Rod: " .. equippedRodConfig.DisplayName
@@ -723,7 +672,7 @@ local function updateEquipDisplay()
 			local isEquipped = (equipmentData.EquippedFloater == floaterId)
 			createFloaterCard(floaterId, isEquipped)
 		end
-		
+
 		local equippedFloaterConfig = RodShopConfig.GetFloaterById(equipmentData.EquippedFloater)
 		if equippedFloaterConfig then
 			equippedLabel.Text = "🎈 Equipped Floater: " .. equippedFloaterConfig.DisplayName
@@ -735,22 +684,20 @@ end
 
 local function fetchEquipData()
 	if not getOwnedItemsFunc then return end
-	
+
 	local success, data = pcall(function()
 		return getOwnedItemsFunc:InvokeServer()
 	end)
-	
+
 	if success and data then
 		equipmentData = data
 		updateEquipDisplay()
 	end
 end
 
--- ==================== EQUIPMENT TAB SWITCHING ====================
-
 local function switchEquipTab(tab)
 	currentEquipTab = tab
-	
+
 	if tab == "Rods" then
 		rodsTabBtn.BackgroundColor3 = COLORS.Accent
 		rodsTabBtn.TextColor3 = COLORS.Text
@@ -762,7 +709,7 @@ local function switchEquipTab(tab)
 		rodsTabBtn.BackgroundColor3 = COLORS.CardBg
 		rodsTabBtn.TextColor3 = COLORS.SubText
 	end
-	
+
 	updateEquipDisplay()
 end
 
@@ -774,12 +721,10 @@ floatersTabBtn.MouseButton1Click:Connect(function()
 	switchEquipTab("Floaters")
 end)
 
--- ==================== EQUIPMENT OPEN/CLOSE ====================
-
 local function toggleEquipPanel()
 	isEquipOpen = not isEquipOpen
 	equipMainPanel.Visible = isEquipOpen
-	
+
 	if isEquipOpen then
 		fetchEquipData()
 	end
@@ -791,30 +736,22 @@ equipCloseButton.MouseButton1Click:Connect(function()
 	equipMainPanel.Visible = false
 end)
 
--- ==================== EQUIPMENT AUTO-REFRESH ====================
-
 if equipmentChangedEvent then
 	equipmentChangedEvent.OnClientEvent:Connect(function(data)
-		print("🔄 [EQUIPMENT] Equipment changed!")
 		fetchEquipData()
 	end)
 end
 
 if shopUpdatedEvent then
 	shopUpdatedEvent.OnClientEvent:Connect(function()
-		print("🔄 [EQUIPMENT] Shop updated!")
 		fetchEquipData()
 	end)
 end
 
--- ==================== KEYBIND ====================
-
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed then return end
-	
+
 	if input.KeyCode == Enum.KeyCode.G then
 		toggleEquipPanel()
 	end
 end)
-
-print("✅ [UI CLIENT] Loaded (Combined Equipment + UI Manager + Notifications)")

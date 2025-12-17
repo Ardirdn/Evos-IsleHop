@@ -50,8 +50,6 @@ if not updatePlayerDataEvent then
 	updatePlayerDataEvent.Parent = remoteFolder
 end
 
-print("✅ [SHOP SERVER] Initialized")
-
 local function hasGamepass(userId, gamepassId)
 	if not gamepassId or gamepassId == 0 then return false end
 
@@ -104,7 +102,6 @@ getShopDataEvent.OnServerInvoke = function(player)
 end
 
 purchaseItemEvent.OnServerEvent:Connect(function(player, itemType, itemId, price, isPremium, productId)
-	print(string.format("🛒 [SHOP] Purchase request: %s - %s %s", player.Name, itemType, itemId))
 
 	local arrayField = itemType == "Aura" and "OwnedAuras" or "OwnedTools"
 	if DataHandler:ArrayContains(player, arrayField, itemId) then
@@ -142,7 +139,6 @@ purchaseItemEvent.OnServerEvent:Connect(function(player, itemType, itemId, price
 			})
 
 			sendDataUpdate(player)
-			print(string.format("✅ [SHOP] %s purchased %s %s", player.Name, itemType, itemId))
 		else
 			NotificationService:Send(player, {
 				Message = "Not enough money!",
@@ -154,7 +150,6 @@ purchaseItemEvent.OnServerEvent:Connect(function(player, itemType, itemId, price
 end)
 
 purchaseGamepassEvent.OnServerEvent:Connect(function(player, gamepassName)
-	print(string.format("🛒 [SHOP] Gamepass request: %s - %s", player.Name, gamepassName))
 
 	local gamepassData = nil
 	for _, gp in ipairs(ShopConfig.Gamepasses) do
@@ -186,8 +181,6 @@ end)
 MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, gamepassId, wasPurchased)
 	if not wasPurchased then return end
 
-	print(string.format("🎉 [SHOP] Gamepass purchased: %s - ID %d", player.Name, gamepassId))
-
 	for _, gp in ipairs(ShopConfig.Gamepasses) do
 		if gp.GamepassId == gamepassId then
 			DataHandler:AddToArray(player, "OwnedGamepasses", gp.Name)
@@ -206,14 +199,12 @@ MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, gamep
 			})
 
 			sendDataUpdate(player)
-			print(string.format("✅ [SHOP] %s received %s", player.Name, gp.Name))
 			break
 		end
 	end
 end)
 
 purchaseMoneyPackEvent.OnServerEvent:Connect(function(player, productId)
-	print(string.format("💰 [SHOP] Money pack request: %s - Product %d", player.Name, productId))
 
 	if productId == 0 then
 		NotificationService:Send(player, {
@@ -225,5 +216,3 @@ purchaseMoneyPackEvent.OnServerEvent:Connect(function(player, productId)
 
 	MarketplaceService:PromptProductPurchase(player, productId)
 end)
-
-print("✅ [SHOP SERVER] System loaded (Passive income DISABLED)")

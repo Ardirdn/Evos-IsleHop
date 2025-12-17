@@ -368,5 +368,3 @@ local donateIcon = Icon.new()
 	:setLabel("Donate")
 	:bindEvent("selected", showPanel)
 	:bindEvent("deselected", hidePanel)
-
-print("✅ [DONATE CLIENT] System loaded")

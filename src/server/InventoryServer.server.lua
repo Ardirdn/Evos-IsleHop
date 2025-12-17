@@ -84,8 +84,6 @@ local function findToolTemplate(toolId)
 	return nil
 end
 
-print("✅ [INVENTORY SERVER] Initialized")
-
 getInventoryEvent.OnServerInvoke = function(player)
 	local data = DataHandler:GetData(player)
 	if not data then
@@ -141,7 +139,6 @@ equipAuraEvent.OnServerEvent:Connect(function(player, auraId)
 
 				auraClone.Parent = humanoidRootPart
 
-				print(string.format("✨ [INVENTORY SERVER] Applied aura visual: %s", auraId))
 			else
 				warn(string.format("⚠️ [INVENTORY SERVER] Aura template not found: %s", auraId))
 			end
@@ -155,7 +152,6 @@ equipAuraEvent.OnServerEvent:Connect(function(player, auraId)
 		Icon = "✨"
 	})
 
-	print(string.format("✨ [INVENTORY SERVER] %s equipped aura: %s", player.Name, auraId))
 end)
 
 unequipAuraEvent.OnServerEvent:Connect(function(player)
@@ -170,7 +166,6 @@ unequipAuraEvent.OnServerEvent:Connect(function(player)
 			local equippedAura = humanoidRootPart:FindFirstChild("EquippedAura")
 			if equippedAura then
 				equippedAura:Destroy()
-				print(string.format("✨ [INVENTORY SERVER] Removed aura visual from %s", player.Name))
 			end
 		end
 	end
@@ -181,7 +176,6 @@ unequipAuraEvent.OnServerEvent:Connect(function(player)
 		Duration = 3
 	})
 
-	print(string.format("✨ [INVENTORY SERVER] %s unequipped aura", player.Name))
 end)
 
 equipToolEvent.OnServerEvent:Connect(function(player, toolId)
@@ -246,7 +240,6 @@ equipToolEvent.OnServerEvent:Connect(function(player, toolId)
 		Icon = "🔧"
 	})
 
-	print(string.format("🔧 [INVENTORY SERVER] %s equipped tool: %s", player.Name, toolId))
 end)
 
 unequipToolEvent.OnServerEvent:Connect(function(player)
@@ -279,7 +272,6 @@ unequipToolEvent.OnServerEvent:Connect(function(player)
 		Duration = 3
 	})
 
-	print(string.format("🔧 [INVENTORY SERVER] %s unequipped tool", player.Name))
 end)
 
 Players.PlayerAdded:Connect(function(player)
@@ -305,7 +297,6 @@ Players.PlayerAdded:Connect(function(player)
 
 					auraClone.Parent = humanoidRootPart
 
-					print(string.format("✨ [INVENTORY SERVER] Reapplied aura on respawn: %s", data.EquippedAura))
 				end
 			end
 		end
@@ -316,10 +307,7 @@ Players.PlayerAdded:Connect(function(player)
 				local toolClone = toolTemplate:Clone()
 				toolClone.Parent = character
 
-				print(string.format("🔧 [INVENTORY SERVER] Reapplied tool on respawn: %s", data.EquippedTool))
 			end
 		end
 	end)
 end)
-
-print("✅ [INVENTORY SERVER] System loaded")

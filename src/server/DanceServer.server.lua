@@ -100,8 +100,6 @@ if not getFavoritesFunc then
 	getFavoritesFunc.Parent = remoteFolder
 end
 
-print("✅ [DANCE SERVER] RemoteEvents created")
-
 local PlayerAnims = {}
 local PlayerSpeeds = {}
 local SynchronizedPlayer = {}
@@ -126,8 +124,6 @@ local function PlayAnim(player, data, synchronizedPlayer)
 		end
 	end
 
-	print(string.format("💃 [DANCE SERVER] %s started dancing (sync: %s)",
-		player.Name, synchronizedPlayer and synchronizedPlayer.Name or "none"))
 end
 
 local function StopAnim(player)
@@ -140,7 +136,6 @@ local function StopAnim(player)
 		end
 	end
 
-	print(string.format("🛑 [DANCE SERVER] %s stopped dancing", player.Name))
 end
 
 local lastSpeedSet = {}
@@ -178,14 +173,12 @@ local function SyncDance(player, synchronizedPlayer)
 		targetPlayer = SynchronizedPlayer[targetPlayer]
 	end
 	if PlayerAnims[targetPlayer] == nil then
-		print(string.format("⚠️ [DANCE SERVER] %s is not dancing, cannot sync", targetPlayer.Name))
 		return
 	end
 
 	PlayAnim(player, PlayerAnims[targetPlayer], targetPlayer)
 	SyncDanceEvent:FireAllClients(player, synchronizedPlayer)
 
-	print(string.format("🔗 [DANCE SERVER] %s synchronized with %s", player.Name, synchronizedPlayer.Name))
 end
 
 local function UnsyncDance(player)
@@ -193,7 +186,6 @@ local function UnsyncDance(player)
 	StopAnim(player)
 	UnsyncDanceEvent:FireAllClients(player)
 
-	print(string.format("🔓 [DANCE SERVER] %s unsynchronized", player.Name))
 end
 
 local function getPlayerDanceData(player)
@@ -208,7 +200,6 @@ end
 local stopCoordinateDance
 
 local function startCoordinateDance(follower, leader)
-	print(string.format("🎭 [DANCE SERVER] Starting coordinate dance: %s -> %s", follower.Name, leader.Name))
 
 	if playerToLeader[follower] then
 		stopCoordinateDance(follower)
@@ -217,7 +208,6 @@ local function startCoordinateDance(follower, leader)
 	local animData, speed, timePosition = getPlayerDanceData(leader)
 
 	if not animData then
-		print(string.format("⏳ [DANCE SERVER] Leader %s not dancing, setting as PENDING for %s", leader.Name, follower.Name))
 		pendingCoordinates[follower] = leader
 		playerToLeader[follower] = leader
 
@@ -241,7 +231,6 @@ local function startCoordinateDance(follower, leader)
 
 	syncDanceEvent:FireClient(follower, leader, animData, speed, timePosition, false)
 
-	print(string.format("✅ [DANCE SERVER] Coordinate dance started: %s following %s", follower.Name, leader.Name))
 end
 
 stopCoordinateDance = function(follower)
@@ -264,7 +253,6 @@ stopCoordinateDance = function(follower)
 
 	syncDanceEvent:FireClient(follower, nil, nil, 1, 0, false)
 
-	print(string.format("🛑 [DANCE SERVER] %s stopped coordinate dancing", follower.Name))
 end
 
 local function updateFollowers(leader)
@@ -294,7 +282,6 @@ local function checkPendingCoordinates()
 		if follower and follower.Parent and leader and leader.Parent then
 			local animData, speed, timePosition = getPlayerDanceData(leader)
 			if animData then
-				print(string.format("✅ [DANCE SERVER] Leader %s started dancing, activating coordinate for %s", leader.Name, follower.Name))
 				startCoordinateDance(follower, leader)
 			end
 		else
@@ -349,8 +336,6 @@ UnsyncDanceEvent.OnServerEvent:Connect(function(player)
 end)
 
 updateDanceEvent.OnServerEvent:Connect(function(player, animData, speed)
-	print(string.format("📝 [DANCE SERVER] Update dance: %s (%s, speed: %.2f)",
-		player.Name, animData and animData.Title or "NIL", speed))
 
 	playerDances[player] = {
 		AnimData = animData,
@@ -363,7 +348,6 @@ end)
 
 stopDanceEvent.OnServerEvent:Connect(function(player)
 	playerDances[player] = nil
-	print(string.format("🛑 [DANCE SERVER] %s stopped dancing (via stopDanceEvent)", player.Name))
 	updateFollowers(player)
 end)
 
@@ -395,11 +379,9 @@ toggleFavoriteEvent.OnServerEvent:Connect(function(player, danceTitle)
 	if isFavorite then
 		DataHandler:RemoveFromArray(player, "FavoriteDances", danceTitle)
 		DataHandler:SavePlayer(player)
-		print(string.format("💃 [DANCE SERVER] %s removed favorite: %s", player.Name, danceTitle))
 	else
 		DataHandler:AddToArray(player, "FavoriteDances", danceTitle)
 		DataHandler:SavePlayer(player)
-		print(string.format("💃 [DANCE SERVER] %s added favorite: %s", player.Name, danceTitle))
 	end
 end)
 
@@ -436,7 +418,4 @@ Players.PlayerRemoving:Connect(function(player)
 		coordinateDanceGroups[player] = nil
 	end
 
-	print(string.format("🧹 [DANCE SERVER] Cleaned up data for %s", player.Name))
 end)
-
-print("✅ [DANCE SERVER] System loaded")

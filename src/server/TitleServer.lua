@@ -62,10 +62,7 @@ if not BroadcastTitle then
 	BroadcastTitle = Instance.new("RemoteEvent")
 	BroadcastTitle.Name = "BroadcastTitle"
 	BroadcastTitle.Parent = remoteFolder
-	print("✅ [TITLE SERVER] BroadcastTitle RemoteEvent created")
 end
-
-print("✅ [TITLE SERVER v3] Initialized with Unlock/Equip System")
 
 local collidersFolder = nil
 local accessControlReady = false
@@ -81,7 +78,6 @@ local DEBUG_MODE = false
 
 local function debugLog(...)
 	if DEBUG_MODE then
-		print("🔍 [ACCESS DEBUG]", ...)
 	end
 end
 
@@ -403,8 +399,6 @@ function TitleServer:UnlockTitle(player, titleName)
 	DataHandler:AddToArray(player, "UnlockedTitles", titleName)
 	DataHandler:SavePlayer(player)
 
-	print(string.format("🔓 [TITLE] %s unlocked '%s'", player.Name, titleName))
-
 	NotificationService:Send(player, {
 		Message = string.format("New Title Unlocked: %s %s", titleData.Icon, titleData.DisplayName),
 		Type = "success",
@@ -450,7 +444,6 @@ function TitleServer:SyncSummitTitles(player, totalSummits)
 		local idx = table.find(data.UnlockedTitles, titleName)
 		if idx then
 			table.remove(data.UnlockedTitles, idx)
-			print(string.format("🔒 [TITLE] Removed '%s' from %s (no longer qualifies)", titleName, player.Name))
 		end
 	end
 
@@ -464,7 +457,6 @@ function TitleServer:SyncSummitTitles(player, totalSummits)
 				Duration = 5,
 				Icon = titleData.Icon
 			})
-			print(string.format("🔓 [TITLE] %s unlocked '%s'", player.Name, titleName))
 		end
 	end
 
@@ -482,7 +474,6 @@ function TitleServer:SyncSummitTitles(player, totalSummits)
 		end
 	end
 
-	print(string.format("[TITLE] SyncSummitTitles for %s: +%d, -%d", player.Name, #titlesToAdd, #titlesToRemove))
 end
 
 function TitleServer:EquipTitle(player, titleName)
@@ -509,8 +500,6 @@ function TitleServer:EquipTitle(player, titleName)
 
 	DataHandler:Set(player, "EquippedTitle", titleName)
 	DataHandler:SavePlayer(player)
-
-	print(string.format("👑 [TITLE] %s equipped '%s'", player.Name, titleName))
 
 	self:ApplyPrivileges(player, titleName)
 
@@ -551,8 +540,6 @@ function TitleServer:UnequipTitle(player)
 	DataHandler:Set(player, "EquippedTitle", nil)
 	DataHandler:SavePlayer(player)
 
-	print(string.format("🔓 [TITLE] %s unequipped title", player.Name))
-
 	self:BroadcastTitle(player, nil)
 
 	BroadcastTitle:FireAllClients(player.UserId, nil)
@@ -580,10 +567,8 @@ function TitleServer:ApplyPrivileges(player, titleName)
 		for _, toolName in ipairs(privileges.Tools) do
 			self:GiveTool(player, toolName)
 		end
-		print(string.format("🔧 [PRIVILEGES] Gave %d tools to %s", #privileges.Tools, player.Name))
 	end
 
-	print(string.format("✅ [PRIVILEGES] Applied for %s: %s", player.Name, titleName))
 end
 
 function TitleServer:RemovePrivileges(player, titleName)
@@ -596,10 +581,8 @@ function TitleServer:RemovePrivileges(player, titleName)
 		for _, toolName in ipairs(privileges.Tools) do
 			self:RemoveTool(player, toolName)
 		end
-		print(string.format("🗑️ [PRIVILEGES] Removed %d tools from %s", #privileges.Tools, player.Name))
 	end
 
-	print(string.format("❌ [PRIVILEGES] Removed for %s: %s", player.Name, titleName))
 end
 
 function TitleServer:GiveTool(player, toolName)
@@ -630,7 +613,6 @@ function TitleServer:GiveTool(player, toolName)
 	local toolClone = toolTemplate:Clone()
 	toolClone.Parent = backpack or player.Character
 
-	print(string.format("🔧 [PRIVILEGES] Gave %s to %s", toolName, player.Name))
 end
 
 function TitleServer:RemoveTool(player, toolName)
@@ -649,7 +631,6 @@ function TitleServer:RemoveTool(player, toolName)
 		end
 	end
 
-	print(string.format("🗑️ [PRIVILEGES] Removed %s from %s", toolName, player.Name))
 end
 
 Players.PlayerRemoving:Connect(function(player)
@@ -726,22 +707,16 @@ function TitleServer:UpdateSummitTitle(player)
 	if not data then return end
 
 	if data.EquippedTitle then
-		print(string.format("[TITLE] ⏭️ Player %s has equipped title '%s', skipping auto-update",
-			player.Name, data.EquippedTitle))
 
 		self:UnlockSummitTitles(player, data.TotalSummits or 0)
 		return
 	end
 
 	if data.SpecialTitle and data.SpecialTitle ~= "" then
-		print(string.format("[TITLE] ⏭️ Player %s has SpecialTitle '%s', skipping summit title update",
-			player.Name, data.SpecialTitle))
 		return
 	end
 
 	if data.TitleSource and data.TitleSource ~= "summit" then
-		print(string.format("[TITLE] ⏭️ Player %s has non-summit title (source: %s), skipping update",
-			player.Name, data.TitleSource))
 		return
 	end
 
@@ -755,13 +730,8 @@ function TitleServer:UpdateSummitTitle(player)
 		DataHandler:Set(player, "TitleSource", "summit")
 		DataHandler:SavePlayer(player)
 
-		print(string.format("[TITLE] ✅ Summit title upgraded for %s: %s → %s (Summits: %d)",
-			player.Name, currentTitle, newTitle, data.TotalSummits))
-
 		self:BroadcastTitle(player, newTitle)
 	else
-		print(string.format("[TITLE] Summit title unchanged for %s: %s (Summits: %d)",
-			player.Name, currentTitle, data.TotalSummits))
 	end
 end
 
@@ -776,8 +746,6 @@ function TitleServer:GrantSpecialTitle(player, specialTitleName)
 	DataHandler:Set(player, "TitleSource", "special")
 	DataHandler:SavePlayer(player)
 
-	print(string.format("👑 [TITLE] Special title granted to %s: %s", player.Name, specialTitleName))
-
 	self:BroadcastTitle(player, specialTitleName)
 	return true
 end
@@ -790,15 +758,11 @@ function TitleServer:RemoveSpecialTitle(player)
 	DataHandler:Set(player, "TitleSource", "summit")
 	DataHandler:SavePlayer(player)
 
-	print(string.format("🔓 [TITLE] Special title removed from %s, new title: %s", player.Name, newTitle))
-
 	self:BroadcastTitle(player, newTitle)
 	return true
 end
 
 function TitleServer:SetTitle(player, titleName, source, isSpecial)
-	print(string.format("[TITLE] Setting title for %s: %s (source: %s, special: %s)",
-		player.Name, titleName, source or "manual", tostring(isSpecial)))
 
 	local data = DataHandler:GetData(player)
 
@@ -811,7 +775,6 @@ function TitleServer:SetTitle(player, titleName, source, isSpecial)
 	end
 
 	if isSummitTitle then
-		print(string.format("[TITLE] '%s' detected as Summit Title, treating as non-special", titleName))
 		isSpecial = false
 	end
 
@@ -826,8 +789,6 @@ function TitleServer:SetTitle(player, titleName, source, isSpecial)
 		DataHandler:Set(player, "TitleSource", source or "admin")
 		DataHandler:SavePlayer(player)
 
-		print(string.format("👑 [TITLE] ✅ Set SpecialTitle for %s: %s", player.Name, titleName))
-
 		self:BroadcastTitle(player, titleName)
 		return true
 	else
@@ -837,10 +798,6 @@ function TitleServer:SetTitle(player, titleName, source, isSpecial)
 		local correctSummitTitle = getSummitTitle(data.TotalSummits or 0)
 		DataHandler:Set(player, "Title", correctSummitTitle)
 		DataHandler:SavePlayer(player)
-
-		print(string.format("🔓 [TITLE] ✅ Cleared SpecialTitle for %s", player.Name))
-		print(string.format("🔄 [TITLE] ✅ Recalculated title based on summits (%d): %s",
-			data.TotalSummits or 0, correctSummitTitle))
 
 		self:BroadcastTitle(player, correctSummitTitle)
 		return true
@@ -918,8 +875,6 @@ function TitleServer:InitializePlayer(player)
 		DataHandler:SavePlayer(player)
 	end
 
-	print(string.format("🎯 [TITLE] Initialized for %s: %s", player.Name, title))
-
 	if data.EquippedTitle then
 		task.wait(1)
 		self:ApplyPrivileges(player, data.EquippedTitle)
@@ -935,26 +890,19 @@ function TitleServer:InitializePlayerPostMigration(player)
 	local data = DataHandler:GetData(player)
 	if not data then return end
 
-	print(string.format("🎯 [TITLE] Post-migration init for %s (Summits: %d)",
-		player.Name, data.TotalSummits or 0))
-
 	if data.TotalSummits and data.TotalSummits > 0 then
 		self:UnlockSummitTitles(player, data.TotalSummits)
-		print(string.format("🏔️ [TITLE] Unlocked summit titles for %s based on %d summits",
-			player.Name, data.TotalSummits))
 	end
 
 	if table.find(TitleConfig.AdminIds, player.UserId) then
 		if not table.find(data.UnlockedTitles or {}, "Admin") then
 			self:UnlockTitle(player, "Admin")
-			print(string.format("👑 [TITLE] Unlocked Admin title for %s", player.Name))
 		end
 
 		if data.EquippedTitle ~= "Admin" then
 			DataHandler:Set(player, "EquippedTitle", "Admin")
 			DataHandler:SavePlayer(player)
 
-			print(string.format("👑 [TITLE] Auto-equipped Admin title for %s", player.Name))
 		end
 
 		self:GiveAdminWing(player)
@@ -970,8 +918,6 @@ function TitleServer:InitializePlayerPostMigration(player)
 
 	self:BroadcastTitle(player, data.EquippedTitle or title)
 
-	print(string.format("✅ [TITLE] Post-migration complete for %s (Title: %s)",
-		player.Name, data.EquippedTitle or title))
 end
 
 function TitleServer:GiveAdminWing(player)
@@ -980,13 +926,11 @@ function TitleServer:GiveAdminWing(player)
 
 	if not DataHandler:ArrayContains(player, "OwnedTools", "AdminWing") then
 		DataHandler:AddToArray(player, "OwnedTools", "AdminWing")
-		print(string.format("👑 [TITLE] Added AdminWing to OwnedTools for admin: %s", player.Name))
 	end
 
 	local equippedTool = DataHandler:Get(player, "EquippedTool")
 	if not equippedTool then
 		DataHandler:Set(player, "EquippedTool", "AdminWing")
-		print(string.format("👑 [TITLE] Auto-equipped AdminWing for admin: %s", player.Name))
 	end
 
 	DataHandler:SavePlayer(player)
@@ -1007,7 +951,6 @@ function TitleServer:AdminSetSummits(player, newSummitCount)
 	self:UpdateSummitTitle(player)
 
 	DataHandler:SavePlayer(player)
-	print(string.format("👨‍💼 [ADMIN] Set summits for %s: %d", player.Name, newSummitCount))
 end
 
 equipTitleEvent.OnServerEvent:Connect(function(player, titleName)
@@ -1059,14 +1002,11 @@ Players.PlayerAdded:Connect(function(player)
 	end)
 end)
 
-print("🔒 [TITLE SERVER] Initializing Access Control...")
-
 collidersFolder = workspace:WaitForChild("Colliders", 10)
 
 if not collidersFolder then
 	warn("⚠️ [ACCESS CONTROL] Colliders folder not found in Workspace!")
 else
-	print("🔒 [ACCESS CONTROL] Found Colliders folder")
 	accessControlReady = true
 
 	local totalParts = 0
@@ -1125,9 +1065,6 @@ else
 		setupZoneFolder(zoneFolder)
 	end)
 
-	print(string.format("✅ [ACCESS CONTROL] System loaded - %d zone parts found", totalParts))
 end
-
-print("✅ [TITLE SERVER v3] System loaded with Unlock/Equip & Privileges")
 
 return TitleServer

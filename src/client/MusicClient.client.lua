@@ -739,8 +739,6 @@ local function loadPlaylists()
 
 	task.wait(1)
 
-	print(string.format("✅ Loaded %d playlists with %d total songs",
-		#playlists, #allSongs))
 end
 
 loadFavorites = function()
@@ -770,8 +768,6 @@ loadFavorites = function()
 					end
 				end
 			end
-
-			print(string.format("🎵 [MUSIC CLIENT] Loaded %d favorite songs", #favorites))
 
 			if libraryFrame.Visible then
 				updateLibraryContent()
