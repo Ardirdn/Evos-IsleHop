@@ -1,18 +1,4 @@
---[[
-    TITLE CONFIG (REFACTORED WITH SUMMIT INTEGRATION + ACCESS CONTROL)
-    Place in ReplicatedStorage/TitleConfig
-    
-    UPDATED: 3-TIER ADMIN SYSTEM
-    - Primary Admin: Full access
-    - Secondary Admin: Limited access (no Notifications & Events)
-    - Thirdparty Admin: Very limited (Teleport, Freeze, Give Shop Items, Kick, Delete Leaderboard)
-]]
-
 local TitleConfig = {}
-
--- ==================== SUMMIT TITLES ====================
--- Title yang didapat berdasarkan jumlah summit
--- Urutan dari bawah ke atas (priority otomatis berdasarkan requirement)
 
 TitleConfig.SummitTitles = {
 	{
@@ -59,19 +45,14 @@ TitleConfig.SummitTitles = {
 	},
 }
 
--- ==================== SPECIAL TITLES ====================
--- Title khusus yang override summit titles
--- Didapat dari gamepass, donation, atau admin grant
-
 TitleConfig.SpecialTitles = {
 	VIP = {
 		DisplayName = "VIP",
 		Color = Color3.fromRGB(255, 215, 0),
 		Icon = "⭐",
-		Priority = 100, -- Higher priority = override summit titles
-		GamepassId = 0, -- GANTI DENGAN GAMEPASS ID VIP
-		Givable = true, -- Can be given by admin
-		-- ✅ Tools yang diberikan saat equip title ini
+		Priority = 100,
+		GamepassId = 0,
+		Givable = true,
 		Privileges = {
 			Tools = {"SpeedCoil", "BubbleGun"}
 		}
@@ -81,7 +62,7 @@ TitleConfig.SpecialTitles = {
 		Color = Color3.fromRGB(138, 43, 226),
 		Icon = "💎",
 		Priority = 200,
-		GamepassId = 0, -- GANTI DENGAN GAMEPASS ID VVIP
+		GamepassId = 0,
 		Givable = true,
 		Privileges = {
 			Tools = {"SpeedCoil", "BubbleGun"}
@@ -96,7 +77,7 @@ TitleConfig.SpecialTitles = {
 	},
 	Akamsi = {
 		DisplayName = "AKAMSI",
-		Color = Color3.fromRGB(255, 165, 0), -- Orange
+		Color = Color3.fromRGB(255, 165, 0),
 		Icon = "🎯",
 		Priority = 250,
 		Givable = true,
@@ -106,24 +87,24 @@ TitleConfig.SpecialTitles = {
 	},
 	SahabatAdmin = {
 		DisplayName = "SAHABAT ADMIN",
-		Color = Color3.fromRGB(237, 66, 69), -- Merah
+		Color = Color3.fromRGB(237, 66, 69),
 		Icon = "❤️",
 		Priority = 300,
 		Givable = true
 	},
 	Owner = {
 		DisplayName = "OWNER",
-		Color = Color3.fromRGB(237, 66, 69), -- Merah
+		Color = Color3.fromRGB(237, 66, 69),
 		Icon = "👑",
-		Priority = 1000, -- Highest priority
-		Givable = false -- Cannot be given, owner only
+		Priority = 1000,
+		Givable = false
 	},
 	Admin = {
 		DisplayName = "ADMIN",
 		Color = Color3.fromRGB(237, 66, 69),
 		Icon = "👑",
 		Priority = 999,
-		Givable = false -- Cannot be given, admin only
+		Givable = false
 	},
 	["EVOS TEAM"] = {
 		DisplayName = "EVOS TEAM",
@@ -141,57 +122,38 @@ TitleConfig.SpecialTitles = {
 	}
 }
 
--- ==================== ACCESS CONTROL RULES ====================
--- Folder name di Workspace/Colliders/ → Allowed titles
-
 TitleConfig.AccessRules = {
-	-- Admin zones: Only admin
 	["AdminZones"] = {"Admin", "Owner"},
 
-	-- Premium zones: VIP hierarchy
 	["VVIPZones"] = {"VVIP", "Donatur", "EVOS TEAM", "Trimatra", "Admin", "Owner", "SahabatAdmin"},
 	["VIPZones"] = {"VIP", "VVIP", "Donatur", "EVOS TEAM", "Trimatra", "Admin", "Owner", "SahabatAdmin", "Akamsi"},
 
-	-- Community/Clan zones: Exact match only (+ admin)
 	["EVOSZones"] = {"EVOS TEAM", "Admin", "Owner"},
 	["TrimatraZones"] = {"Trimatra", "Admin", "Owner"},
 	["AkamsiZones"] = {"Akamsi", "Admin", "Owner"},
 	["BoatAccess"] = {"VIP", "VVIP", "Donatur", "EVOS TEAM", "Trimatra", "Admin", "Owner", "SahabatAdmin", "Akamsi"},
 }
 
-
--- ==================== ZONE COLORS ====================
--- Visual identification untuk zone colliders
-
 TitleConfig.ZoneColors = {
-	["AdminZones"] = Color3.fromRGB(237, 66, 69), -- Red
-	["VVIPZones"] = Color3.fromRGB(138, 43, 226), -- Purple
-	["VIPZones"] = Color3.fromRGB(255, 215, 0), -- Gold
-	["EVOSZones"] = Color3.fromRGB(255, 0, 0), -- Bright Red
-	["TrimatraZones"] = Color3.fromRGB(0, 150, 255), -- Blue
+	["AdminZones"] = Color3.fromRGB(237, 66, 69),
+	["VVIPZones"] = Color3.fromRGB(138, 43, 226),
+	["VIPZones"] = Color3.fromRGB(255, 215, 0),
+	["EVOSZones"] = Color3.fromRGB(255, 0, 0),
+	["TrimatraZones"] = Color3.fromRGB(0, 150, 255),
 }
-
-
-
--- ==================== ADMIN IDS ====================
--- Primary Admin: Full access to all features
--- Secondary Admin: Limited access (cannot use Notifications & Events)
--- Both have the same "Admin" title
 
 TitleConfig.PrimaryAdminIds = {
 	8714136305,
 	8970505309,
-	
+
 }
 
 TitleConfig.SecondaryAdminIds = {
-	
+
     4680144719,
-    
+
 }
 
--- Combine semua admin IDs (untuk compatibility dengan existing code)
--- Note: ThirdpartyAdminIds ditambahkan di bawah setelah didefinisikan
 TitleConfig.AdminIds = {}
 for _, id in ipairs(TitleConfig.PrimaryAdminIds) do
 	table.insert(TitleConfig.AdminIds, id)
@@ -200,12 +162,8 @@ for _, id in ipairs(TitleConfig.SecondaryAdminIds) do
 	table.insert(TitleConfig.AdminIds, id)
 end
 
--- ==================== THIRDPARTY ADMIN ====================
--- Thirdparty Admin: Very limited permissions
--- Can ONLY do: Teleport, Freeze, Give Shop Items (non-premium), Kick (no ban), Delete Leaderboard Data
-
 TitleConfig.ThirdpartyAdminIds = {
-	
+
 	9209793056,
 	 8910155229,
 	 3573849857,
@@ -214,21 +172,17 @@ TitleConfig.ThirdpartyAdminIds = {
 	 9139343773,
 	 3574034140,
 	 5252854473,
-	-- Tambahkan User ID thirdparty admin di sini
-	-- Contoh: 1234567890,
 }
 
--- Add ThirdpartyAdminIds to AdminIds for compatibility
 for _, id in ipairs(TitleConfig.ThirdpartyAdminIds) do
 	table.insert(TitleConfig.AdminIds, id)
 end
 
--- Thirdparty Admin Permissions (untuk reference di AdminServer)
 TitleConfig.ThirdpartyPermissions = {
 	CanTeleport = true,
 	CanFreeze = true,
-	CanGiveShopItems = true, -- Only non-premium items
-	CanKick = true, -- No ban permission
+	CanGiveShopItems = true,
+	CanKick = true,
 	CanDeleteLeaderboard = true,
 	CanBan = false,
 	CanSetTitle = false,
@@ -240,8 +194,6 @@ TitleConfig.ThirdpartyPermissions = {
 	CanSetGravity = false,
 	CanViewLogs = false,
 }
-
--- ==================== HELPER FUNCTIONS ====================
 
 function TitleConfig.IsPrimaryAdmin(userId)
 	for _, id in ipairs(TitleConfig.PrimaryAdminIds) do
@@ -274,12 +226,10 @@ function TitleConfig.IsAdmin(userId)
 	return TitleConfig.IsPrimaryAdmin(userId) or TitleConfig.IsSecondaryAdmin(userId) or TitleConfig.IsThirdpartyAdmin(userId)
 end
 
--- Check if user is full admin (Primary or Secondary, NOT thirdparty)
 function TitleConfig.IsFullAdmin(userId)
 	return TitleConfig.IsPrimaryAdmin(userId) or TitleConfig.IsSecondaryAdmin(userId)
 end
 
--- Get admin tier (for UI display)
 function TitleConfig.GetAdminTier(userId)
 	if TitleConfig.IsPrimaryAdmin(userId) then
 		return "Primary"
@@ -290,9 +240,6 @@ function TitleConfig.GetAdminTier(userId)
 	end
 	return nil
 end
-
--- ==================== DONATION THRESHOLD ====================
--- Minimum donation untuk mendapat title "Donatur"
 
 TitleConfig.DonationThreshold = 5000
 

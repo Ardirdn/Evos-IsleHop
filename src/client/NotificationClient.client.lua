@@ -1,8 +1,3 @@
---[[
-    NOTIFICATION CLIENT (FIXED - Color Override)
-    Place in StarterPlayerScripts/NotificationClient
-]]
-
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local SoundService = game:GetService("SoundService")
@@ -16,11 +11,9 @@ local NotificationConfig = require(ReplicatedStorage:WaitForChild("NotificationC
 local notificationComm = ReplicatedStorage:WaitForChild("NotificationComm")
 local showNotificationEvent = notificationComm:WaitForChild("ShowNotification")
 
--- Notification queue
 local notificationQueue = {}
 local activeNotifications = {}
 
--- Create ScreenGui
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "NotificationGui"
 screenGui.ResetOnSpawn = false
@@ -28,7 +21,6 @@ screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 screenGui.DisplayOrder = 100
 screenGui.Parent = playerGui
 
--- Container for notifications (top-right)
 local container = Instance.new("Frame")
 container.Name = "NotificationContainer"
 container.Size = UDim2.new(0, 350, 1, -20)
@@ -42,7 +34,6 @@ layout.SortOrder = Enum.SortOrder.LayoutOrder
 layout.VerticalAlignment = Enum.VerticalAlignment.Top
 layout.Parent = container
 
--- Helper functions
 local function createCorner(radius)
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0, radius)
@@ -72,10 +63,8 @@ local function playSound(soundId)
 end
 
 local function createNotification(data)
-	-- Get notification type config (COPY, tidak reference!)
 	local typeConfig = NotificationConfig.Types[data.Type] or NotificationConfig.Types.info
 
-	-- Apply custom color BEFORE creating UI
 	local finalColor = typeConfig.Color
 	if data.CustomColor then
 		if type(data.CustomColor) == "table" then
@@ -83,11 +72,10 @@ local function createNotification(data)
 		else
 			finalColor = data.CustomColor
 		end
-		print(string.format("🎨 [NOTIFICATION CLIENT] Custom color applied: R=%.2f G=%.2f B=%.2f", 
+		print(string.format("🎨 [NOTIFICATION CLIENT] Custom color applied: R=%.2f G=%.2f B=%.2f",
 			finalColor.R, finalColor.G, finalColor.B))
 	end
 
-	-- Create notification frame
 	local notif = Instance.new("Frame")
 	notif.Name = "Notification"
 	notif.Size = UDim2.new(1, 0, 0, 70)
@@ -98,9 +86,8 @@ local function createNotification(data)
 	notif.Parent = container
 
 	createCorner(10).Parent = notif
-	createStroke(finalColor, 2).Parent = notif -- Use finalColor!
+	createStroke(finalColor, 2).Parent = notif
 
-	-- Icon
 	local icon = Instance.new("TextLabel")
 	icon.Name = "IconLabel"
 	icon.Size = UDim2.new(0, 50, 1, 0)
@@ -108,11 +95,10 @@ local function createNotification(data)
 	icon.BackgroundTransparency = 1
 	icon.Font = Enum.Font.GothamBold
 	icon.Text = data.Icon or typeConfig.Icon
-	icon.TextColor3 = finalColor -- Use finalColor!
+	icon.TextColor3 = finalColor
 	icon.TextSize = 28
 	icon.Parent = notif
 
-	-- Message
 	local message = Instance.new("TextLabel")
 	message.Size = UDim2.new(1, -60, 1, -10)
 	message.Position = UDim2.new(0, 55, 0, 5)
@@ -126,7 +112,6 @@ local function createNotification(data)
 	message.TextYAlignment = Enum.TextYAlignment.Center
 	message.Parent = notif
 
-	-- Progress bar
 	local progressBg = Instance.new("Frame")
 	progressBg.Name = "ProgressBg"
 	progressBg.Size = UDim2.new(1, -10, 0, 3)
@@ -140,7 +125,7 @@ local function createNotification(data)
 	local progress = Instance.new("Frame")
 	progress.Name = "ProgressBar"
 	progress.Size = UDim2.new(1, 0, 1, 0)
-	progress.BackgroundColor3 = finalColor -- Use finalColor!
+	progress.BackgroundColor3 = finalColor
 	progress.BorderSizePixel = 0
 	progress.Parent = progressBg
 
@@ -150,17 +135,14 @@ local function createNotification(data)
 end
 
 local function showNotification(data)
-	-- Check max notifications
 	if #activeNotifications >= NotificationConfig.MaxNotifications then
 		table.insert(notificationQueue, data)
 		return
 	end
 
-	-- Create notification with color already applied
 	local notif, progress, typeConfig = createNotification(data)
 	table.insert(activeNotifications, notif)
 
-	-- Add Skip button for global notifications
 	if data.Type == "info" and data.Icon == "📢" then
 		local skipBtn = Instance.new("TextButton")
 		skipBtn.Size = UDim2.new(0, 50, 0, 20)
@@ -179,7 +161,6 @@ local function showNotification(data)
 		skipCorner.Parent = skipBtn
 
 		skipBtn.MouseButton1Click:Connect(function()
-			-- Immediately remove notification
 			local slideOut = TweenService:Create(notif, TweenInfo.new(0.2, Enum.EasingStyle.Quad), {
 				BackgroundTransparency = 1,
 				Position = UDim2.new(0, 50, 0, 0)
@@ -202,10 +183,8 @@ local function showNotification(data)
 		end)
 	end
 
-	-- Play sound
 	playSound(typeConfig.Sound)
 
-	-- Slide in animation
 	notif.BackgroundTransparency = 1
 	notif.Position = UDim2.new(0, 50, 0, 0)
 
@@ -214,16 +193,13 @@ local function showNotification(data)
 		Position = UDim2.new(0, 0, 0, 0)
 	}):Play()
 
-	-- Duration countdown
 	local duration = data.Duration or NotificationConfig.DefaultDuration
 
 	TweenService:Create(progress, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
 		Size = UDim2.new(0, 0, 1, 0)
 	}):Play()
 
-	-- Remove after duration
 	task.delay(duration, function()
-		-- Slide out animation
 		local slideOut = TweenService:Create(notif, TweenInfo.new(NotificationConfig.AnimationDuration, Enum.EasingStyle.Quad), {
 			BackgroundTransparency = 1,
 			Position = UDim2.new(0, 50, 0, 0)
@@ -233,13 +209,11 @@ local function showNotification(data)
 		slideOut.Completed:Connect(function()
 			notif:Destroy()
 
-			-- Remove from active list
 			local index = table.find(activeNotifications, notif)
 			if index then
 				table.remove(activeNotifications, index)
 			end
 
-			-- Show next in queue
 			if #notificationQueue > 0 then
 				local nextData = table.remove(notificationQueue, 1)
 				showNotification(nextData)
@@ -248,7 +222,6 @@ local function showNotification(data)
 	end)
 end
 
--- Listen for notifications
 showNotificationEvent.OnClientEvent:Connect(function(data)
 	if not data or not data.Message then
 		warn("⚠️ [NOTIFICATION CLIENT] Invalid notification data")
@@ -257,7 +230,6 @@ showNotificationEvent.OnClientEvent:Connect(function(data)
 
 	print(string.format("📥 [NOTIFICATION CLIENT] Received: %s (%s)", data.Message, data.Type or "info"))
 
-	-- Debug custom color
 	if data.CustomColor then
 		print("📥 [NOTIFICATION CLIENT] CustomColor received:", data.CustomColor)
 	end

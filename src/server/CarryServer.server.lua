@@ -1,20 +1,16 @@
--- Services
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
--- Remotes
 local REMOTE_NAME = "CarryRemote"
 local CarryRemote = ReplicatedStorage:FindFirstChild(REMOTE_NAME) or Instance.new("RemoteEvent")
 CarryRemote.Name = REMOTE_NAME
 CarryRemote.Parent = ReplicatedStorage
 
--- Config
 local PENDING_TIMEOUT = 8
 local MAX_DISTANCE = 20
 local MAX_CARRY = 8
-local DEBUG = true  -- ✅ Enable debug logging
+local DEBUG = true
 
--- Formation
 local BASE_Z = 1.6
 local SPACING_Z = 1.1
 local Y_OFFSET = 0.9
@@ -33,7 +29,6 @@ local function slotOffset(i: number): CFrame
 	return CFrame.new(0, Y_OFFSET + extraY, z)
 end
 
--- State
 local pending: {[number]: {requester: Player, target: Player, time: number, requestType: string, originator: Player}} = {}
 local carryingByCarrier: {[number]: {[number]: Player}} = {}
 local carriedByTarget: {[number]: Player} = {}
@@ -41,11 +36,9 @@ local slotByCarrier: {[number]: {[number]: number}} = {}
 local lockMap: {[number]: boolean} = {}
 local detachGuard: {[number]: boolean} = {}
 
--- Save/Restore
 local savedProps: {[number]: {[BasePart]: {cc:boolean, ml:boolean}}} = {}
 local savedHum: {[number]: {ws:number, useJP:boolean, jp:number, jh:number, autoRotate:boolean, jumpEnabled:boolean, platformStand:boolean}} = {}
 
--- Helpers
 local function getCharHRP(p: Player)
 	local char = p.Character
 	if not char then return end
@@ -84,7 +77,6 @@ local function isBeingCarried(p: Player) return carriedByTarget[p.UserId] ~= nil
 local function canCarrierRequest(p: Player) return not isBeingCarried(p) end
 local function targetAvailable(p: Player) return not isBeingCarried(p) end
 
--- Save/Restore Humanoid
 local function saveHumState(uid: number, hum: Humanoid)
 	savedHum[uid] = {
 		ws = hum.WalkSpeed,
@@ -114,7 +106,6 @@ local function restoreHumState(uid: number, hum: Humanoid)
 	end
 end
 
--- Lighten carried
 local function makeCarriedLight(char: Model, userId: number)
 	local map: {[BasePart]: {cc:boolean, ml:boolean}} = {}
 	for _, d in ipairs(char:GetDescendants()) do
@@ -137,7 +128,6 @@ local function restoreCarriedLight(userId: number)
 	savedProps[userId] = nil
 end
 
--- Network ownership
 local function setHRPOwnerTo(p: Player, owner: Player?)
 	local _, hrp = getCharHRP(p)
 	if not hrp then return end
@@ -152,7 +142,6 @@ end
 local function giveSelfOwnership(p: Player) setHRPOwnerTo(p, p) end
 local function giveCarrierOwnership(target: Player, carrier: Player) setHRPOwnerTo(target, carrier) end
 
--- Weld helpers
 local function clearCarryWeldsForChar(char: Model)
 	if not char then return end
 	local hrp = char:FindFirstChild("HumanoidRootPart")
@@ -188,7 +177,6 @@ local function removeCarryWeldBetween(carrierHRP: BasePart, targetHRP: BasePart)
 	if w then w:Destroy() end
 end
 
--- UI Snapshot
 local function buildCarriedList(carrier: Player)
 	local list = {}
 	local cmap = carryingByCarrier[carrier.UserId]
@@ -202,7 +190,6 @@ local function sendCarrierList(carrier: Player)
 	CarryRemote:FireClient(carrier, "CarrierList", {list = buildCarriedList(carrier)})
 end
 
--- Reindex slots
 local function reindexSlots(carrier: Player)
 	acquireLock(carrier.UserId)
 	local ok = pcall(function()
@@ -231,7 +218,6 @@ local function reindexSlots(carrier: Player)
 	releaseLock(carrier.UserId)
 end
 
--- Notify
 local function sendStart(carrier: Player, target: Player)
 	local total = countCarried(carrier)
 	CarryRemote:FireClient(carrier, "Start", {
@@ -268,7 +254,6 @@ local function sendEndPair(carrier: Player, target: Player, reason: string?)
 	CarryRemote:FireClient(target, "End", {reason = reason or "end", youAreCarrier = false, yourCarryCount = still})
 end
 
--- Detach
 local function detachPair(carrier: Player, target: Player, reason: string?)
 	local cUID = carrier.UserId
 	local tUID = target.UserId
@@ -340,7 +325,6 @@ local function safeDetachIfAny(p: Player, reason: string?)
 	end)
 end
 
--- Transfer
 local function transferPassengersToAtomic(newCarrier: Player, oldCarrier: Player)
 	local oldMap = carryingByCarrier[oldCarrier.UserId]; if not oldMap then return end
 	local smapOld = slotByCarrier[oldCarrier.UserId] or {}
@@ -399,7 +383,6 @@ local function transferPassengersToAtomic(newCarrier: Player, oldCarrier: Player
 	sendCarrierList(oldCarrier)
 end
 
--- Pending cleanup loop
 task.spawn(function()
 	while true do
 		task.wait(2)
@@ -433,15 +416,14 @@ local function hasPendingOutgoing(p: Player)
 	return false
 end
 
--- Start Carry
 local function startCarry(carrier: Player, target: Player)
 	if DEBUG then print(string.format("[CARRY DEBUG] startCarry called: carrier=%s, target=%s", carrier.Name, target.Name)) end
 
 	local cChar, cHRP = getCharHRP(carrier)
 	local tChar, tHRP, tHum = getCharHRP(target)
-	if not (cChar and cHRP and tChar and tHRP and tHum) then 
+	if not (cChar and cHRP and tChar and tHRP and tHum) then
 		if DEBUG then print("[CARRY DEBUG] startCarry FAILED: missing character parts") end
-		return false, "character missing" 
+		return false, "character missing"
 	end
 
 	acquireLock(carrier.UserId)
@@ -510,9 +492,9 @@ local function startCarry(carrier: Player, target: Player)
 		if DEBUG then print(string.format("[CARRY DEBUG] startCarry SUCCESS: %s carrying %s", carrier.Name, target.Name)) end
 	end)
 	releaseLock(carrier.UserId)
-	if not ok then 
+	if not ok then
 		if DEBUG then print(string.format("[CARRY DEBUG] startCarry FAILED: %s", tostring(err))) end
-		return false, tostring(err) 
+		return false, tostring(err)
 	end
 
 	if countCarried(target) > 0 then transferPassengersToAtomic(carrier, target) end
@@ -520,7 +502,6 @@ local function startCarry(carrier: Player, target: Player)
 	return true
 end
 
--- ==================== REMOTE HANDLERS (FULLY FIXED WITH DEBUG) ====================
 CarryRemote.OnServerEvent:Connect(function(player: Player, action: string, data)
 	if action == "Request" then
 		local targetId = data and data.targetId
@@ -535,14 +516,13 @@ CarryRemote.OnServerEvent:Connect(function(player: Player, action: string, data)
 		local target = Players:GetPlayerByUserId(targetId)
 		if not target or target == player then return end
 
-		-- ✅ FIX: Track originator (player who clicked button)
 		local actualCarrier, actualTarget, promptReceiver, promptMessage, originator
 
 		if requestType == "be_carried" then
-			actualCarrier = target  -- B becomes carrier
-			actualTarget = player   -- A becomes target
-			promptReceiver = target -- Prompt to B
-			originator = player     -- ✅ A is originator!
+			actualCarrier = target
+			actualTarget = player
+			promptReceiver = target
+			originator = player
 			promptMessage = string.format("%s wants you to carry them. Accept?", player.DisplayName)
 
 			if DEBUG then print(string.format("[CARRY DEBUG] Mode: BE_CARRIED")) end
@@ -551,10 +531,10 @@ CarryRemote.OnServerEvent:Connect(function(player: Player, action: string, data)
 			if DEBUG then print(string.format("[CARRY DEBUG] ActualTarget: %s (who will be carried)", actualTarget.Name)) end
 			if DEBUG then print(string.format("[CARRY DEBUG] PromptReceiver: %s", promptReceiver.Name)) end
 		else
-			actualCarrier = player  -- A becomes carrier
-			actualTarget = target   -- B becomes target
-			promptReceiver = target -- Prompt to B
-			originator = player     -- ✅ A is originator!
+			actualCarrier = player
+			actualTarget = target
+			promptReceiver = target
+			originator = player
 			promptMessage = string.format("%s wants to carry you. Accept?", player.DisplayName)
 
 			if DEBUG then print(string.format("[CARRY DEBUG] Mode: CARRY")) end
@@ -566,9 +546,9 @@ CarryRemote.OnServerEvent:Connect(function(player: Player, action: string, data)
 
 		local _, cHRP = getCharHRP(actualCarrier)
 		local _, tHRP = getCharHRP(actualTarget)
-		if not (cHRP and tHRP) then 
+		if not (cHRP and tHRP) then
 			if DEBUG then print("[CARRY DEBUG] REJECTED: Missing HRP") end
-			return 
+			return
 		end
 
 		if (cHRP.Position - tHRP.Position).Magnitude > MAX_DISTANCE then
@@ -596,13 +576,12 @@ CarryRemote.OnServerEvent:Connect(function(player: Player, action: string, data)
 			return
 		end
 
-		-- ✅ FIX: Store with promptReceiver as key (who needs to accept)
 		pending[promptReceiver.UserId] = {
-			requester = actualCarrier,      -- Who will be carrier
-			target = actualTarget,           -- Who will be carried
+			requester = actualCarrier,
+			target = actualTarget,
 			time = os.clock(),
 			requestType = requestType,
-			originator = originator          -- ✅ Who clicked the button
+			originator = originator
 		}
 
 		if DEBUG then print(string.format("[CARRY DEBUG] Pending stored: pending[%d (%s)]", promptReceiver.UserId, promptReceiver.Name)) end
@@ -610,9 +589,8 @@ CarryRemote.OnServerEvent:Connect(function(player: Player, action: string, data)
 		if DEBUG then print(string.format("[CARRY DEBUG]   - target (carried): %s", actualTarget.Name)) end
 		if DEBUG then print(string.format("[CARRY DEBUG]   - originator (clicked): %s", originator.Name)) end
 
-		-- ✅ FIX: Send originator ID for avatar, not carrier ID!
 		CarryRemote:FireClient(promptReceiver, "Prompt", {
-			fromId = originator.UserId,           -- ✅ Show originator's avatar!
+			fromId = originator.UserId,
 			fromName = originator.DisplayName,
 			customMessage = promptMessage
 		})
@@ -630,16 +608,15 @@ CarryRemote.OnServerEvent:Connect(function(player: Player, action: string, data)
 		if DEBUG then print(string.format("[CARRY DEBUG] RequesterId: %s", tostring(requesterId))) end
 		if DEBUG then print(string.format("[CARRY DEBUG] Accept: %s", tostring(accept))) end
 
-		if type(requesterId) ~= "number" then 
+		if type(requesterId) ~= "number" then
 			if DEBUG then print("[CARRY DEBUG] FAILED: Invalid requesterId type") end
-			return 
+			return
 		end
 
-		-- ✅ FIX: Check pending[player.UserId] since prompt was sent to player
 		local pend = pending[player.UserId]
 
 		if DEBUG then print(string.format("[CARRY DEBUG] Checking pending[%d (%s)]", player.UserId, player.Name)) end
-		if DEBUG then 
+		if DEBUG then
 			if pend then
 				print(string.format("[CARRY DEBUG] Pending found!"))
 				print(string.format("[CARRY DEBUG]   - requester: %s", pend.requester and pend.requester.Name or "nil"))
@@ -655,12 +632,11 @@ CarryRemote.OnServerEvent:Connect(function(player: Player, action: string, data)
 			end
 		end
 
-		if not pend then 
+		if not pend then
 			if DEBUG then print("[CARRY DEBUG] FAILED: No pending request") end
-			return 
+			return
 		end
 
-		-- ✅ Validate that requesterId matches
 		if pend.originator and pend.originator.UserId ~= requesterId then
 			if DEBUG then print(string.format("[CARRY DEBUG] FAILED: RequesterId mismatch (expected %d, got %d)", pend.originator.UserId, requesterId)) end
 			return
@@ -715,7 +691,6 @@ CarryRemote.OnServerEvent:Connect(function(player: Player, action: string, data)
 	end
 end)
 
--- Respawn
 local function onCharacterAdded(p: Player, char: Model)
 	task.defer(function()
 		clearCarryWeldsForChar(char)
@@ -741,7 +716,6 @@ Players.PlayerAdded:Connect(function(p)
 end)
 
 Players.PlayerRemoving:Connect(function(p: Player)
-	-- Clear any pending where this player is involved
 	for uid, info in pairs(pending) do
 		if info.originator == p or info.requester == p or info.target == p then
 			pending[uid] = nil

@@ -1,7 +1,3 @@
--- ROBLOX MUSIC PLAYER - FIXED VERSION
--- Letakkan script ini di StarterPlayer > StarterPlayerScripts
--- Requires: TopbarPlus module (https://devforum.roblox.com/t/topbarplus/1017485)
-
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -11,26 +7,22 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- Require TopbarPlus Icon module
 local Icon = require(ReplicatedStorage:WaitForChild("Icon"))
 local MusicConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("MusicConfig"))
 
--- RemoteEvents untuk Favorites
 local musicRemoteFolder = ReplicatedStorage:WaitForChild("MusicRemotes")
 local toggleFavoriteMusicEvent = musicRemoteFolder:WaitForChild("ToggleFavorite")
 local getFavoritesMusicFunc = musicRemoteFolder:WaitForChild("GetFavorites")
 
--- Helper function to apply TextScaled with size constraint (✅ UPDATED - No MinTextSize)
 local function applyTextScaling(textObject, maxSize)
 	maxSize = maxSize or 16
 	textObject.TextScaled = true
 	local sizeConstraint = Instance.new("UITextSizeConstraint")
 	sizeConstraint.MaxTextSize = maxSize
-	sizeConstraint.MinTextSize = 1  -- ✅ No minimum size
+	sizeConstraint.MinTextSize = 1
 	sizeConstraint.Parent = textObject
 end
 
--- ✅ Helper: Add UIAspectRatioConstraint to main frames
 local function addAspectRatio(frame, ratio)
 	local aspectRatio = Instance.new("UIAspectRatioConstraint")
 	aspectRatio.AspectRatio = ratio or 0.75
@@ -38,7 +30,6 @@ local function addAspectRatio(frame, ratio)
 	aspectRatio.Parent = frame
 end
 
--- ✅ Helper: tweenSize for animations
 local function tweenSize(object, endSize, time, callback)
 	local tween = TweenService:Create(object, TweenInfo.new(time or 0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
 		Size = endSize
@@ -50,7 +41,6 @@ local function tweenSize(object, endSize, time, callback)
 	return tween
 end
 
--- ==================== CREATE MAIN GUI ====================
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "MusicPlayerGUI"
 screenGui.ResetOnSpawn = false
@@ -58,10 +48,9 @@ screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 screenGui.Enabled = false
 screenGui.Parent = playerGui
 
--- ==================== MUSIC PLAYER ====================
 local musicFrame = Instance.new("Frame")
 musicFrame.Name = "MusicPlayer"
-musicFrame.Size = UDim2.new(0.7, 0, 0.8, 0)  -- 450/1920, 480/1080
+musicFrame.Size = UDim2.new(0.7, 0, 0.8, 0)
 musicFrame.Position = UDim2.new(0.5, 0, -0.5, 0)
 musicFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 musicFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 23)
@@ -83,7 +72,6 @@ local musicAspectRatio = Instance.new("UIAspectRatioConstraint")
 musicAspectRatio.AspectRatio = 0.75
 musicAspectRatio.Parent = musicFrame
 
--- Music Header
 local musicHeader = Instance.new("Frame")
 musicHeader.Size = UDim2.new(1, 0, 0.104, 0)
 musicHeader.BackgroundColor3 = Color3.fromRGB(25, 25, 28)
@@ -102,7 +90,7 @@ musicHeaderBottom.BorderSizePixel = 0
 musicHeaderBottom.Parent = musicHeader
 
 local musicTitle = Instance.new("TextLabel")
-musicTitle.Size = UDim2.new(0.778, 0, 1, 0)  -- (450-100)/450
+musicTitle.Size = UDim2.new(0.778, 0, 1, 0)
 musicTitle.Position = UDim2.new(0.044, 0, 0, 0)
 musicTitle.BackgroundTransparency = 1
 musicTitle.Text = "MUSIC PLAYER"
@@ -128,9 +116,8 @@ local musicCloseBtnCorner = Instance.new("UICorner")
 musicCloseBtnCorner.CornerRadius = UDim.new(0, 10)
 musicCloseBtnCorner.Parent = musicCloseBtn
 
--- Song Title Display
 local songTitleLabel = Instance.new("TextLabel")
-songTitleLabel.Size = UDim2.new(0.822, 0, 0.063, 0)  -- (450-80)/450, 30/480
+songTitleLabel.Size = UDim2.new(0.822, 0, 0.063, 0)
 songTitleLabel.Position = UDim2.new(0.044, 0, 0.125, 0)
 songTitleLabel.BackgroundTransparency = 1
 songTitleLabel.Text = "No Song Playing"
@@ -141,9 +128,8 @@ songTitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 songTitleLabel.TextTruncate = Enum.TextTruncate.AtEnd
 songTitleLabel.Parent = musicFrame
 
--- Favorite Button
 local favoriteBtn = Instance.new("TextButton")
-favoriteBtn.Size = UDim2.new(0.089, 0, 0.083, 0)  -- 40/450, 40/480
+favoriteBtn.Size = UDim2.new(0.089, 0, 0.083, 0)
 favoriteBtn.Position = UDim2.new(0.878, 0, 0.115, 0)
 favoriteBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 38)
 favoriteBtn.BorderSizePixel = 0
@@ -157,10 +143,9 @@ local favoriteBtnCorner = Instance.new("UICorner")
 favoriteBtnCorner.CornerRadius = UDim.new(0, 10)
 favoriteBtnCorner.Parent = favoriteBtn
 
--- Playlist Display (Changed to show current playlist)
 local playlistLabel = Instance.new("TextLabel")
-playlistLabel.Size = UDim2.new(0.911, 0, 0.042, 0)  -- 20/480
-playlistLabel.Position = UDim2.new(0.044, 0, 0.208, 0) 
+playlistLabel.Size = UDim2.new(0.911, 0, 0.042, 0)
+playlistLabel.Position = UDim2.new(0.044, 0, 0.208, 0)
 playlistLabel.BackgroundTransparency = 1
 playlistLabel.Text = "Playlist: None"
 playlistLabel.Font = Enum.Font.Gotham
@@ -169,7 +154,6 @@ playlistLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
 playlistLabel.TextXAlignment = Enum.TextXAlignment.Left
 playlistLabel.Parent = musicFrame
 
--- Time Labels
 local currentTimeLabel = Instance.new("TextLabel")
 currentTimeLabel.Size = UDim2.new(0.133, 0, 0.042, 0)
 currentTimeLabel.Position = UDim2.new(0.044, 0, 0.271, 0)
@@ -192,7 +176,6 @@ totalTimeLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
 totalTimeLabel.TextXAlignment = Enum.TextXAlignment.Right
 totalTimeLabel.Parent = musicFrame
 
--- Progress Bar
 local progressBg = Instance.new("Frame")
 progressBg.Size = UDim2.new(0.911, 0, 0.013, 0)
 progressBg.Position = UDim2.new(0.044, 0, 0.323, 0)
@@ -214,18 +197,16 @@ local progressBarCorner = Instance.new("UICorner")
 progressBarCorner.CornerRadius = UDim.new(1, 0)
 progressBarCorner.Parent = progressBar
 
--- Control Buttons
 local controlsFrame = Instance.new("Frame")
-controlsFrame.Size = UDim2.new(0.911, 0, 0.104, 0)  -- 50/480
+controlsFrame.Size = UDim2.new(0.911, 0, 0.104, 0)
 controlsFrame.Position = UDim2.new(0.044, 0, 0.375, 0)
 controlsFrame.BackgroundTransparency = 1
 controlsFrame.Parent = musicFrame
 
--- GANTI fungsi createControlButton:
 local function createControlButton(name, text, position)
 	local btn = Instance.new("TextButton")
 	btn.Name = name
-	btn.Size = UDim2.new(0.122, 0, 1, 0)  -- 50/410 (frame width minus padding)
+	btn.Size = UDim2.new(0.122, 0, 1, 0)
 	btn.Position = position
 	btn.BackgroundColor3 = Color3.fromRGB(35, 35, 38)
 	btn.BorderSizePixel = 0
@@ -242,12 +223,10 @@ local function createControlButton(name, text, position)
 	return btn
 end
 
--- Update positions:
-local prevBtn = createControlButton("Previous", "⏮", UDim2.new(0.268, 0, 0, 0))  -- Center - 110/410
-local playPauseBtn = createControlButton("PlayPause", "▶", UDim2.new(0.439, 0, 0, 0))  -- Center - 25/410
+local prevBtn = createControlButton("Previous", "⏮", UDim2.new(0.268, 0, 0, 0))
+local playPauseBtn = createControlButton("PlayPause", "▶", UDim2.new(0.439, 0, 0, 0))
 local nextBtn = createControlButton("Next", "⏭", UDim2.new(0.610, 0, 0, 0))
 
--- Volume Control
 local volumeLabel = Instance.new("TextLabel")
 volumeLabel.Size = UDim2.new(0.222, 0, 0.042, 0)
 volumeLabel.Position = UDim2.new(0.044, 0, 0.510, 0)
@@ -259,7 +238,6 @@ volumeLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
 volumeLabel.TextXAlignment = Enum.TextXAlignment.Left
 volumeLabel.Parent = musicFrame
 
--- Volume Decrease Button
 local volumeDecBtn = Instance.new("TextButton")
 volumeDecBtn.Size = UDim2.new(0.067, 0, 0.063, 0)
 volumeDecBtn.Position = UDim2.new(0.044, 0, 0.552, 0)
@@ -275,7 +253,6 @@ local volumeDecBtnCorner = Instance.new("UICorner")
 volumeDecBtnCorner.CornerRadius = UDim.new(0, 8)
 volumeDecBtnCorner.Parent = volumeDecBtn
 
--- Volume Slider Background
 local volumeSliderBg = Instance.new("Frame")
 volumeSliderBg.Size = UDim2.new(0.756, 0, 0.013, 0)
 volumeSliderBg.Position = UDim2.new(0.122, 0, 0.577, 0)
@@ -297,7 +274,6 @@ local volumeSliderCorner = Instance.new("UICorner")
 volumeSliderCorner.CornerRadius = UDim.new(1, 0)
 volumeSliderCorner.Parent = volumeSlider
 
--- Volume Increase Button
 local volumeIncBtn = Instance.new("TextButton")
 volumeIncBtn.Size = UDim2.new(0.067, 0, 0.063, 0)
 volumeIncBtn.Position = UDim2.new(0.889, 0, 0.552, 0)
@@ -313,7 +289,6 @@ local volumeIncBtnCorner = Instance.new("UICorner")
 volumeIncBtnCorner.CornerRadius = UDim.new(0, 8)
 volumeIncBtnCorner.Parent = volumeIncBtn
 
--- Next Song Info (NEW POSITION)
 local nextSongFrame = Instance.new("Frame")
 nextSongFrame.Size = UDim2.new(0.489, 0, 0.094, 0)
 nextSongFrame.Position = UDim2.new(0.044, 0, 0.646, 0)
@@ -348,7 +323,6 @@ nextSongTitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 nextSongTitleLabel.TextTruncate = Enum.TextTruncate.AtEnd
 nextSongTitleLabel.Parent = nextSongFrame
 
--- Queue Button (NEW)
 local queueBtn = Instance.new("TextButton")
 queueBtn.Size = UDim2.new(0.4, 0, 0.094, 0)
 queueBtn.Position = UDim2.new(0.556, 0, 0.646, 0)
@@ -364,7 +338,6 @@ local queueBtnCorner = Instance.new("UICorner")
 queueBtnCorner.CornerRadius = UDim.new(0, 10)
 queueBtnCorner.Parent = queueBtn
 
--- Library Button
 local libraryBtn = Instance.new("TextButton")
 libraryBtn.Size = UDim2.new(0.911, 0, 0.094, 0)
 libraryBtn.Position = UDim2.new(0.044, 0, 0.760, 0)
@@ -380,7 +353,6 @@ local libraryBtnCorner = Instance.new("UICorner")
 libraryBtnCorner.CornerRadius = UDim.new(0, 10)
 libraryBtnCorner.Parent = libraryBtn
 
--- Add Queue Info Label
 local queueInfoLabel = Instance.new("TextLabel")
 queueInfoLabel.Size = UDim2.new(0.911, 0, 0.042, 0)
 queueInfoLabel.Position = UDim2.new(0.044, 0, 0.875, 0)
@@ -392,10 +364,9 @@ queueInfoLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
 queueInfoLabel.TextXAlignment = Enum.TextXAlignment.Center
 queueInfoLabel.Parent = musicFrame
 
--- ==================== QUEUE PANEL ====================
 local queuePanel = Instance.new("Frame")
-queuePanel.Size = UDim2.new(0.7, 0, 0.8, 0)  -- 350/1920, 480/1080
-queuePanel.Position = UDim2.new(0.622, 0, -0.5, 0)  -- 0.5 + (235/1920)
+queuePanel.Size = UDim2.new(0.7, 0, 0.8, 0)
+queuePanel.Position = UDim2.new(0.622, 0, -0.5, 0)
 queuePanel.AnchorPoint = Vector2.new(0, 0.5)
 queuePanel.BackgroundColor3 = Color3.fromRGB(20, 20, 23)
 queuePanel.BorderSizePixel = 0
@@ -416,7 +387,6 @@ local queueAspectRatio = Instance.new("UIAspectRatioConstraint")
 queueAspectRatio.AspectRatio = 0.75
 queueAspectRatio.Parent = queuePanel
 
--- Queue Header
 local queueHeader = Instance.new("Frame")
 queueHeader.Size = UDim2.new(1, 0, 0.104, 0)
 queueHeader.BackgroundColor3 = Color3.fromRGB(25, 25, 28)
@@ -461,9 +431,8 @@ local queueCloseBtnCorner = Instance.new("UICorner")
 queueCloseBtnCorner.CornerRadius = UDim.new(0, 10)
 queueCloseBtnCorner.Parent = queueCloseBtn
 
--- Queue ScrollFrame
 local queueScroll = Instance.new("ScrollingFrame")
-queueScroll.Size = UDim2.new(0.886, 0, 0.854, 0)  -- (480-70)/480
+queueScroll.Size = UDim2.new(0.886, 0, 0.854, 0)
 queueScroll.Position = UDim2.new(0.057, 0, 0.125, 0)
 queueScroll.BackgroundTransparency = 1
 queueScroll.BorderSizePixel = 0
@@ -476,7 +445,6 @@ queueLayout.SortOrder = Enum.SortOrder.LayoutOrder
 queueLayout.Padding = UDim.new(0, 5)
 queueLayout.Parent = queueScroll
 
--- Empty Queue Label
 local emptyQueueLabel = Instance.new("TextLabel")
 emptyQueueLabel.Size = UDim2.new(1, -10, 0, 100)
 emptyQueueLabel.Position = UDim2.new(0, 5, 0, 100)
@@ -488,9 +456,8 @@ emptyQueueLabel.TextColor3 = Color3.fromRGB(120, 120, 120)
 emptyQueueLabel.Visible = true
 emptyQueueLabel.Parent = queueScroll
 
--- ==================== LIBRARY FRAME ====================
 local libraryFrame = Instance.new("Frame")
-libraryFrame.Size = UDim2.new(0.7, 0, 0.8, 0)  -- 500/1920, 550/1080
+libraryFrame.Size = UDim2.new(0.7, 0, 0.8, 0)
 libraryFrame.Position = UDim2.new(0.5, 0, -0.5, 0)
 libraryFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 libraryFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 23)
@@ -512,7 +479,6 @@ local libraryAspectRatio = Instance.new("UIAspectRatioConstraint")
 libraryAspectRatio.AspectRatio = 0.75
 libraryAspectRatio.Parent = libraryFrame
 
--- Library Header
 local libraryHeader = Instance.new("Frame")
 libraryHeader.Size = UDim2.new(1, 0, 0.091, 0)
 libraryHeader.BackgroundColor3 = Color3.fromRGB(25, 25, 28)
@@ -557,9 +523,8 @@ local libraryCloseBtnCorner = Instance.new("UICorner")
 libraryCloseBtnCorner.CornerRadius = UDim.new(0, 10)
 libraryCloseBtnCorner.Parent = libraryCloseBtn
 
--- Tab Buttons
 local tabFrame = Instance.new("Frame")
-tabFrame.Size = UDim2.new(0.92, 0, 0.082, 0)  -- 45/550
+tabFrame.Size = UDim2.new(0.92, 0, 0.082, 0)
 tabFrame.Position = UDim2.new(0.04, 0, 0.109, 0)
 tabFrame.BackgroundTransparency = 1
 tabFrame.Parent = libraryFrame
@@ -589,9 +554,8 @@ local allTab = createTabButton("AllTab", "ALL SONGS", UDim2.new(0, 0, 0, 0), 1)
 local playlistsTab = createTabButton("PlaylistsTab", "PLAYLISTS", UDim2.new(0.33, 0, 0, 0), 2)
 local favoritesTab = createTabButton("FavoritesTab", "FAVORITES", UDim2.new(0.66, 0, 0, 0), 3)
 
--- Content ScrollFrame
 local contentScroll = Instance.new("ScrollingFrame")
-contentScroll.Size = UDim2.new(0.92, 0, 0.773, 0)  -- (550-125)/550
+contentScroll.Size = UDim2.new(0.92, 0, 0.773, 0)
 contentScroll.Position = UDim2.new(0.04, 0, 0.209, 0)
 contentScroll.BackgroundTransparency = 1
 contentScroll.BorderSizePixel = 0
@@ -604,9 +568,8 @@ contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
 contentLayout.Padding = UDim.new(0, 8)
 contentLayout.Parent = contentScroll
 
--- ==================== SONG DETAILS FRAME ====================
 local songDetailsFrame = Instance.new("Frame")
-songDetailsFrame.Size = UDim2.new(0.234, 0, 0.463, 0)  -- 450/1920, 500/1080
+songDetailsFrame.Size = UDim2.new(0.234, 0, 0.463, 0)
 songDetailsFrame.Position = UDim2.new(0.5, 0, -0.5, 0)
 songDetailsFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 songDetailsFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 23)
@@ -628,7 +591,6 @@ local songDetailsAspectRatio = Instance.new("UIAspectRatioConstraint")
 songDetailsAspectRatio.AspectRatio = 0.75
 songDetailsAspectRatio.Parent = songDetailsFrame
 
--- Song Details Header
 local songDetailsHeader = Instance.new("Frame")
 songDetailsHeader.Size = UDim2.new(1, 0, 0.1, 0)
 songDetailsHeader.BackgroundColor3 = Color3.fromRGB(25, 25, 28)
@@ -673,7 +635,6 @@ local songDetailsCloseBtnCorner = Instance.new("UICorner")
 songDetailsCloseBtnCorner.CornerRadius = UDim.new(0, 10)
 songDetailsCloseBtnCorner.Parent = songDetailsCloseBtn
 
--- Song List ScrollFrame
 local songListScroll = Instance.new("ScrollingFrame")
 songListScroll.Size = UDim2.new(0.911, 0, 0.76, 0)
 songListScroll.Position = UDim2.new(0.044, 0, 0.12, 0)
@@ -688,7 +649,6 @@ songListLayout.SortOrder = Enum.SortOrder.LayoutOrder
 songListLayout.Padding = UDim.new(0, 5)
 songListLayout.Parent = songListScroll
 
--- Play All Button
 local playAllBtn = Instance.new("TextButton")
 playAllBtn.Size = UDim2.new(0.911, 0, 0.09, 0)
 playAllBtn.Position = UDim2.new(0.044, 0, 0.89, 0)
@@ -704,7 +664,6 @@ local playAllBtnCorner = Instance.new("UICorner")
 playAllBtnCorner.CornerRadius = UDim.new(0, 10)
 playAllBtnCorner.Parent = playAllBtn
 
--- Apply TextScaled to all static text elements in main frames
 local function applyTextScalingToFrame(frame, maxSize)
 	for _, descendant in ipairs(frame:GetDescendants()) do
 		if (descendant:IsA("TextLabel") or descendant:IsA("TextButton")) and not descendant:FindFirstChild("UITextSizeConstraint") then
@@ -713,20 +672,18 @@ local function applyTextScalingToFrame(frame, maxSize)
 	end
 end
 
--- Apply to all main frames
 applyTextScalingToFrame(musicFrame, 18)
 applyTextScalingToFrame(queuePanel, 16)
 applyTextScalingToFrame(libraryFrame, 16)
 applyTextScalingToFrame(songDetailsFrame, 16)
 
--- ==================== MUSIC PLAYER LOGIC ====================
 local currentSound = nil
 local currentPlaylist = nil
 local currentIndex = 1
 local playlists = {}
 local allSongs = {}
 local favorites = {}
-local favoritesData = {} -- Store as "PlaylistName/SongName" strings
+local favoritesData = {}
 local queue = {}
 local isPlaying = false
 local isDraggingProgress = false
@@ -735,7 +692,6 @@ local currentTab = "all"
 local currentPlaylistSongs = {}
 local autoPlayStarted = false
 
--- Forward declarations for functions
 local updateLibraryContent
 local updateFavoriteButton
 local updateQueueDisplay
@@ -752,8 +708,7 @@ end
 local function loadPlaylists()
 	playlists = {}
 	allSongs = {}
-	
-	-- ✅ Create a folder in SoundService for organization
+
 	local SoundService = game:GetService("SoundService")
 	local musicFolder = SoundService:FindFirstChild("MusicPlayerSounds")
 	if not musicFolder then
@@ -762,18 +717,16 @@ local function loadPlaylists()
 		musicFolder.Parent = SoundService
 	end
 
-	-- Load from MusicConfig
 	for playlistName, playlistData in pairs(MusicConfig.Playlists) do
 		local songs = {}
 
 		for _, songData in ipairs(playlistData.Songs) do
-			-- Create Sound object in SoundService (better than workspace)
 			local sound = Instance.new("Sound")
 			sound.Name = songData.Title
 			sound.SoundId = songData.AssetId
 			sound.Volume = MusicConfig.Settings.DefaultVolume
 			sound.Looped = false
-			sound.Parent = musicFolder  -- ✅ Parent to SoundService folder
+			sound.Parent = musicFolder
 
 			table.insert(songs, sound)
 			table.insert(allSongs, sound)
@@ -784,17 +737,15 @@ local function loadPlaylists()
 		end
 	end
 
-	-- Wait for sounds to load
 	task.wait(1)
 
-	print(string.format("✅ Loaded %d playlists with %d total songs", 
+	print(string.format("✅ Loaded %d playlists with %d total songs",
 		#playlists, #allSongs))
 end
 
--- Load favorites from DataStore (NEW - server-side)
 loadFavorites = function()
 	task.spawn(function()
-		task.wait(2) -- Wait for DataHandler to load
+		task.wait(2)
 
 		local success, loadedFavorites = pcall(function()
 			return getFavoritesMusicFunc:InvokeServer()
@@ -804,7 +755,6 @@ loadFavorites = function()
 			favoritesData = loadedFavorites
 			favorites = {}
 
-			-- Convert stored IDs back to Sound objects
 			for _, id in ipairs(favoritesData) do
 				local parts = string.split(id, "/")
 				if #parts == 2 then
@@ -823,7 +773,6 @@ loadFavorites = function()
 
 			print(string.format("🎵 [MUSIC CLIENT] Loaded %d favorite songs", #favorites))
 
-			-- Refresh UI if library is open
 			if libraryFrame.Visible then
 				updateLibraryContent()
 			end
@@ -833,9 +782,7 @@ loadFavorites = function()
 	end)
 end
 
-
 updateQueueDisplay = function()
-	-- Update next song display
 	if #queue > 0 then
 		nextSongTitleLabel.Text = queue[1].Name
 	elseif currentPlaylist and playlists[currentPlaylist] then
@@ -849,12 +796,10 @@ updateQueueDisplay = function()
 		nextSongTitleLabel.Text = "None"
 	end
 
-	-- Update queue info
 	queueInfoLabel.Text = "Queue: "..#queue.." songs"
 end
 
 updateQueuePanel = function()
-	-- Clear existing queue items
 	for _, child in ipairs(queueScroll:GetChildren()) do
 		if child:IsA("Frame") then
 			child:Destroy()
@@ -879,7 +824,7 @@ updateQueuePanel = function()
 			queueItemCorner.Parent = queueItem
 
 			local queueNumLabel = Instance.new("TextLabel")
-			queueNumLabel.Size = UDim2.new(0.088, 0, 1, 0)  -- 30/340
+			queueNumLabel.Size = UDim2.new(0.088, 0, 1, 0)
 			queueNumLabel.Position = UDim2.new(0.029, 0, 0, 0)
 			queueNumLabel.BackgroundTransparency = 1
 			queueNumLabel.Text = i
@@ -889,7 +834,7 @@ updateQueuePanel = function()
 			queueNumLabel.Parent = queueItem
 
 			local queueSongNameLabel = Instance.new("TextLabel")
-			queueSongNameLabel.Size = UDim2.new(0.676, 0, 0.364, 0)  -- (340-110)/340, 20/55
+			queueSongNameLabel.Size = UDim2.new(0.676, 0, 0.364, 0)
 			queueSongNameLabel.Position = UDim2.new(0.132, 0, 0.182, 0)
 			queueSongNameLabel.BackgroundTransparency = 1
 			queueSongNameLabel.Text = song.Name
@@ -935,8 +880,7 @@ updateQueuePanel = function()
 	end
 
 	queueScroll.CanvasSize = UDim2.new(0, 0, 0, queueLayout.AbsoluteContentSize.Y)
-	
-	-- Apply TextScaled to dynamically created elements
+
 	applyTextScalingToFrame(queueScroll, 14)
 end
 
@@ -952,7 +896,6 @@ end
 local function toggleFavorite(sound)
 	local playlistName = "Unknown"
 
-	-- Find which playlist this song belongs to
 	for pName, songs in pairs(playlists) do
 		if table.find(songs, sound) then
 			playlistName = pName
@@ -962,7 +905,6 @@ local function toggleFavorite(sound)
 
 	local songId = playlistName.."/"..sound.Name
 
-	-- Toggle locally
 	if isFavorite(sound) then
 		for i, fav in ipairs(favorites) do
 			if fav == sound then
@@ -971,7 +913,6 @@ local function toggleFavorite(sound)
 			end
 		end
 
-		-- Remove from favoritesData
 		for i, id in ipairs(favoritesData) do
 			if id == songId then
 				table.remove(favoritesData, i)
@@ -983,18 +924,14 @@ local function toggleFavorite(sound)
 		table.insert(favoritesData, songId)
 	end
 
-	-- Save to server
 	toggleFavoriteMusicEvent:FireServer(songId)
 
 	updateFavoriteButton()
 
-	-- ✅ Refresh UI if on favorites tab
 	if currentTab == "favorites" and libraryFrame.Visible then
 		updateLibraryContent()
 	end
 end
-
-
 
 updateFavoriteButton = function()
 	if currentSound and isFavorite(currentSound) then
@@ -1018,7 +955,6 @@ local function playSong(sound, fromQueue)
 	playPauseBtn.Text = "⏸"
 	songTitleLabel.Text = sound.Name
 
-	-- Update playlist label
 	if currentPlaylist then
 		playlistLabel.Text = "Playlist: "..currentPlaylist
 	else
@@ -1028,7 +964,6 @@ local function playSong(sound, fromQueue)
 	updateFavoriteButton()
 	updateQueueDisplay()
 
-	-- Update library display to show currently playing
 	if libraryFrame.Visible then
 		updateLibraryContent()
 	end
@@ -1048,12 +983,11 @@ updateLibraryContent = function()
 	end
 
 	if currentTab == "all" then
-		-- Show all songs
 		for _, song in ipairs(allSongs) do
 			local isCurrentlyPlaying = (currentSound == song)
 
 			local songItem = Instance.new("Frame")
-			songItem.Size = UDim2.new(1, -10, 0, 60)  -- Fixed pixel height to prevent scaling issues
+			songItem.Size = UDim2.new(1, -10, 0, 60)
 			songItem.BackgroundColor3 = isCurrentlyPlaying and Color3.fromRGB(50, 80, 150) or Color3.fromRGB(30, 30, 33)
 			songItem.BorderSizePixel = 0
 			songItem.Parent = contentScroll
@@ -1062,10 +996,9 @@ updateLibraryContent = function()
 			songItemCorner.CornerRadius = UDim.new(0, 10)
 			songItemCorner.Parent = songItem
 
-			-- Playing indicator
 			if isCurrentlyPlaying then
 				local playingIndicator = Instance.new("Frame")
-				playingIndicator.Size = UDim2.new(0.009, 0, 0.667, 0)  -- Dari (0, 4, 0, 40)
+				playingIndicator.Size = UDim2.new(0.009, 0, 0.667, 0)
 				playingIndicator.Position = UDim2.new(0.011, 0, 0.167, 0)
 				playingIndicator.BackgroundColor3 = Color3.fromRGB(70, 130, 255)
 				playingIndicator.BorderSizePixel = 0
@@ -1077,8 +1010,8 @@ updateLibraryContent = function()
 			end
 
 			local songNameLabel = Instance.new("TextLabel")
-			songNameLabel.Size = UDim2.new(0.533, 0, 0.417, 0)  -- Dari (1, -210, 0, 25)
-			songNameLabel.Position = UDim2.new(isCurrentlyPlaying and 0.044 or 0.033, 0, 0.167, 0)  -- Dari (0, ..., 0, 10)
+			songNameLabel.Size = UDim2.new(0.533, 0, 0.417, 0)
+			songNameLabel.Position = UDim2.new(isCurrentlyPlaying and 0.044 or 0.033, 0, 0.167, 0)
 			songNameLabel.TextSize = 13
 			songNameLabel.BackgroundTransparency = 1
 			songNameLabel.Text = song.Name..(isCurrentlyPlaying and " ♫" or "")
@@ -1090,7 +1023,7 @@ updateLibraryContent = function()
 
 			local durationLabel = Instance.new("TextLabel")
 			durationLabel.Size = UDim2.new(0.533, 0, 0.3, 0)
-			durationLabel.Position = UDim2.new(isCurrentlyPlaying and 0.044 or 0.033, 0, 0.583, 0)  -- Dari (0, ..., 0, 35)
+			durationLabel.Position = UDim2.new(isCurrentlyPlaying and 0.044 or 0.033, 0, 0.583, 0)
 			durationLabel.BackgroundTransparency = 1
 			durationLabel.Text = formatTime(song.TimeLength)
 			durationLabel.Font = Enum.Font.Gotham
@@ -1099,9 +1032,8 @@ updateLibraryContent = function()
 			durationLabel.TextXAlignment = Enum.TextXAlignment.Left
 			durationLabel.Parent = songItem
 
-			-- Add to Queue Button (NEW)
 			local addQueueBtn = Instance.new("TextButton")
-			addQueueBtn.Size = UDim2.new(0.089, 0, 0.667, 0)  -- Dari (0, 40, 0, 40)
+			addQueueBtn.Size = UDim2.new(0.089, 0, 0.667, 0)
 			addQueueBtn.Position = UDim2.new(0.667, 0, 0.167, 0)
 			addQueueBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 255)
 			addQueueBtn.BorderSizePixel = 0
@@ -1122,7 +1054,7 @@ updateLibraryContent = function()
 			end)
 
 			local favBtn = Instance.new("TextButton")
-			favBtn.Size = UDim2.new(0.089, 0, 0.667, 0)  -- Dari (0, 40, 0, 40)
+			favBtn.Size = UDim2.new(0.089, 0, 0.667, 0)
 			favBtn.Position = UDim2.new(0.778, 0, 0.167, 0)
 			favBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 43)
 			favBtn.BorderSizePixel = 0
@@ -1143,7 +1075,7 @@ updateLibraryContent = function()
 			end)
 
 			local playBtn = Instance.new("TextButton")
-			playBtn.Size = UDim2.new(0.111, 0, 0.667, 0)  -- Dari (0, 50, 0, 40)
+			playBtn.Size = UDim2.new(0.111, 0, 0.667, 0)
 			playBtn.Position = UDim2.new(0.884, 0, 0.167, 0)
 			playBtn.BackgroundColor3 = Color3.fromRGB(70, 130, 255)
 			playBtn.BorderSizePixel = 0
@@ -1161,7 +1093,6 @@ updateLibraryContent = function()
 				currentPlaylist = nil
 				currentIndex = 1
 
-				-- Find current song index in allSongs
 				for i, s in ipairs(allSongs) do
 					if s == song then
 						currentIndex = i
@@ -1171,7 +1102,6 @@ updateLibraryContent = function()
 
 				playSong(song, false)
 
-				-- Build queue from remaining songs (if queue is empty)
 				if #queue == 0 then
 					for i = currentIndex + 1, #allSongs do
 						table.insert(queue, allSongs[i])
@@ -1183,10 +1113,9 @@ updateLibraryContent = function()
 		end
 
 	elseif currentTab == "playlists" then
-		-- Show playlists
 		for playlistName, songs in pairs(playlists) do
 			local playlistItem = Instance.new("Frame")
-			playlistItem.Size = UDim2.new(1, -10, 0, 70)  -- Fixed pixel height
+			playlistItem.Size = UDim2.new(1, -10, 0, 70)
 			playlistItem.BackgroundColor3 = Color3.fromRGB(30, 30, 33)
 			playlistItem.BorderSizePixel = 0
 			playlistItem.Parent = contentScroll
@@ -1236,17 +1165,15 @@ updateLibraryContent = function()
 				currentPlaylistSongs = songs
 				songDetailsTitle.Text = playlistName
 
-				-- Clear song list
 				for _, child in ipairs(songListScroll:GetChildren()) do
 					if child:IsA("Frame") then
 						child:Destroy()
 					end
 				end
 
-				-- Populate song list
 				for i, song in ipairs(songs) do
 					local songListItem = Instance.new("Frame")
-					songListItem.Size = UDim2.new(1, -10, 0, 45)  -- Fixed pixel height
+					songListItem.Size = UDim2.new(1, -10, 0, 45)
 					songListItem.BackgroundColor3 = Color3.fromRGB(35, 35, 38)
 					songListItem.BorderSizePixel = 0
 					songListItem.LayoutOrder = i
@@ -1289,7 +1216,6 @@ updateLibraryContent = function()
 					songDurLabel.TextXAlignment = Enum.TextXAlignment.Right
 					songDurLabel.Parent = songListItem
 
-					-- Add to Queue Button in song details (NEW)
 					local addQueueBtnDetails = Instance.new("TextButton")
 					addQueueBtnDetails.Size = UDim2.new(0.087, 0, 0.75, 0)
 					addQueueBtnDetails.Position = UDim2.new(0.765, 0, 0.125, 0)
@@ -1342,7 +1268,6 @@ updateLibraryContent = function()
 
 				songListScroll.CanvasSize = UDim2.new(0, 0, 0, songListLayout.AbsoluteContentSize.Y)
 
-				-- Animate song details frame
 				songDetailsFrame.Visible = true
 				local openTween = TweenService:Create(songDetailsFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
 					Position = UDim2.new(0.5, 0, 0.5, 0)
@@ -1352,7 +1277,6 @@ updateLibraryContent = function()
 		end
 
 	elseif currentTab == "favorites" then
-		-- Show favorites
 		if #favorites == 0 then
 			local emptyLabel = Instance.new("TextLabel")
 			emptyLabel.Size = UDim2.new(1, -10, 0, 100)
@@ -1367,7 +1291,7 @@ updateLibraryContent = function()
 				local isCurrentlyPlaying = (currentSound == song)
 
 				local songItem = Instance.new("Frame")
-				songItem.Size = UDim2.new(1, -10, 0, 60)  -- Fixed pixel height to prevent scaling issues
+				songItem.Size = UDim2.new(1, -10, 0, 60)
 				songItem.BackgroundColor3 = isCurrentlyPlaying and Color3.fromRGB(50, 80, 150) or Color3.fromRGB(30, 30, 33)
 				songItem.BorderSizePixel = 0
 				songItem.Parent = contentScroll
@@ -1376,10 +1300,9 @@ updateLibraryContent = function()
 				songItemCorner.CornerRadius = UDim.new(0, 10)
 				songItemCorner.Parent = songItem
 
-				-- Playing indicator
 				if isCurrentlyPlaying then
 					local playingIndicator = Instance.new("Frame")
-					playingIndicator.Size = UDim2.new(0.009, 0, 0.667, 0)  -- 4/450, 40/60
+					playingIndicator.Size = UDim2.new(0.009, 0, 0.667, 0)
 					playingIndicator.Position = UDim2.new(0.011, 0, 0.167, 0)
 					playingIndicator.BackgroundColor3 = Color3.fromRGB(70, 130, 255)
 					playingIndicator.BorderSizePixel = 0
@@ -1413,7 +1336,6 @@ updateLibraryContent = function()
 				durationLabel.TextXAlignment = Enum.TextXAlignment.Left
 				durationLabel.Parent = songItem
 
-				-- Add to Queue Button (NEW)
 				local addQueueBtn = Instance.new("TextButton")
 				addQueueBtn.Size = UDim2.new(0.089, 0, 0.667, 0)
 				addQueueBtn.Position = UDim2.new(0.667, 0, 0.167, 0)
@@ -1474,7 +1396,6 @@ updateLibraryContent = function()
 					currentPlaylist = nil
 					currentIndex = 1
 
-					-- Find current song index in favorites
 					for i, s in ipairs(favorites) do
 						if s == song then
 							currentIndex = i
@@ -1484,7 +1405,6 @@ updateLibraryContent = function()
 
 					playSong(song, false)
 
-					-- Build queue from remaining favorites (if queue is empty)
 					if #queue == 0 then
 						for i = currentIndex + 1, #favorites do
 							table.insert(queue, favorites[i])
@@ -1499,13 +1419,11 @@ updateLibraryContent = function()
 
 	task.wait()
 	contentScroll.CanvasSize = UDim2.new(0, 0, 0, contentLayout.AbsoluteContentSize.Y)
-	
-	-- Apply TextScaled to dynamically created elements
+
 	applyTextScalingToFrame(contentScroll, 16)
 end
 
 local function setActiveTab(tab)
-	-- Reset all tabs
 	allTab.BackgroundColor3 = Color3.fromRGB(30, 30, 33)
 	allTab.TextColor3 = Color3.fromRGB(150, 150, 150)
 	playlistsTab.BackgroundColor3 = Color3.fromRGB(30, 30, 33)
@@ -1513,7 +1431,6 @@ local function setActiveTab(tab)
 	favoritesTab.BackgroundColor3 = Color3.fromRGB(30, 30, 33)
 	favoritesTab.TextColor3 = Color3.fromRGB(150, 150, 150)
 
-	-- Set active tab
 	if tab == "all" then
 		allTab.BackgroundColor3 = Color3.fromRGB(70, 130, 255)
 		allTab.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -1529,16 +1446,12 @@ local function setActiveTab(tab)
 	updateLibraryContent()
 end
 
--- ==================== BUTTON EVENTS ====================
-
--- Favorite Button
 favoriteBtn.MouseButton1Click:Connect(function()
 	if currentSound then
 		toggleFavorite(currentSound)
 	end
 end)
 
--- Play/Pause
 playPauseBtn.MouseButton1Click:Connect(function()
 	if currentSound then
 		if isPlaying then
@@ -1553,7 +1466,6 @@ playPauseBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
--- Next Song
 nextBtn.MouseButton1Click:Connect(function()
 	if #queue > 0 then
 		playSong(queue[1], true)
@@ -1565,7 +1477,6 @@ nextBtn.MouseButton1Click:Connect(function()
 		end
 		playSong(songs[currentIndex], false)
 	elseif not currentPlaylist and #allSongs > 0 then
-		-- Play from all songs in order
 		currentIndex = currentIndex + 1
 		if currentIndex > #allSongs then
 			currentIndex = 1
@@ -1574,7 +1485,6 @@ nextBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
--- Previous Song
 prevBtn.MouseButton1Click:Connect(function()
 	if currentPlaylist and playlists[currentPlaylist] then
 		local songs = playlists[currentPlaylist]
@@ -1584,7 +1494,6 @@ prevBtn.MouseButton1Click:Connect(function()
 		end
 		playSong(songs[currentIndex], false)
 	elseif not currentPlaylist and #allSongs > 0 then
-		-- Navigate in all songs
 		currentIndex = currentIndex - 1
 		if currentIndex < 1 then
 			currentIndex = #allSongs
@@ -1593,7 +1502,6 @@ prevBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
--- Volume Decrease Button
 volumeDecBtn.MouseButton1Click:Connect(function()
 	local newVolume = math.max(0, volumeSlider.Size.X.Scale - 0.1)
 	volumeSlider.Size = UDim2.new(newVolume, 0, 1, 0)
@@ -1603,7 +1511,6 @@ volumeDecBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
--- Volume Increase Button
 volumeIncBtn.MouseButton1Click:Connect(function()
 	local newVolume = math.min(1, volumeSlider.Size.X.Scale + 0.1)
 	volumeSlider.Size = UDim2.new(newVolume, 0, 1, 0)
@@ -1613,7 +1520,6 @@ volumeIncBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
--- Volume Slider
 volumeSliderBg.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
 		isDraggingVolume = true
@@ -1649,7 +1555,6 @@ UserInputService.InputChanged:Connect(function(input)
 	end
 end)
 
--- Progress Bar
 progressBg.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
 		isDraggingProgress = true
@@ -1676,7 +1581,6 @@ UserInputService.InputEnded:Connect(function(input)
 	end
 end)
 
--- Queue Button
 queueBtn.MouseButton1Click:Connect(function()
 	queuePanel.Visible = true
 	updateQueuePanel()
@@ -1686,7 +1590,6 @@ queueBtn.MouseButton1Click:Connect(function()
 	openTween:Play()
 end)
 
--- Queue Close Button
 queueCloseBtn.MouseButton1Click:Connect(function()
 	local closeTween = TweenService:Create(queuePanel, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
 		Position = UDim2.new(0.622, 0, -0.5, 0)
@@ -1696,12 +1599,10 @@ queueCloseBtn.MouseButton1Click:Connect(function()
 	queuePanel.Visible = false
 end)
 
--- Library Button
 libraryBtn.MouseButton1Click:Connect(function()
 	libraryFrame.Visible = true
 	setActiveTab("all")
 
-	-- ✅ Force refresh layout after opening
 	task.wait(0.1)
 	updateLibraryContent()
 
@@ -1711,8 +1612,6 @@ libraryBtn.MouseButton1Click:Connect(function()
 	openTween:Play()
 end)
 
-
--- Library Close Button
 libraryCloseBtn.MouseButton1Click:Connect(function()
 	local closeTween = TweenService:Create(libraryFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
 		Position = UDim2.new(0.5, 0, -0.5, 0)
@@ -1722,7 +1621,6 @@ libraryCloseBtn.MouseButton1Click:Connect(function()
 	libraryFrame.Visible = false
 end)
 
--- Tab Buttons
 allTab.MouseButton1Click:Connect(function()
 	setActiveTab("all")
 end)
@@ -1735,7 +1633,6 @@ favoritesTab.MouseButton1Click:Connect(function()
 	setActiveTab("favorites")
 end)
 
--- Song Details Close Button
 songDetailsCloseBtn.MouseButton1Click:Connect(function()
 	local closeTween = TweenService:Create(songDetailsFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
 		Position = UDim2.new(0.5, 0, -0.5, 0)
@@ -1745,7 +1642,6 @@ songDetailsCloseBtn.MouseButton1Click:Connect(function()
 	songDetailsFrame.Visible = false
 end)
 
--- Play All Button
 playAllBtn.MouseButton1Click:Connect(function()
 	if #currentPlaylistSongs > 0 then
 		currentPlaylist = songDetailsTitle.Text
@@ -1758,7 +1654,6 @@ playAllBtn.MouseButton1Click:Connect(function()
 		updateQueueDisplay()
 		updateQueuePanel()
 
-		-- Close song details
 		local closeTween = TweenService:Create(songDetailsFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
 			Position = UDim2.new(0.5, 0, -0.5, 0)
 		})
@@ -1768,7 +1663,6 @@ playAllBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
--- Update Progress Bar
 RunService.Heartbeat:Connect(function()
 	if currentSound and currentSound.IsPlaying then
 		local progress = currentSound.TimePosition / currentSound.TimeLength
@@ -1778,7 +1672,6 @@ RunService.Heartbeat:Connect(function()
 		currentTimeLabel.Text = formatTime(currentSound.TimePosition)
 		totalTimeLabel.Text = formatTime(currentSound.TimeLength)
 
-		-- Auto next when song ends
 		if currentSound.TimePosition >= currentSound.TimeLength - 0.1 then
 			if #queue > 0 then
 				playSong(queue[1], true)
@@ -1797,7 +1690,6 @@ RunService.Heartbeat:Connect(function()
 	end
 end)
 
--- Make frames draggable (IMPROVED - only drag on header)
 local function makeDraggable(frame, dragHandle)
 	local dragging = false
 	local dragInput, mousePos, framePos
@@ -1822,7 +1714,6 @@ local function makeDraggable(frame, dragHandle)
 		end
 	end)
 
-	-- GANTI DENGAN:
 	UserInputService.InputChanged:Connect(function(input)
 		if input == dragInput and dragging then
 			local delta = input.Position - mousePos
@@ -1833,33 +1724,29 @@ local function makeDraggable(frame, dragHandle)
 
 			frame.Position = UDim2.new(
 				framePos.X.Scale + deltaScaleX,
-				0,  -- ✅ Offset = 0
+				0,
 				framePos.Y.Scale + deltaScaleY,
-				0   -- ✅ Offset = 0
+				0
 			)
 		end
 	end)
 end
 
--- Apply draggable only to headers
 makeDraggable(musicFrame, musicHeader)
 makeDraggable(libraryFrame, libraryHeader)
 makeDraggable(songDetailsFrame, songDetailsHeader)
 makeDraggable(queuePanel, queueHeader)
 
--- Initialize
 loadPlaylists()
-task.wait(0.5)  -- Give extra time for sounds to fully load
+task.wait(0.5)
 loadFavorites()
 updateQueueDisplay()
 
--- AUTO-PLAY FIRST SONG ON START
-task.wait(2) -- Wait for everything to load
+task.wait(2)
 if #allSongs > 0 and not autoPlayStarted then
 	autoPlayStarted = true
 	currentIndex = 1
 	playSong(allSongs[1], false)
-	-- Build queue with remaining songs
 	for i = 2, #allSongs do
 		table.insert(queue, allSongs[i])
 	end
@@ -1867,29 +1754,25 @@ if #allSongs > 0 and not autoPlayStarted then
 	updateQueuePanel()
 end
 
--- ==================== TOPBAR ICON (CREATE LAST) ====================
 local musicIcon = Icon.new()
 	:setImage("rbxassetid://99799967722215")
 	:setLabel("Music")
 	:bindEvent("selected", function()
 		screenGui.Enabled = true
 		musicFrame.Visible = true
-		musicFrame.Position = UDim2.new(0.5, 0, 0.5, 0)  -- ✅ Centered
-		musicFrame.Size = UDim2.new(0, 0, 0, 0)  -- ✅ Start small
-		
-		-- ✅ Use tweenSize for smooth animation
+		musicFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+		musicFrame.Size = UDim2.new(0, 0, 0, 0)
+
 		tweenSize(musicFrame, UDim2.new(0.7, 0, 0.8, 0), 0.3)
 	end)
 	:bindEvent("deselected", function()
-		-- ✅ Use tweenSize for smooth animation
 		tweenSize(musicFrame, UDim2.new(0, 0, 0, 0), 0.2, function()
 			musicFrame.Visible = false
 			screenGui.Enabled = false
-			musicFrame.Size = UDim2.new(0.7, 0, 0.8, 0)  -- ✅ Reset size
+			musicFrame.Size = UDim2.new(0.7, 0, 0.8, 0)
 		end)
 	end)
 
--- Music Close Button (needs musicIcon defined first)
 musicCloseBtn.MouseButton1Click:Connect(function()
 	musicIcon:deselect()
 end)

@@ -1,8 +1,3 @@
---[[
-    CHAT TITLE CLIENT
-    Applies title prefixes to chat messages
-]]
-
 local TextChatService = game:GetService("TextChatService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -11,10 +6,8 @@ local player = Players.LocalPlayer
 
 print("✅ [CHAT TITLE CLIENT] Initializing...")
 
--- Wait for TitleConfig
 local TitleConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("TitleConfig"))
 
--- Wait for RemoteEvents
 local titleRemotes = ReplicatedStorage:WaitForChild("TitleRemotes", 30)
 if not titleRemotes then
 	warn("[CHAT TITLE CLIENT] TitleRemotes not found!")
@@ -27,25 +20,20 @@ if not chatTitleUpdate then
 	return
 end
 
--- ✅ Also listen to BroadcastTitle (from TitleServer)
 local BroadcastTitle = titleRemotes:WaitForChild("BroadcastTitle", 10)
 
--- Cache player titles
 local playerTitles = {}
 
--- ✅ PERFORMANCE FIX: Pre-build summit title lookup dictionary for O(1) access
 local summitTitleLookup = {}
 for _, titleData in ipairs(TitleConfig.SummitTitles) do
 	summitTitleLookup[titleData.Name] = titleData
 end
 
--- Listen for chat-specific title updates
 chatTitleUpdate.OnClientEvent:Connect(function(userId, titleName)
 	playerTitles[userId] = titleName
 	print(string.format("[CHAT TITLE CLIENT] Updated title for UserID %d: %s", userId, titleName or "None"))
 end)
 
--- ✅ ALSO listen to BroadcastTitle (for immediate equip/unequip)
 if BroadcastTitle then
 	BroadcastTitle.OnClientEvent:Connect(function(userId, titleName)
 		playerTitles[userId] = titleName
@@ -53,7 +41,6 @@ if BroadcastTitle then
 	end)
 end
 
--- Function: Create gradient text
 local function GradientText(text, colors)
 	local result = ""
 	local length = #text
@@ -62,10 +49,10 @@ local function GradientText(text, colors)
 
 	if #colors < 2 then
 		local color = colors[1] or Color3.fromRGB(255, 255, 255)
-		return string.format("<font color='rgb(%d,%d,%d)'>%s</font>", 
-			math.floor(color.R * 255), 
-			math.floor(color.G * 255), 
-			math.floor(color.B * 255), 
+		return string.format("<font color='rgb(%d,%d,%d)'>%s</font>",
+			math.floor(color.R * 255),
+			math.floor(color.G * 255),
+			math.floor(color.B * 255),
 			text)
 	end
 
@@ -87,7 +74,6 @@ local function GradientText(text, colors)
 	return result
 end
 
--- Setup TextChatService
 task.wait(2)
 
 local textChannels = TextChatService:WaitForChild("TextChannels", 10)
@@ -104,7 +90,6 @@ end
 
 print("[CHAT TITLE CLIENT] Found RBXGeneral channel")
 
--- Set OnIncomingMessage
 TextChatService.OnIncomingMessage = function(message: TextChatMessage)
 	local properties = Instance.new("TextChatMessageProperties")
 
@@ -115,18 +100,14 @@ TextChatService.OnIncomingMessage = function(message: TextChatMessage)
 	local userId = message.TextSource.UserId
 	local titleName = playerTitles[userId]
 
-	-- ✅ DEFAULT: White color for messages without title
 	local defaultColor = Color3.fromRGB(255, 255, 255)
 
 	if not titleName then
-		-- ✅ FIX: Even without title, make text white (not black)
 		local nameDisplay = message.PrefixText or ""
 		properties.PrefixText = string.format("<font color='rgb(255,255,255)'>%s</font>", nameDisplay)
 		return properties
 	end
 
-	-- ✅ PERFORMANCE FIX: Build summit title cache once at startup (moved from inline loop)
-	-- This avoids O(n) search on every chat message
 	local titleData = nil
 
 	if TitleConfig.SpecialTitles[titleName] then
@@ -144,20 +125,18 @@ TextChatService.OnIncomingMessage = function(message: TextChatMessage)
 		local tagText = string.format("[%s %s]", icon, displayName)
 		local gradientTag = GradientText(tagText, colors)
 
-		-- ✅ FIX: Player name color matches title color
 		local playerName = message.TextSource.Name
-		local nameColorRGB = string.format("rgb(%d,%d,%d)", 
-			math.floor(mainColor.R * 255), 
-			math.floor(mainColor.G * 255), 
+		local nameColorRGB = string.format("rgb(%d,%d,%d)",
+			math.floor(mainColor.R * 255),
+			math.floor(mainColor.G * 255),
 			math.floor(mainColor.B * 255))
-		
+
 		local coloredName = string.format("<font color='%s'>%s:</font>", nameColorRGB, playerName)
-		
+
 		properties.PrefixText = gradientTag .. " " .. coloredName
 
 		print(string.format("[CHAT TITLE CLIENT] ✅ Applied title for %s: %s", message.TextSource.Name, displayName))
 	else
-		-- ✅ FIX: Title not found in config but player has title - show white
 		local nameDisplay = message.PrefixText or ""
 		properties.PrefixText = string.format("<font color='rgb(255,255,255)'>%s</font>", nameDisplay)
 	end

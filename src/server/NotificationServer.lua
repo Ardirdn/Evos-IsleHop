@@ -1,14 +1,8 @@
---[[
-    NOTIFICATION SERVER
-    Place in ServerScriptService/NotificationServer
-]]
-
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 
 local NotificationServer = {}
 
--- Create communication folder
 local notificationComm = ReplicatedStorage:FindFirstChild("NotificationComm")
 if not notificationComm then
 	notificationComm = Instance.new("Folder")
@@ -16,7 +10,6 @@ if not notificationComm then
 	notificationComm.Parent = ReplicatedStorage
 end
 
--- Create RemoteEvent
 local showNotificationEvent = notificationComm:FindFirstChild("ShowNotification")
 if not showNotificationEvent then
 	showNotificationEvent = Instance.new("RemoteEvent")
@@ -26,16 +19,6 @@ end
 
 print("✅ [NOTIFICATION SERVER] Initialized")
 
---[[
-    Send notification to a specific player
-    
-    @param player Player - Target player
-    @param data table - Notification data
-        - Message: string
-        - Type: "success" | "error" | "warning" | "info" | "admin" | "shop"
-        - Duration: number (optional, default 5)
-        - Icon: string (optional, overrides default)
-]]
 function NotificationServer:Send(player, data)
 	if not player or not player:IsA("Player") or not player.Parent then
 		warn("⚠️ [NOTIFICATION SERVER] Invalid player")
@@ -47,10 +30,8 @@ function NotificationServer:Send(player, data)
 		return
 	end
 
-	-- Validate type
 	data.Type = data.Type or "info"
 
-	-- Fire to client
 	local success = pcall(function()
 		showNotificationEvent:FireClient(player, data)
 	end)
@@ -62,11 +43,6 @@ function NotificationServer:Send(player, data)
 	end
 end
 
---[[
-    Send notification to all players
-    
-    @param data table - Notification data
-]]
 function NotificationServer:SendToAll(data)
 	if not data or not data.Message then
 		warn("⚠️ [NOTIFICATION SERVER] No message provided")
@@ -82,12 +58,6 @@ function NotificationServer:SendToAll(data)
 	print(string.format("📢 [NOTIFICATION SERVER] Broadcast '%s' to %d players", data.Message, count))
 end
 
---[[
-    Send notification to multiple players
-    
-    @param players table - Array of players
-    @param data table - Notification data
-]]
 function NotificationServer:SendToPlayers(players, data)
 	if not players or #players == 0 then
 		warn("⚠️ [NOTIFICATION SERVER] No players provided")
@@ -99,12 +69,6 @@ function NotificationServer:SendToPlayers(players, data)
 	end
 end
 
---[[
-    Send notification to all admins (requires admin check)
-    
-    @param data table - Notification data
-    @param adminIds table - Array of admin user IDs
-]]
 function NotificationServer:SendToAdmins(data, adminIds)
 	if not adminIds or #adminIds == 0 then
 		warn("⚠️ [NOTIFICATION SERVER] No admin IDs provided")

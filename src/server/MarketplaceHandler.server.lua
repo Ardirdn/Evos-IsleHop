@@ -1,14 +1,3 @@
---[[
-    MARKETPLACE HANDLER
-    Place in ServerScriptService/MarketplaceHandler
-    
-    Unified ProcessReceipt handler for all purchases:
-    - Donations
-    - Money Packs
-    - Premium Auras/Tools
-    - Skip Checkpoint
-]]
-
 local Players = game:GetService("Players")
 local MarketplaceService = game:GetService("MarketplaceService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -22,13 +11,12 @@ local DonateConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForCh
 
 local purchaseHistory = {}
 
--- ✅ AUTO-CLEANUP: Bersihkan purchaseHistory setiap 10 menit untuk mencegah memory leak
 task.spawn(function()
 	while true do
-		task.wait(600) -- 10 menit
+		task.wait(600)
 		local count = 0
-		for _ in pairs(purchaseHistory) do 
-			count = count + 1 
+		for _ in pairs(purchaseHistory) do
+			count = count + 1
 		end
 		if count > 0 then
 			purchaseHistory = {}
@@ -39,7 +27,6 @@ end)
 
 print("✅ [MARKETPLACE HANDLER] Initializing...")
 
--- ✅ DEBUG: Log all valid ProductIds at startup
 print("📋 [MARKETPLACE] Valid Money Pack ProductIds:")
 for i, pack in ipairs(ShopConfig.MoneyPacks) do
 	print(string.format("   %d. %s = ProductId: %d, Reward: $%d", i, pack.Title, pack.ProductId, pack.MoneyReward))
@@ -50,7 +37,6 @@ for i, pkg in ipairs(DonateConfig.Packages) do
 	print(string.format("   %d. %s = ProductId: %d", i, pkg.Title, pkg.ProductId))
 end
 
--- Helper: Send data update to client
 local function sendDataUpdate(player)
 	local data = DataHandler:GetData(player)
 	if not data then return end
@@ -67,17 +53,13 @@ local function sendDataUpdate(player)
 	end
 end
 
--- NOTE: Donation Leaderboard display updates are now handled by LeaderboardServer.server.lua
--- Leaderboards are in workspace.Leaderboards folder and support multiple copies
 local function updateDonationLeaderboard()
-	-- Handled by LeaderboardServer via RefreshLeaderboardsEvent
 	local refreshEvent = game.ServerScriptService:FindFirstChild("RefreshLeaderboardsEvent")
 	if refreshEvent and refreshEvent:IsA("BindableEvent") then
 		refreshEvent:Fire("Donation")
 	end
 end
 
--- Unified ProcessReceipt
 MarketplaceService.ProcessReceipt = function(receiptInfo)
 	local userId = receiptInfo.PlayerId
 	local productId = receiptInfo.ProductId
@@ -85,7 +67,6 @@ MarketplaceService.ProcessReceipt = function(receiptInfo)
 
 	print(string.format("💳 [MARKETPLACE] Processing: User %d, Product %d, Purchase %s", userId, productId, purchaseId))
 
-	-- Prevent duplicates
 	if purchaseHistory[purchaseId] then
 		print(string.format("⚠️ [MARKETPLACE] Duplicate purchase detected: %s", purchaseId))
 		return Enum.ProductPurchaseDecision.PurchaseGranted
@@ -97,7 +78,6 @@ MarketplaceService.ProcessReceipt = function(receiptInfo)
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 
-	-- ===== 1. CHECK DONATIONS =====
 	for _, package in ipairs(DonateConfig.Packages) do
 		if package.ProductId == productId then
 			print(string.format("💝 [MARKETPLACE] Processing donation: %s", package.Title))
@@ -124,7 +104,6 @@ MarketplaceService.ProcessReceipt = function(receiptInfo)
 				})
 			end
 
-			-- Update donation leaderboard via DataHandler
 			if DataHandler.UpdateLeaderboards then
 				DataHandler:UpdateLeaderboards(player)
 			end
@@ -140,7 +119,6 @@ MarketplaceService.ProcessReceipt = function(receiptInfo)
 		end
 	end
 
-	-- ===== 2. CHECK MONEY PACKS =====
 	print(string.format("🔍 [MARKETPLACE] Checking %d money packs for ProductId: %d", #ShopConfig.MoneyPacks, productId))
 	for i, pack in ipairs(ShopConfig.MoneyPacks) do
 		print(string.format("   Pack %d: %s (ProductId: %d) - Match: %s", i, pack.Title, pack.ProductId, tostring(pack.ProductId == productId)))
@@ -149,13 +127,13 @@ MarketplaceService.ProcessReceipt = function(receiptInfo)
 
 			local beforeMoney = DataHandler:Get(player, "Money") or 0
 			print(string.format("   Before: $%d, Adding: $%d", beforeMoney, pack.MoneyReward))
-			
+
 			local incrementSuccess = DataHandler:Increment(player, "Money", pack.MoneyReward)
 			print(string.format("   Increment success: %s", tostring(incrementSuccess)))
-			
+
 			DataHandler:Increment(player, "TotalDonations", pack.Price)
 			DataHandler:SavePlayer(player)
-			
+
 			local afterMoney = DataHandler:Get(player, "Money") or 0
 			print(string.format("   After: $%d", afterMoney))
 
@@ -178,7 +156,6 @@ MarketplaceService.ProcessReceipt = function(receiptInfo)
 		end
 	end
 
-	-- ===== 3. CHECK PREMIUM AURAS =====
 	for _, aura in ipairs(ShopConfig.Auras) do
 		if aura.IsPremium and aura.ProductId == productId then
 			print(string.format("✨ [MARKETPLACE] Processing premium aura: %s", aura.Title))
@@ -202,7 +179,6 @@ MarketplaceService.ProcessReceipt = function(receiptInfo)
 		end
 	end
 
-	-- ===== 4. CHECK PREMIUM TOOLS =====
 	for _, tool in ipairs(ShopConfig.Tools) do
 		if tool.IsPremium and tool.ProductId == productId then
 			print(string.format("🔧 [MARKETPLACE] Processing premium tool: %s", tool.Title))
@@ -225,12 +201,10 @@ MarketplaceService.ProcessReceipt = function(receiptInfo)
 			return Enum.ProductPurchaseDecision.PurchaseGranted
 		end
 	end
-	
-	-- ===== 5. CHECK SKIP CHECKPOINT =====
+
 	if _G.SKIP_PRODUCT_ID and productId == _G.SKIP_PRODUCT_ID then
 		print(string.format("🚀 [MARKETPLACE] Processing skip checkpoint for %s", player.Name))
 
-		-- Execute skip via global function
 		if _G.ExecuteSkipCheckpoint then
 			_G.ExecuteSkipCheckpoint(player)
 		else
@@ -241,7 +215,6 @@ MarketplaceService.ProcessReceipt = function(receiptInfo)
 		return Enum.ProductPurchaseDecision.PurchaseGranted
 	end
 
-	-- Unknown product
 	warn(string.format("⚠️ [MARKETPLACE] Unknown product ID: %d", productId))
 	return Enum.ProductPurchaseDecision.NotProcessedYet
 end

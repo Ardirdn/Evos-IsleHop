@@ -1,20 +1,13 @@
---[[
-    DONATE CONFIG
-    Place in ReplicatedStorage/DonateConfig
-]]
-
 local DonateConfig = {}
 
--- Donation threshold untuk unlock title "Donatur"
-DonateConfig.DonationThreshold = 1000 -- Robux
+DonateConfig.DonationThreshold = 1000
 
--- Donation Packages
 DonateConfig.Packages = {
 	{
 		Title = "Starter",
 		Description = "Support kecil",
 		Amount = 10,
-		ProductId = 3465203706, -- ⚠️ GANTI DENGAN PRODUCT ID ASLI
+		ProductId = 3465203706,
 		Thumbnail = "rbxassetid://7733992358",
 		Color = Color3.fromRGB(100, 149, 237)
 	},
@@ -107,7 +100,6 @@ DonateConfig.Packages = {
 		Color = Color3.fromRGB(255, 0, 0)
 	},
 }
--- UI Colors
 DonateConfig.Colors = {
 	Background = Color3.fromRGB(20, 20, 23),
 	Panel = Color3.fromRGB(25, 25, 28),

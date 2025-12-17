@@ -1,9 +1,3 @@
---[[
-    CHECKPOINT CLIENT v2
-    Modern UI styled like Admin Panel
-    Place in StarterGui
-]]
-
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
@@ -12,9 +6,8 @@ local UserInputService = game:GetService("UserInputService")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
--- ✅ CONFIG
 local CONFIG = {
-	SHOW_CHECKPOINT_BUTTON = true, -- Set false untuk hide button
+	SHOW_CHECKPOINT_BUTTON = true,
 }
 
 if not CONFIG.SHOW_CHECKPOINT_BUTTON then
@@ -22,7 +15,6 @@ if not CONFIG.SHOW_CHECKPOINT_BUTTON then
 	return
 end
 
--- Wait for CheckpointRemotes
 local checkpointRemotes = ReplicatedStorage:WaitForChild("CheckpointRemotes", 30)
 if not checkpointRemotes then
 	warn("[CHECKPOINT CLIENT] CheckpointRemotes not found!")
@@ -37,7 +29,6 @@ if not teleportToBasecamp or not skipCheckpoint then
 	return
 end
 
--- ✅ COLOR SCHEME (Same as Admin Panel)
 local COLORS = {
 	Background = Color3.fromRGB(25, 25, 30),
 	Panel = Color3.fromRGB(30, 30, 35),
@@ -54,7 +45,6 @@ local COLORS = {
 	Border = Color3.fromRGB(50, 50, 55)
 }
 
--- ✅ UTILITY FUNCTIONS
 local function createCorner(radius)
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0, radius)
@@ -69,7 +59,6 @@ local function createStroke(color, thickness)
 	return stroke
 end
 
--- ✅ CREATE SCREENGUI
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "CheckpointGui"
 screenGui.ResetOnSpawn = false
@@ -77,11 +66,10 @@ screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 screenGui.DisplayOrder = 100
 screenGui.Parent = playerGui
 
--- ✅ CREATE CP BUTTON (KOTAK dengan Icon + Text)
 local cpButton = Instance.new("TextButton")
 cpButton.Name = "CPButton"
-cpButton.Size = UDim2.new(0.06, 0, 0.1, 0) -- Square-ish
-cpButton.Position = UDim2.new(0.93, 0, 0.45, 0) -- Right middle
+cpButton.Size = UDim2.new(0.06, 0, 0.1, 0)
+cpButton.Position = UDim2.new(0.93, 0, 0.45, 0)
 cpButton.AnchorPoint = Vector2.new(0.5, 0.5)
 cpButton.BackgroundColor3 = COLORS.Panel
 cpButton.BorderSizePixel = 0
@@ -92,7 +80,6 @@ cpButton.Parent = screenGui
 createCorner(8).Parent = cpButton
 createStroke(COLORS.Border, 2).Parent = cpButton
 
--- ✅ ICON (Top)
 local icon = Instance.new("TextLabel")
 icon.Size = UDim2.new(1, 0, 0.6, 0)
 icon.Position = UDim2.new(0, 0, 0.1, 0)
@@ -107,7 +94,6 @@ local iconConstraint = Instance.new("UITextSizeConstraint")
 iconConstraint.MaxTextSize = 32
 iconConstraint.Parent = icon
 
--- ✅ TEXT (Bottom)
 local label = Instance.new("TextLabel")
 label.Size = UDim2.new(1, 0, 0.3, 0)
 label.Position = UDim2.new(0, 0, 0.68, 0)
@@ -123,10 +109,9 @@ labelConstraint.MaxTextSize = 14
 labelConstraint.MinTextSize = 10
 labelConstraint.Parent = label
 
--- ✅ CREATE POPUP PANEL (KOTAK - Center)
 local popupPanel = Instance.new("Frame")
 popupPanel.Name = "PopupPanel"
-popupPanel.Size = UDim2.new(0.25, 0, 0.35, 0) -- Square-ish
+popupPanel.Size = UDim2.new(0.25, 0, 0.35, 0)
 popupPanel.Position = UDim2.new(0.5, 0, 0.5, 0)
 popupPanel.AnchorPoint = Vector2.new(0.5, 0.5)
 popupPanel.BackgroundColor3 = COLORS.Background
@@ -137,7 +122,6 @@ popupPanel.Parent = screenGui
 createCorner(12).Parent = popupPanel
 createStroke(COLORS.Border, 2).Parent = popupPanel
 
--- ✅ HEADER
 local header = Instance.new("Frame")
 header.Size = UDim2.new(1, 0, 0, 50)
 header.BackgroundColor3 = COLORS.Header
@@ -146,7 +130,6 @@ header.Parent = popupPanel
 
 createCorner(12).Parent = header
 
--- Header bottom filler (fix rounded corner)
 local headerBottom = Instance.new("Frame")
 headerBottom.Size = UDim2.new(1, 0, 0, 15)
 headerBottom.Position = UDim2.new(0, 0, 1, -15)
@@ -154,7 +137,6 @@ headerBottom.BackgroundColor3 = COLORS.Header
 headerBottom.BorderSizePixel = 0
 headerBottom.Parent = header
 
--- ✅ TITLE
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, -50, 1, 0)
 title.Position = UDim2.new(0, 15, 0, 0)
@@ -166,7 +148,6 @@ title.TextSize = 16
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Parent = header
 
--- ✅ CLOSE BUTTON
 local closeButton = Instance.new("TextButton")
 closeButton.Size = UDim2.new(0, 30, 0, 30)
 closeButton.Position = UDim2.new(1, -40, 0, 10)
@@ -180,14 +161,12 @@ closeButton.Parent = header
 
 createCorner(6).Parent = closeButton
 
--- ✅ CONTENT CONTAINER
 local contentContainer = Instance.new("Frame")
 contentContainer.Size = UDim2.new(1, -30, 1, -70)
 contentContainer.Position = UDim2.new(0, 15, 0, 60)
 contentContainer.BackgroundTransparency = 1
 contentContainer.Parent = popupPanel
 
--- ✅ RESET BUTTON (Kotak dengan Icon + Text)
 local resetButton = Instance.new("TextButton")
 resetButton.Name = "ResetButton"
 resetButton.Size = UDim2.new(1, 0, 0.4, 0)
@@ -201,7 +180,6 @@ resetButton.Parent = contentContainer
 createCorner(8).Parent = resetButton
 createStroke(Color3.fromRGB(200, 50, 50), 2).Parent = resetButton
 
--- Reset Icon
 local resetIcon = Instance.new("TextLabel")
 resetIcon.Size = UDim2.new(1, 0, 0.5, 0)
 resetIcon.Position = UDim2.new(0, 0, 0.1, 0)
@@ -216,7 +194,6 @@ local resetIconConstraint = Instance.new("UITextSizeConstraint")
 resetIconConstraint.MaxTextSize = 40
 resetIconConstraint.Parent = resetIcon
 
--- Reset Text
 local resetText = Instance.new("TextLabel")
 resetText.Size = UDim2.new(1, 0, 0.4, 0)
 resetText.Position = UDim2.new(0, 0, 0.58, 0)
@@ -232,7 +209,6 @@ resetTextConstraint.MaxTextSize = 14
 resetTextConstraint.MinTextSize = 10
 resetTextConstraint.Parent = resetText
 
--- ✅ SKIP BUTTON (Kotak dengan Icon + Text)
 local skipButton = Instance.new("TextButton")
 skipButton.Name = "SkipButton"
 skipButton.Size = UDim2.new(1, 0, 0.4, 0)
@@ -246,7 +222,6 @@ skipButton.Parent = contentContainer
 createCorner(8).Parent = skipButton
 createStroke(Color3.fromRGB(70, 80, 200), 2).Parent = skipButton
 
--- Skip Icon
 local skipIcon = Instance.new("TextLabel")
 skipIcon.Size = UDim2.new(1, 0, 0.5, 0)
 skipIcon.Position = UDim2.new(0, 0, 0.1, 0)
@@ -261,7 +236,6 @@ local skipIconConstraint = Instance.new("UITextSizeConstraint")
 skipIconConstraint.MaxTextSize = 40
 skipIconConstraint.Parent = skipIcon
 
--- Skip Text
 local skipText = Instance.new("TextLabel")
 skipText.Size = UDim2.new(1, 0, 0.4, 0)
 skipText.Position = UDim2.new(0, 0, 0.58, 0)
@@ -277,12 +251,10 @@ skipTextConstraint.MaxTextSize = 14
 skipTextConstraint.MinTextSize = 10
 skipTextConstraint.Parent = skipText
 
--- ✅ COOLDOWN SYSTEM
 local resetCooldownActive = false
 local skipCooldownActive = false
 local COOLDOWN_TIME = 3
 
--- ✅ TOGGLE PANEL
 local panelOpen = false
 
 local function togglePanel()
@@ -313,10 +285,8 @@ local function togglePanel()
 	end
 end
 
--- ✅ CP BUTTON CLICK
 cpButton.MouseButton1Click:Connect(togglePanel)
 
--- ✅ CP BUTTON HOVER
 cpButton.MouseEnter:Connect(function()
 	if not panelOpen then
 		TweenService:Create(cpButton, TweenInfo.new(0.2), {
@@ -333,10 +303,8 @@ cpButton.MouseLeave:Connect(function()
 	end
 end)
 
--- ✅ CLOSE BUTTON CLICK
 closeButton.MouseButton1Click:Connect(togglePanel)
 
--- ✅ RESET BUTTON HOVER
 resetButton.MouseEnter:Connect(function()
 	if resetCooldownActive then return end
 	TweenService:Create(resetButton, TweenInfo.new(0.2), {
@@ -351,7 +319,6 @@ resetButton.MouseLeave:Connect(function()
 	}):Play()
 end)
 
--- ✅ SKIP BUTTON HOVER
 skipButton.MouseEnter:Connect(function()
 	if skipCooldownActive then return end
 	TweenService:Create(skipButton, TweenInfo.new(0.2), {
@@ -366,7 +333,6 @@ skipButton.MouseLeave:Connect(function()
 	}):Play()
 end)
 
--- ✅ RESET BUTTON CLICK
 resetButton.MouseButton1Click:Connect(function()
 	if resetCooldownActive then
 		warn("[CHECKPOINT CLIENT] Reset cooldown active")
@@ -383,7 +349,6 @@ resetButton.MouseButton1Click:Connect(function()
 	teleportToBasecamp:FireServer()
 	print("[CHECKPOINT CLIENT] Reset to basecamp requested")
 
-	-- Cooldown countdown
 	for i = COOLDOWN_TIME, 1, -1 do
 		resetText.Text = string.format("⏳ %ds", i)
 		task.wait(1)
@@ -397,7 +362,6 @@ resetButton.MouseButton1Click:Connect(function()
 	}):Play()
 end)
 
--- ✅ SKIP BUTTON CLICK
 skipButton.MouseButton1Click:Connect(function()
 	if skipCooldownActive then
 		warn("[CHECKPOINT CLIENT] Skip cooldown active")
@@ -414,10 +378,8 @@ skipButton.MouseButton1Click:Connect(function()
 	skipCheckpoint:FireServer()
 	print("[CHECKPOINT CLIENT] Skip checkpoint requested")
 
-	-- Close panel
 	togglePanel()
 
-	-- Cooldown countdown
 	for i = COOLDOWN_TIME, 1, -1 do
 		skipText.Text = string.format("⏳ %ds", i)
 		task.wait(1)
@@ -431,16 +393,13 @@ skipButton.MouseButton1Click:Connect(function()
 	}):Play()
 end)
 
--- ✅ ADAPTIVE SCALING
 local function updateScale()
 	local viewportSize = workspace.CurrentCamera.ViewportSize
 
 	if viewportSize.X < 600 then
-		-- Mobile
 		popupPanel.Size = UDim2.new(0.65, 0, 0.45, 0)
 		cpButton.Size = UDim2.new(0.12, 0, 0.12, 0)
 	else
-		-- Desktop
 		popupPanel.Size = UDim2.new(0.25, 0, 0.35, 0)
 		cpButton.Size = UDim2.new(0.06, 0, 0.1, 0)
 	end

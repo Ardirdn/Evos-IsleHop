@@ -1,24 +1,18 @@
---[[
-    SHOP CONFIG - UPDATED WITH PREMIUM PRODUCT IDS
-    Place in ReplicatedStorage
-]]
-
 local ShopConfig = {}
 
--- Gamepass Configuration
 ShopConfig.Gamepasses = {
 	{
 		Name = "VIP",
 		Price = 100,
 		Thumbnail = "rbxassetid://93839116673767",
-		GamepassId = 1604161626, -- GANTI DENGAN GAMEPASS ID
+		GamepassId = 1604161626,
 		Description = "Unlock VIP features and exclusive perks!"
 	},
 	{
 		Name = "VVIP",
 		Price = 500,
 		Thumbnail = "rbxassetid://113168148931190",
-		GamepassId = 1603523555, -- GANTI DENGAN GAMEPASS ID
+		GamepassId = 1603523555,
 		Description = "Ultimate VIP with premium benefits!"
 	},
 	{
@@ -26,15 +20,14 @@ ShopConfig.Gamepasses = {
         DisplayName = "x2 Summit",
         Description = "Dapatkan 2x lipat summit setiap mencapai puncak!",
         Price = 100,
-		GamepassId = 1604095605, -- GANTI dengan ID gamepass kamu
-        Thumbnail = "rbxassetid://130384558824672", -- Upload icon x2 ke Roblox, ganti ID-nya
+		GamepassId = 1604095605,
+        Thumbnail = "rbxassetid://130384558824672",
         Icon = "⚡",
         Color = Color3.fromRGB(255, 165, 0)
     },
 }
 
 ShopConfig.GiftProducts = {
-	-- VIP & VVIP (CORRECT - keep as is)
 	{
 		Name = "VIP",
 		Price = 99,
@@ -58,88 +51,84 @@ ShopConfig.GiftProducts = {
 		RewardId = 1590994399
 	},
 
-	-- ✅ FIXED AURAS - match dengan Auras config
 	{
-		Name = "Fire Aura",  -- ✅ Changed from "Phoenix Aura"
+		Name = "Fire Aura",
 		Price = 50,
 		ProductId = 0,
 		Description = "Gift Fire aura to another player!",
 		Icon = "🔥",
 		Color = Color3.fromRGB(255, 100, 50),
 		RewardType = "Aura",
-		RewardId = "FireAura"  -- ✅ Match dengan AuraId
+		RewardId = "FireAura"
 	},
 	{
-		Name = "Ice Aura",  -- ✅ New
+		Name = "Ice Aura",
 		Price = 60,
 		ProductId = 0,
 		Description = "Gift Ice aura!",
 		Icon = "❄️",
 		Color = Color3.fromRGB(100, 200, 255),
 		RewardType = "Aura",
-		RewardId = "IceAura"  -- ✅ Match dengan AuraId
+		RewardId = "IceAura"
 	},
 	{
-		Name = "Galaxy Aura",  -- ✅ Keep name
+		Name = "Galaxy Aura",
 		Price = 75,
 		ProductId = 3459294151,
 		Description = "Gift Galaxy aura!",
 		Icon = "🌌",
 		Color = Color3.fromRGB(100, 50, 255),
 		RewardType = "Aura",
-		RewardId = "GalaxyAura"  -- ✅ Changed from "Galaxy" to "GalaxyAura"
+		RewardId = "GalaxyAura"
 	},
 	{
-		Name = "Rainbow Aura",  -- ✅ New
+		Name = "Rainbow Aura",
 		Price = 100,
 		ProductId = 0,
 		Description = "Gift Rainbow aura!",
 		Icon = "🌈",
 		Color = Color3.fromRGB(255, 150, 255),
 		RewardType = "Aura",
-		RewardId = "RainbowAura"  -- ✅ Match dengan AuraId
+		RewardId = "RainbowAura"
 	},
 
-	-- ✅ TOOLS - verify tool names exist in ServerStorage
 	{
-		Name = "Speed Coil",  -- ✅ Match dengan Tools config
+		Name = "Speed Coil",
 		Price = 80,
 		ProductId = 0,
 		Description = "Gift Speed Coil tool!",
 		Icon = "⚡",
 		Color = Color3.fromRGB(255, 255, 0),
 		RewardType = "Tool",
-		RewardId = "SpeedCoil"  -- ✅ Match dengan ToolId
+		RewardId = "SpeedCoil"
 	},
 	{
-		Name = "Lightsaber",  -- Keep this if tool exists
+		Name = "Lightsaber",
 		Price = 100,
 		ProductId = 3459293993,
 		Description = "Gift Lightsaber tool!",
 		Icon = "⚔️",
 		Color = Color3.fromRGB(0, 200, 255),
 		RewardType = "Tool",
-		RewardId = "Lightsaber"  -- ⚠️ Verify tool exists in ServerStorage!
+		RewardId = "Lightsaber"
 	},
 	{
-		Name = "Boombox",  -- ✅ Match dengan Tools config
+		Name = "Boombox",
 		Price = 150,
 		ProductId = 0,
 		Description = "Gift Boombox tool!",
 		Icon = "📻",
 		Color = Color3.fromRGB(255, 100, 200),
 		RewardType = "Tool",
-		RewardId = "Boombox"  -- ✅ Match dengan ToolId
+		RewardId = "Boombox"
 	}
 }
 
-
--- Auras Configuration
 ShopConfig.Auras = {
 	{
 		Title = "Fire Aura",
 		IsPremium = false,
-		Price = 1000, -- In-game money
+		Price = 1000,
 		Thumbnail = "rbxassetid://137186433949829",
 		AuraId = "FireAura"
 	},
@@ -167,22 +156,21 @@ ShopConfig.Auras = {
 	{
 		Title = "Rainbow Aura",
 		IsPremium = true,
-		Price = 100, -- Robux price
-		ProductId = 3465227826, -- GANTI DENGAN DEVELOPER PRODUCT ID
+		Price = 100,
+		ProductId = 3465227826,
 		Thumbnail = "rbxassetid://135525537490161",
 		AuraId = "RainbowAura"
 	},
 	{
 		Title = "Galaxy Aura",
 		IsPremium = true,
-		Price = 250, -- Robux price
-		ProductId = 3465227441, -- GANTI DENGAN DEVELOPER PRODUCT ID
+		Price = 250,
+		ProductId = 3465227441,
 		Thumbnail = " rbxassetid://99172280237398",
 		AuraId = "GalaxyAura"
 	},
 }
 
--- Tools Configuration
 ShopConfig.Tools = {
 	{
 		Title = "Speed Coil",
@@ -215,13 +203,12 @@ ShopConfig.Tools = {
 	{
 		Title = "Boombox",
 		IsPremium = true,
-		Price = 150, -- Robux price
-		ProductId = 0, -- GANTI DENGAN DEVELOPER PRODUCT ID
+		Price = 150,
+		ProductId = 0,
 		Thumbnail = "rbxassetid://136639296031649",
 		ToolId = "Boombox"
 	},
 }
--- ✅ UPDATED TOOLS CONFIGURATION
 ShopConfig.Tools = {
 	{
 		Title = "Speed Coil",
@@ -288,35 +275,34 @@ ShopConfig.Tools = {
 		ToolId = "BoomBox"
 	},
 }
--- Money Packs Configuration (Developer Products)
 ShopConfig.MoneyPacks = {
 	{
 		Title = "Starter Pack",
 		Price = 50,
 		Thumbnail = "rbxassetid://139931791718495",
 		MoneyReward = 1000,
-		ProductId = 3465225709 -- GANTI DENGAN PRODUCT ID
+		ProductId = 3465225709
 	},
 	{
 		Title = "Medium Pack",
 		Price = 150,
 		Thumbnail = "rbxassetid://89707390656568",
 		MoneyReward = 5000,
-		ProductId = 3465225908 -- GANTI DENGAN PRODUCT ID
+		ProductId = 3465225908
 	},
 	{
 		Title = "Large Pack",
 		Price = 400,
 		Thumbnail = "rbxassetid://89707390656568",
 		MoneyReward = 15000,
-		ProductId = 3465226043 -- GANTI DENGAN PRODUCT ID
+		ProductId = 3465226043
 	},
 	{
 		Title = "Mega Pack",
 		Price = 1000,
 		Thumbnail = "rbxassetid://101242002582412",
 		MoneyReward = 50000,
-		ProductId = 3465226176 -- GANTI DENGAN PRODUCT ID
+		ProductId = 3465226176
 	},
 }
 

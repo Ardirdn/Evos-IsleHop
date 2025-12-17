@@ -1,101 +1,69 @@
---[[
-    DATA HANDLER SYSTEM
-    Place in ServerScriptService/DataHandler
-    
-    Centralized data management system
-    - All DataStore operations go through here
-    - Automatic save & backup
-    - Session locking
-    - Data validation
-]]
-
 local DataStoreService = game:GetService("DataStoreService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
--- ✅ FIXED: Use centralized DataStoreConfig
 local DataStoreConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("DataStoreConfig"))
 
 local DataHandler = {}
 DataHandler.__index = DataHandler
 
--- ✅ FIXED: Configuration now uses DataStoreConfig
 local CONFIG = {
-	AutoSaveInterval = DataStoreConfig.AutoSaveInterval or 300, -- 5 minutes
+	AutoSaveInterval = DataStoreConfig.AutoSaveInterval or 300,
 	MaxRetries = DataStoreConfig.MaxRetries or 3,
 	RetryDelay = DataStoreConfig.RetryDelay or 1,
 }
 
--- Data cache (in-memory)
 local PlayerDataCache = {}
 local SessionLocks = {}
 
--- ✅ FIXED: Get DataStore using centralized config
 local PlayerDataStore = DataStoreService:GetDataStore(DataStoreConfig.PlayerData)
 print(string.format("✅ [DATA HANDLER] Using DataStore: %s", DataStoreConfig.PlayerData))
 
--- Default data template
--- Default data template
 local function getDefaultData(userId)
 	return {
 		UserId = userId,
 
-		-- Money
 		Money = 0,
 		TotalDonations = 0,
 
-		-- Inventory
 		OwnedAuras = {},
 		OwnedTools = {},
 		OwnedGamepasses = {},
 		EquippedAura = nil,
-		
-		UnlockedTitles = {"Pengunjung"}, -- Array of unlocked title names
-		EquippedTitle = nil, -- Currently equipped title (nil = no title)
 
-		-- Title System (UPDATED)
+		UnlockedTitles = {"Pengunjung"},
+		EquippedTitle = nil,
+
 		Title = "Pengunjung",
-		TitleSource = "summit", -- "summit", "special", "admin"
-		SpecialTitle = nil, -- Untuk VIP, VVIP, Donatur, Admin, dll
+		TitleSource = "summit",
+		SpecialTitle = nil,
 
-		-- Summit & Checkpoint (NEW - dipindahkan dari checkpoint script)
 		TotalSummits = 0,
 		LastCheckpoint = 0,
 		BestSpeedrun = nil,
 		TotalPlaytime = 0,
 
-		-- Clan (future feature)
 		Clan = nil,
-		
-		--Dance
+
 		FavoriteDances = {},
-		
-		--Music
+
 		FavoriteMusic = {},
 
-		-- Redeem System
-		RedeemedCodes = {}, -- Array of redeemed code IDs
+		RedeemedCodes = {},
 
-
-		-- Metadata
 		FirstJoin = os.time(),
 		LastJoin = os.time(),
 		PlayTime = 0,
-		DataVersion = 5, -- ✅ Ubah jadi 5 karena ada perubahan struktur
+		DataVersion = 5,
 	}
 end
 
-
---[[
-    Validate and migrate data structure
-]]
 local function validateData(data, userId)
 	if not data then
 		return getDefaultData(userId)
 	end
 
-	-- Ensure all fields exist
 	local template = getDefaultData(userId)
 	for key, defaultValue in pairs(template) do
 		if data[key] == nil then
@@ -103,39 +71,30 @@ local function validateData(data, userId)
 		end
 	end
 
-	-- Type validation
 	if type(data.Money) ~= "number" then data.Money = 0 end
 	if type(data.TotalDonations) ~= "number" then data.TotalDonations = 0 end
 	if type(data.OwnedAuras) ~= "table" then data.OwnedAuras = {} end
 	if type(data.OwnedTools) ~= "table" then data.OwnedTools = {} end
 	if type(data.OwnedGamepasses) ~= "table" then data.OwnedGamepasses = {} end
-	if type(data.FavoriteDances) ~= "table" then 
-		data.FavoriteDances = {} 
+	if type(data.FavoriteDances) ~= "table" then
+		data.FavoriteDances = {}
 	end
-	if type(data.FavoriteMusic) ~= "table" then 
-		data.FavoriteMusic = {} 
+	if type(data.FavoriteMusic) ~= "table" then
+		data.FavoriteMusic = {}
 	end
-	if type(data.RedeemedCodes) ~= "table" then 
-		data.RedeemedCodes = {} 
+	if type(data.RedeemedCodes) ~= "table" then
+		data.RedeemedCodes = {}
 	end
 
-
-
-
-	-- Update last join
 	data.LastJoin = os.time()
 
 	return data
 end
 
---[[
-    Load player data from DataStore
-]]
 function DataHandler:LoadPlayer(player)
 	local userId = player.UserId
 	local key = "Player_" .. userId
 
-	-- Check session lock
 	if SessionLocks[userId] then
 		warn(string.format("⚠️ [DATA HANDLER] Session lock active for %s", player.Name))
 		player:Kick("Data session conflict. Please rejoin.")
@@ -144,7 +103,6 @@ function DataHandler:LoadPlayer(player)
 
 	print(string.format("📂 [DATA HANDLER] Loading data for %s...", player.Name))
 
-	-- Try to load data with retry
 	local data = nil
 	local success = false
 
@@ -165,16 +123,13 @@ function DataHandler:LoadPlayer(player)
 
 	if not success then
 		warn(string.format("❌ [DATA HANDLER] Failed to load data for %s after %d attempts", player.Name, CONFIG.MaxRetries))
-		-- Use default data
 		data = nil
 	end
 
-	-- Validate and cache
 	data = validateData(data, userId)
 	PlayerDataCache[player] = data
 	SessionLocks[userId] = true
 
-	-- Create Money IntValue for easy access
 	local moneyValue = Instance.new("IntValue")
 	moneyValue.Name = "Money"
 	moneyValue.Value = data.Money
@@ -185,9 +140,6 @@ function DataHandler:LoadPlayer(player)
 	return true
 end
 
---[[
-    Save player data to DataStore
-]]
 function DataHandler:SavePlayer(player)
 	if not PlayerDataCache[player] then
 		warn(string.format("⚠️ [DATA HANDLER] No cached data for %s", player.Name))
@@ -200,7 +152,6 @@ function DataHandler:SavePlayer(player)
 
 	print(string.format("💾 [DATA HANDLER] Saving data for %s...", player.Name))
 
-	-- Try to save with retry
 	local success = false
 	local errorMsg = nil
 
@@ -228,16 +179,10 @@ function DataHandler:SavePlayer(player)
 	end
 end
 
---[[
-    Get cached player data
-]]
 function DataHandler:GetData(player)
 	return PlayerDataCache[player]
 end
 
---[[
-    Set a specific field
-]]
 function DataHandler:Set(player, field, value)
 	if not PlayerDataCache[player] then
 		warn(string.format("⚠️ [DATA HANDLER] No cached data for %s", player.Name))
@@ -246,7 +191,6 @@ function DataHandler:Set(player, field, value)
 
 	PlayerDataCache[player][field] = value
 
-	-- Update IntValue if it's Money
 	if field == "Money" then
 		local moneyValue = player:FindFirstChild("Money")
 		if moneyValue then
@@ -258,9 +202,6 @@ function DataHandler:Set(player, field, value)
 	return true
 end
 
---[[
-    Get a specific field
-]]
 function DataHandler:Get(player, field)
 	if not PlayerDataCache[player] then
 		warn(string.format("⚠️ [DATA HANDLER] No cached data for %s", player.Name))
@@ -270,9 +211,6 @@ function DataHandler:Get(player, field)
 	return PlayerDataCache[player][field]
 end
 
---[[
-    Increment a numeric field
-]]
 function DataHandler:Increment(player, field, amount)
 	if not PlayerDataCache[player] then
 		warn(string.format("⚠️ [DATA HANDLER] No cached data for %s", player.Name))
@@ -288,7 +226,6 @@ function DataHandler:Increment(player, field, amount)
 	local newValue = currentValue + amount
 	PlayerDataCache[player][field] = newValue
 
-	-- Update IntValue if it's Money
 	if field == "Money" then
 		local moneyValue = player:FindFirstChild("Money")
 		if moneyValue then
@@ -298,9 +235,6 @@ function DataHandler:Increment(player, field, amount)
 	return true
 end
 
---[[
-    Add item to array field
-]]
 function DataHandler:AddToArray(player, field, value)
 	if not PlayerDataCache[player] then
 		warn(string.format("⚠️ [DATA HANDLER] No cached data for %s", player.Name))
@@ -313,7 +247,6 @@ function DataHandler:AddToArray(player, field, value)
 		return false
 	end
 
-	-- Check if already exists
 	if table.find(array, value) then
 		warn(string.format("⚠️ [DATA HANDLER] Value already exists in %s.%s", player.Name, field))
 		return false
@@ -324,9 +257,6 @@ function DataHandler:AddToArray(player, field, value)
 	return true
 end
 
---[[
-    Remove item from array field
-]]
 function DataHandler:RemoveFromArray(player, field, value)
 	if not PlayerDataCache[player] then
 		warn(string.format("⚠️ [DATA HANDLER] No cached data for %s", player.Name))
@@ -350,9 +280,6 @@ function DataHandler:RemoveFromArray(player, field, value)
 	return true
 end
 
---[[
-    Check if array contains value
-]]
 function DataHandler:ArrayContains(player, field, value)
 	if not PlayerDataCache[player] then
 		return false
@@ -366,23 +293,17 @@ function DataHandler:ArrayContains(player, field, value)
 	return table.find(array, value) ~= nil
 end
 
---[[
-    Cleanup on player leave
-]]
 function DataHandler:CleanupPlayer(player)
 	local userId = player.UserId
 
-	-- Save data
 	self:SavePlayer(player)
 
-	-- Clear cache
 	PlayerDataCache[player] = nil
 	SessionLocks[userId] = nil
 
 	print(string.format("🧹 [DATA HANDLER] Cleaned up data for %s", player.Name))
 end
 
--- Auto-save loop
 task.spawn(function()
 	while true do
 		task.wait(CONFIG.AutoSaveInterval)
@@ -401,7 +322,6 @@ task.spawn(function()
 	end
 end)
 
--- Save on server shutdown
 game:BindToClose(function()
 	print("🛑 [DATA HANDLER] Server shutting down, saving all data...")
 
@@ -413,7 +333,6 @@ game:BindToClose(function()
 
 	print("✅ [DATA HANDLER] All data saved on shutdown")
 
-	-- Wait a bit to ensure saves complete
 	if RunService:IsStudio() then
 		task.wait(1)
 	else
@@ -421,7 +340,6 @@ game:BindToClose(function()
 	end
 end)
 
--- Player events
 Players.PlayerAdded:Connect(function(player)
 	DataHandler:LoadPlayer(player)
 end)

@@ -1,11 +1,3 @@
---[[
-    TITLE CLIENT v4.0 (SUPER SIMPLE - NO LAG)
-    ✅ NO FireAllClients - each client fetches titles locally
-    ✅ NO server broadcasts - client pulls data when needed
-    ✅ Minimal connections - no event spam
-    ✅ Support for Hide Title setting
-]]
-
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalizationService = game:GetService("LocalizationService")
@@ -22,40 +14,33 @@ end
 
 local getTitleFunc = remoteFolder:WaitForChild("GetTitle", 5)
 
--- Cache
 local billboardCache = {}
 local playerCountries = {}
 
--- ✅ Hide title setting
 local hideTitlesEnabled = false
 
--- Config
 local CONFIG = {
 	MAX_DISTANCE = 100,
 }
 
--- Design
 local DESIGN = {
 	TextColor = Color3.fromRGB(255, 255, 255),
 	TitleColor = Color3.fromRGB(200, 200, 205),
-	MoneyColor = Color3.fromRGB(255, 255, 255),  -- ✅ Changed to WHITE (was green)
-	SummitColor = Color3.fromRGB(255, 255, 255), -- ✅ Changed to WHITE (was yellow)
+	MoneyColor = Color3.fromRGB(255, 255, 255),
+	SummitColor = Color3.fromRGB(255, 255, 255),
 	DefaultAccent = Color3.fromRGB(80, 80, 90),
-	MainFont = Enum.Font.FredokaOne,  -- ✅ Clean modern font for all text
+	MainFont = Enum.Font.FredokaOne,
 }
 
--- ✅ Function to hide/show all titles (called from SettingsClient)
 local function setHideTitles(value)
 	hideTitlesEnabled = value
-	
-	-- Hide/show ALL billboards (including own when enabled)
+
 	for targetPlayer, billboard in pairs(billboardCache) do
 		if billboard and billboard.Parent then
 			billboard.Enabled = not value
 		end
 	end
-	
-	-- Also find any billboards that might not be in cache
+
 	for _, otherPlayer in ipairs(Players:GetPlayers()) do
 		if otherPlayer.Character then
 			local head = otherPlayer.Character:FindFirstChild("Head")
@@ -67,14 +52,11 @@ local function setHideTitles(value)
 			end
 		end
 	end
-	
+
 	print(string.format("🏷️ [TITLE] Hide titles: %s", tostring(value)))
 end
 
--- Export for SettingsClient
 _G.SetHideTitles = setHideTitles
-
--- ==================== BILLBOARD CREATION ====================
 
 local function createBillboard(character, targetPlayer)
 	local head = character:WaitForChild("Head", 5)
@@ -85,17 +67,16 @@ local function createBillboard(character, targetPlayer)
 
 	local billboard = Instance.new("BillboardGui")
 	billboard.Name = "PlayerInfoBillboard"
-	billboard.Size = UDim2.new(6, 0, 3.5, 0)  -- ✅ TALLER for 4 vertical rows
-	billboard.StudsOffset = Vector3.new(0, 3.5, 0)  -- ✅ Adjusted offset
+	billboard.Size = UDim2.new(6, 0, 3.5, 0)
+	billboard.StudsOffset = Vector3.new(0, 3.5, 0)
 	billboard.AlwaysOnTop = true
 	billboard.MaxDistance = CONFIG.MAX_DISTANCE
 	billboard.LightInfluence = 0
-	
-	-- ✅ Respect hide title setting (hide ALL billboards when enabled)
+
 	if hideTitlesEnabled then
 		billboard.Enabled = false
 	end
-	
+
 	billboard.Parent = head
 
 	local mainFrame = Instance.new("Frame")
@@ -105,14 +86,10 @@ local function createBillboard(character, targetPlayer)
 	mainFrame.BorderSizePixel = 0
 	mainFrame.Parent = billboard
 
-	-- ✅ NEW LAYOUT: 4 vertical rows (Title, Name, Summit, Money)
-	-- Each row = 25% height
-
-	-- Row 1: Title Label (top)
 	local titleLabel = Instance.new("TextLabel")
 	titleLabel.Name = "TitleLabel"
 	titleLabel.Size = UDim2.new(1, 0, 0.25, 0)
-	titleLabel.Position = UDim2.new(0, 0, 0, 0)  -- Row 1: 0%
+	titleLabel.Position = UDim2.new(0, 0, 0, 0)
 	titleLabel.BackgroundTransparency = 1
 	titleLabel.Font = DESIGN.MainFont
 	titleLabel.TextScaled = true
@@ -127,11 +104,10 @@ local function createBillboard(character, targetPlayer)
 	titleStroke.Transparency = 0.3
 	titleStroke.Parent = titleLabel
 
-	-- Row 2: Name Label
 	local nameLabel = Instance.new("TextLabel")
 	nameLabel.Name = "NameLabel"
 	nameLabel.Size = UDim2.new(1, 0, 0.28, 0)
-	nameLabel.Position = UDim2.new(0, 0, 0.22, 0)  -- Row 2: 22%
+	nameLabel.Position = UDim2.new(0, 0, 0.22, 0)
 	nameLabel.BackgroundTransparency = 1
 	nameLabel.Font = DESIGN.MainFont
 	nameLabel.TextScaled = true
@@ -146,13 +122,10 @@ local function createBillboard(character, targetPlayer)
 	nameStroke.Transparency = 0.2
 	nameStroke.Parent = nameLabel
 
-	-- ✅ REMOVED: Accent Bar (user requested no colored line)
-
-	-- Row 3: Summit Label (below name) - SMALLER TEXT
 	local summitsLabel = Instance.new("TextLabel")
 	summitsLabel.Name = "SummitsLabel"
-	summitsLabel.Size = UDim2.new(1, 0, 0.14, 0)  -- ✅ SMALLER (was 0.22)
-	summitsLabel.Position = UDim2.new(0, 0, 0.55, 0)  -- Adjusted position
+	summitsLabel.Size = UDim2.new(1, 0, 0.14, 0)
+	summitsLabel.Position = UDim2.new(0, 0, 0.55, 0)
 	summitsLabel.BackgroundTransparency = 1
 	summitsLabel.Font = DESIGN.MainFont
 	summitsLabel.TextScaled = true
@@ -167,11 +140,10 @@ local function createBillboard(character, targetPlayer)
 	summitStroke.Transparency = 0.3
 	summitStroke.Parent = summitsLabel
 
-	-- Row 4: Money Label (bottom) - SMALLER TEXT
 	local moneyLabel = Instance.new("TextLabel")
 	moneyLabel.Name = "MoneyLabel"
-	moneyLabel.Size = UDim2.new(1, 0, 0.14, 0)  -- ✅ SMALLER (was 0.22)
-	moneyLabel.Position = UDim2.new(0, 0, 0.70, 0)  -- Adjusted position
+	moneyLabel.Size = UDim2.new(1, 0, 0.14, 0)
+	moneyLabel.Position = UDim2.new(0, 0, 0.70, 0)
 	moneyLabel.BackgroundTransparency = 1
 	moneyLabel.Font = DESIGN.MainFont
 	moneyLabel.TextScaled = true
@@ -190,8 +162,6 @@ local function createBillboard(character, targetPlayer)
 	return billboard
 end
 
--- ==================== UPDATE FUNCTIONS ====================
-
 local function updateTitle(targetPlayer, titleName)
 	local billboard = billboardCache[targetPlayer]
 	if not billboard then return end
@@ -199,11 +169,9 @@ local function updateTitle(targetPlayer, titleName)
 	local mainFrame = billboard:FindFirstChild("MainFrame")
 	if not mainFrame then return end
 
-	-- local accentBar = mainFrame:FindFirstChild("AccentBar")  -- ✅ REMOVED
 	local titleLabel = mainFrame:FindFirstChild("TitleLabel")
 	if not titleLabel then return end
 
-	-- Find title data
 	local titleData = nil
 	local titleColor = DESIGN.DefaultAccent
 
@@ -226,13 +194,11 @@ local function updateTitle(targetPlayer, titleName)
 
 	if titleData then
 		titleColor = titleData.Color
-		-- if accentBar then accentBar.BackgroundColor3 = titleColor end  -- ✅ REMOVED
 		titleLabel.Text = titleData.Icon .. " " .. titleData.DisplayName
 		titleLabel.TextColor3 = titleColor
 	else
 		titleLabel.Text = "👤 Visitor"
 		titleLabel.TextColor3 = DESIGN.TitleColor
-		-- if accentBar then accentBar.BackgroundColor3 = DESIGN.DefaultAccent end  -- ✅ REMOVED
 	end
 end
 
@@ -241,7 +207,7 @@ local function updateSummit(targetPlayer, summits)
 	if not billboard then return end
 
 	local mainFrame = billboard:FindFirstChild("MainFrame")
-	local summitsLabel = mainFrame and mainFrame:FindFirstChild("SummitsLabel")  -- ✅ Direct child now
+	local summitsLabel = mainFrame and mainFrame:FindFirstChild("SummitsLabel")
 
 	if summitsLabel then
 		summitsLabel.Text = "⛰️ " .. tostring(summits)
@@ -253,7 +219,7 @@ local function updateMoney(targetPlayer, money)
 	if not billboard then return end
 
 	local mainFrame = billboard:FindFirstChild("MainFrame")
-	local moneyLabel = mainFrame and mainFrame:FindFirstChild("MoneyLabel")  -- ✅ Direct child now
+	local moneyLabel = mainFrame and mainFrame:FindFirstChild("MoneyLabel")
 
 	if moneyLabel then
 		local formatted = tostring(money)
@@ -266,15 +232,11 @@ local function updateMoney(targetPlayer, money)
 	end
 end
 
--- ==================== PLAYER SETUP (SIMPLE) ====================
-
 local function setupPlayer(targetPlayer)
-	-- Watch for character
 	local function onCharacterAdded(character)
-		-- ✅ FIX: Add retry for billboard creation
 		local billboard = nil
 		local retries = 0
-		
+
 		while not billboard and retries < 5 do
 			billboard = createBillboard(character, targetPlayer)
 			if not billboard then
@@ -282,36 +244,33 @@ local function setupPlayer(targetPlayer)
 				task.wait(0.5)
 			end
 		end
-		
-		if not billboard then 
+
+		if not billboard then
 			warn("[TITLE] Failed to create billboard for", targetPlayer.Name)
-			return 
+			return
 		end
 
-		-- ✅ SIMPLE: Client fetches title from server for THIS player only
 		task.spawn(function()
-			task.wait(2) -- Wait for server data to be ready
+			task.wait(2)
 			if not targetPlayer or not targetPlayer.Parent then return end
-			
-			-- ✅ FIX: Retry title fetch with better error handling
+
 			local success, title = nil, nil
 			for attempt = 1, 3 do
 				success, title = pcall(function()
 					return getTitleFunc:InvokeServer(targetPlayer)
 				end)
-				
+
 				if success and title then
 					break
 				end
 				task.wait(1)
 			end
-			
+
 			if success and title then
 				updateTitle(targetPlayer, title)
 			end
 		end)
 
-		-- Watch PlayerStats for summit
 		local function watchPlayerStats()
 			local playerStats = targetPlayer:FindFirstChild("PlayerStats")
 			if playerStats then
@@ -325,11 +284,9 @@ local function setupPlayer(targetPlayer)
 			end
 		end
 
-		-- Try immediately, then try after delay if not ready
 		watchPlayerStats()
 		task.delay(3, watchPlayerStats)
 
-		-- Watch Money
 		local moneyValue = targetPlayer:FindFirstChild("Money")
 		if moneyValue then
 			updateMoney(targetPlayer, moneyValue.Value)
@@ -361,9 +318,6 @@ local function onPlayerRemoving(targetPlayer)
 	playerCountries[targetPlayer] = nil
 end
 
--- ==================== TITLE CHANGE LISTENER (MINIMAL) ====================
-
--- ✅ ONLY listen for OWN title changes (from EquipTitle etc)
 local updateTitleEvent = remoteFolder:FindFirstChild("UpdateTitle")
 if updateTitleEvent then
 	updateTitleEvent.OnClientEvent:Connect(function(titleName)
@@ -371,7 +325,6 @@ if updateTitleEvent then
 	end)
 end
 
--- ✅ Listen for OTHER player title changes (SIMPLE - no loops)
 local updateOtherEvent = remoteFolder:FindFirstChild("UpdateOtherPlayerTitle")
 if updateOtherEvent then
 	updateOtherEvent.OnClientEvent:Connect(function(targetPlayer, titleName)
@@ -381,10 +334,6 @@ if updateOtherEvent then
 	end)
 end
 
--- ==================== ✅ HIDE ROBLOX DEFAULT NAME (ALWAYS) ====================
--- This permanently hides the built-in Roblox name display above heads
--- Only TitleClient's custom billboard will be visible
-
 local function hideRobloxDefaultName(character)
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
 	if humanoid then
@@ -392,30 +341,25 @@ local function hideRobloxDefaultName(character)
 	end
 end
 
--- Apply to character when added
 local function setupHideDefaultName(targetPlayer)
 	if targetPlayer.Character then
 		hideRobloxDefaultName(targetPlayer.Character)
 	end
-	
+
 	targetPlayer.CharacterAdded:Connect(function(character)
 		task.wait(0.5)
 		hideRobloxDefaultName(character)
 	end)
 end
 
--- ==================== INITIALIZATION ====================
-
--- Setup existing players
 for _, targetPlayer in ipairs(Players:GetPlayers()) do
 	setupPlayer(targetPlayer)
-	setupHideDefaultName(targetPlayer)  -- ✅ Hide Roblox default name
+	setupHideDefaultName(targetPlayer)
 end
 
--- Setup new players
 Players.PlayerAdded:Connect(function(targetPlayer)
 	setupPlayer(targetPlayer)
-	setupHideDefaultName(targetPlayer)  -- ✅ Hide Roblox default name
+	setupHideDefaultName(targetPlayer)
 end)
 Players.PlayerRemoving:Connect(onPlayerRemoving)
 

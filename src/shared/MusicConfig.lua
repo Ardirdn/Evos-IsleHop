@@ -1,15 +1,3 @@
---[[
-    MUSIC CONFIG
-    Place in ReplicatedStorage/MusicConfig
-    
-    Format:
-    ["Playlist Name"] = {
-        Songs = {
-            { Title = "Song Name", AssetId = "rbxassetid://123456" },
-        }
-    }
-]]
-
 local MusicConfig = {}
 
 MusicConfig.Playlists = {
@@ -46,7 +34,6 @@ MusicConfig.Playlists = {
 	},
 }
 
--- Settings
 MusicConfig.Settings = {
 	DefaultVolume = 0.5,
 	AutoPlayNext = true,

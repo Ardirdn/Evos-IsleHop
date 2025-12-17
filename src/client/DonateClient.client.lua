@@ -1,8 +1,3 @@
---[[
-    DONATE CLIENT (FIXED UI)
-    Place in StarterPlayerScripts/DonateClient
-]]
-
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
@@ -25,7 +20,6 @@ local donationData = {
 	HasDonaturTitle = false
 }
 
--- Helper functions
 local function createCorner(radius)
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0, radius)
@@ -40,7 +34,6 @@ local function createStroke(color, thickness)
 	return stroke
 end
 
--- ✅ Helper: Create adaptive text with TextScaled and UITextSizeConstraint
 local function makeTextAdaptive(textLabel, maxTextSize)
 	textLabel.TextScaled = true
 	local constraint = Instance.new("UITextSizeConstraint")
@@ -48,7 +41,6 @@ local function makeTextAdaptive(textLabel, maxTextSize)
 	constraint.Parent = textLabel
 end
 
--- ✅ Helper: Add UIAspectRatioConstraint to main frames
 local function addAspectRatio(frame, ratio)
 	local aspectRatio = Instance.new("UIAspectRatioConstraint")
 	aspectRatio.AspectRatio = ratio or 1.3
@@ -56,7 +48,6 @@ local function addAspectRatio(frame, ratio)
 	aspectRatio.Parent = frame
 end
 
--- ✅ Helper: Tween Size with animation
 local function tweenSize(object, endSize, time, callback)
 	local tweenInfo = TweenInfo.new(time or 0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
 	local tween = TweenService:Create(object, tweenInfo, {Size = endSize})
@@ -67,7 +58,6 @@ local function tweenSize(object, endSize, time, callback)
 	return tween
 end
 
--- Create GUI
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "DonateGUI"
 screenGui.ResetOnSpawn = false
@@ -75,10 +65,9 @@ screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 screenGui.Enabled = false
 screenGui.Parent = playerGui
 
--- Main Panel (✅ FULLY ADAPTIVE)
 local mainPanel = Instance.new("Frame")
 mainPanel.Name = "MainPanel"
-mainPanel.Size = UDim2.new(0.7, 0, 0.9, 0)  -- ✅ Scale-based
+mainPanel.Size = UDim2.new(0.7, 0, 0.9, 0)
 mainPanel.Position = UDim2.new(0.5, 0, 0.5, 0)
 mainPanel.AnchorPoint = Vector2.new(0.5, 0.5)
 mainPanel.BackgroundColor3 = COLORS.Background
@@ -89,9 +78,8 @@ mainPanel.Parent = screenGui
 
 createCorner(15).Parent = mainPanel
 createStroke(COLORS.Border, 2).Parent = mainPanel
-addAspectRatio(mainPanel, 1.3)  -- ✅ AspectRatio dengan DominantAxis = Width
+addAspectRatio(mainPanel, 1.3)
 
--- Header (✅ SCALE-BASED)
 local header = Instance.new("Frame")
 header.Name = "Header"
 header.Size = UDim2.new(1, 0, 0.1, 0)
@@ -102,8 +90,8 @@ header.Parent = mainPanel
 createCorner(15).Parent = header
 
 local headerBottom = Instance.new("Frame")
-headerBottom.Size = UDim2.new(1, 0, 0.3, 0)  -- ✅ Scale-based
-headerBottom.Position = UDim2.new(0, 0, 0.7, 0)  -- ✅ Scale-based
+headerBottom.Size = UDim2.new(1, 0, 0.3, 0)
+headerBottom.Position = UDim2.new(0, 0, 0.7, 0)
 headerBottom.BackgroundColor3 = COLORS.Panel
 headerBottom.BorderSizePixel = 0
 headerBottom.Parent = header
@@ -117,9 +105,8 @@ headerTitle.Text = "💝 DONATE"
 headerTitle.TextColor3 = COLORS.Text
 headerTitle.TextXAlignment = Enum.TextXAlignment.Left
 headerTitle.Parent = header
-makeTextAdaptive(headerTitle, 20)  -- ✅ Adaptive text
+makeTextAdaptive(headerTitle, 20)
 
--- Donation Progress
 local progressFrame = Instance.new("Frame")
 progressFrame.Size = UDim2.new(0.35, 0, 0.6, 0)
 progressFrame.Position = UDim2.new(0.4, 0, 0.5, 0)
@@ -139,9 +126,8 @@ progressLabel.Text = "R$0 / R$1000"
 progressLabel.TextColor3 = COLORS.Premium
 progressLabel.TextXAlignment = Enum.TextXAlignment.Left
 progressLabel.Parent = progressFrame
-makeTextAdaptive(progressLabel, 14)  -- ✅ Adaptive text
+makeTextAdaptive(progressLabel, 14)
 
--- Close Button (✅ SCALE-BASED)
 local closeBtn = Instance.new("TextButton")
 closeBtn.Size = UDim2.new(0.06, 0, 0.7, 0)
 closeBtn.Position = UDim2.new(0.92, 0, 0.5, 0)
@@ -152,11 +138,10 @@ closeBtn.Text = "✕"
 closeBtn.Font = Enum.Font.GothamBold
 closeBtn.TextColor3 = COLORS.Text
 closeBtn.Parent = header
-makeTextAdaptive(closeBtn, 20)  -- ✅ Adaptive text
+makeTextAdaptive(closeBtn, 20)
 
 createCorner(10).Parent = closeBtn
 
--- Info Text (✅ ADAPTIVE)
 local infoLabel = Instance.new("TextLabel")
 infoLabel.Size = UDim2.new(0.94, 0, 0.06, 0)
 infoLabel.Position = UDim2.new(0.03, 0, 0.12, 0)
@@ -166,12 +151,11 @@ infoLabel.Text = "Terima kasih atas dukunganmu! Donasi R$1000+ akan mendapatkan 
 infoLabel.TextColor3 = COLORS.TextSecondary
 infoLabel.TextWrapped = true
 infoLabel.Parent = mainPanel
-makeTextAdaptive(infoLabel, 13)  -- ✅ Adaptive text
+makeTextAdaptive(infoLabel, 13)
 
--- Scroll Frame (✅ FIXED: Centered dengan padding)
 local scrollFrame = Instance.new("ScrollingFrame")
-scrollFrame.Size = UDim2.new(0.92, 0, 0.72, 0)  -- ✅ Reduced from 0.95 to 0.92
-scrollFrame.Position = UDim2.new(0.04, 0, 0.22, 0)  -- ✅ Centered (0.5 - 0.46)
+scrollFrame.Size = UDim2.new(0.92, 0, 0.72, 0)
+scrollFrame.Position = UDim2.new(0.04, 0, 0.22, 0)
 scrollFrame.BackgroundTransparency = 1
 scrollFrame.BorderSizePixel = 0
 scrollFrame.ScrollBarThickness = 4
@@ -180,15 +164,13 @@ scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
 scrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
 scrollFrame.Parent = mainPanel
 
--- ✅ FIXED: Grid layout dengan padding lebih besar
 local gridLayout = Instance.new("UIGridLayout")
-gridLayout.CellSize = UDim2.new(0.3, 0, 0.28, 0)  -- ✅ Slightly smaller cell
-gridLayout.CellPadding = UDim2.new(0.04, 0, 0.04, 0)  -- ✅ Increased from 0.02 to 0.035
+gridLayout.CellSize = UDim2.new(0.3, 0, 0.28, 0)
+gridLayout.CellPadding = UDim2.new(0.04, 0, 0.04, 0)
 gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
-gridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center  -- ✅ Center alignment
+gridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 gridLayout.Parent = scrollFrame
 
--- ✅ ADDED: Padding untuk scroll frame (Scale-based)
 local scrollPadding = Instance.new("UIPadding")
 scrollPadding.PaddingLeft = UDim.new(0.02, 0)
 scrollPadding.PaddingRight = UDim.new(0.02, 0)
@@ -196,7 +178,6 @@ scrollPadding.PaddingTop = UDim.new(0.02, 0)
 scrollPadding.PaddingBottom = UDim.new(0.02, 0)
 scrollPadding.Parent = scrollFrame
 
--- Create Donation Cards
 local function createDonationCard(packageData, index)
 	local card = Instance.new("Frame")
 	card.Name = packageData.Title
@@ -208,7 +189,6 @@ local function createDonationCard(packageData, index)
 	createCorner(10).Parent = card
 	createStroke(packageData.Color, 2).Parent = card
 
-	-- Icon/Thumbnail (✅ Adaptive)
 	local icon = Instance.new("TextLabel")
 	icon.Size = UDim2.new(1, 0, 0.3, 0)
 	icon.Position = UDim2.new(0, 0, 0.05, 0)
@@ -217,9 +197,8 @@ local function createDonationCard(packageData, index)
 	icon.Text = "💝"
 	icon.TextColor3 = packageData.Color
 	icon.Parent = card
-	makeTextAdaptive(icon, 40)  -- ✅ Adaptive text
+	makeTextAdaptive(icon, 40)
 
-	-- Title (✅ Adaptive)
 	local titleLabel = Instance.new("TextLabel")
 	titleLabel.Size = UDim2.new(0.9, 0, 0.15, 0)
 	titleLabel.Position = UDim2.new(0.05, 0, 0.38, 0)
@@ -228,9 +207,8 @@ local function createDonationCard(packageData, index)
 	titleLabel.Text = packageData.Title
 	titleLabel.TextColor3 = COLORS.Text
 	titleLabel.Parent = card
-	makeTextAdaptive(titleLabel, 16)  -- ✅ Adaptive text
+	makeTextAdaptive(titleLabel, 16)
 
-	-- Description (✅ Adaptive)
 	local descLabel = Instance.new("TextLabel")
 	descLabel.Size = UDim2.new(0.9, 0, 0.12, 0)
 	descLabel.Position = UDim2.new(0.05, 0, 0.53, 0)
@@ -240,9 +218,8 @@ local function createDonationCard(packageData, index)
 	descLabel.TextColor3 = COLORS.TextSecondary
 	descLabel.TextWrapped = true
 	descLabel.Parent = card
-	makeTextAdaptive(descLabel, 11)  -- ✅ Adaptive text
+	makeTextAdaptive(descLabel, 11)
 
-	-- Price (✅ Adaptive)
 	local priceLabel = Instance.new("TextLabel")
 	priceLabel.Size = UDim2.new(0.9, 0, 0.12, 0)
 	priceLabel.Position = UDim2.new(0.05, 0, 0.66, 0)
@@ -251,9 +228,8 @@ local function createDonationCard(packageData, index)
 	priceLabel.Text = "R$" .. tostring(packageData.Amount)
 	priceLabel.TextColor3 = COLORS.Premium
 	priceLabel.Parent = card
-	makeTextAdaptive(priceLabel, 20)  -- ✅ Adaptive text
+	makeTextAdaptive(priceLabel, 20)
 
-	-- Donate Button (✅ FIXED: Added text stroke, Adaptive)
 	local donateBtn = Instance.new("TextButton")
 	donateBtn.Size = UDim2.new(0.9, 0, 0.15, 0)
 	donateBtn.Position = UDim2.new(0.05, 0, 0.8, 0)
@@ -264,18 +240,16 @@ local function createDonationCard(packageData, index)
 	donateBtn.TextColor3 = COLORS.Text
 	donateBtn.AutoButtonColor = false
 	donateBtn.Parent = card
-	makeTextAdaptive(donateBtn, 14)  -- ✅ Adaptive text
+	makeTextAdaptive(donateBtn, 14)
 
 	createCorner(8).Parent = donateBtn
 
-	-- ✅ ADDED: Text stroke untuk button
 	local textStroke = Instance.new("UIStroke")
 	textStroke.Color = Color3.fromRGB(0, 0, 0)
 	textStroke.Thickness = 1.5
 	textStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
 	textStroke.Parent = donateBtn
 
-	-- Hover effect
 	donateBtn.MouseEnter:Connect(function()
 		TweenService:Create(donateBtn, TweenInfo.new(0.2), {BackgroundTransparency = 0.3}):Play()
 	end)
@@ -284,10 +258,8 @@ local function createDonationCard(packageData, index)
 		TweenService:Create(donateBtn, TweenInfo.new(0.2), {BackgroundTransparency = 0}):Play()
 	end)
 
-	-- Click handler
 	donateBtn.MouseButton1Click:Connect(function()
 		if packageData.ProductId == 0 then
-			-- Show notification
 			game.StarterGui:SetCore("SendNotification", {
 				Title = "Donate",
 				Text = "Product ID belum di-set! Hubungi admin.",
@@ -299,7 +271,6 @@ local function createDonationCard(packageData, index)
 	end)
 end
 
--- Update display
 local function updateDisplay()
 	progressLabel.Text = string.format("R$%d / R$%d", donationData.TotalDonations, DonateConfig.DonationThreshold)
 
@@ -309,7 +280,6 @@ local function updateDisplay()
 	end
 end
 
--- Refresh data
 local function refreshData()
 	local success, data = pcall(function()
 		return getDonateDataFunc:InvokeServer()
@@ -321,40 +291,34 @@ local function refreshData()
 	end
 end
 
--- Show/Hide panel with animation
 local function showPanel()
 	screenGui.Enabled = true
 	mainPanel.Size = UDim2.new(0, 0, 0, 0)
 	mainPanel.Visible = true
-	tweenSize(mainPanel, UDim2.new(0.7, 0, 0.9, 0), 0.3)  -- ✅ Animate open
+	tweenSize(mainPanel, UDim2.new(0.7, 0, 0.9, 0), 0.3)
 	refreshData()
 end
 
 local function hidePanel()
 	tweenSize(mainPanel, UDim2.new(0, 0, 0, 0), 0.3, function()
 		mainPanel.Visible = false
-		mainPanel.Size = UDim2.new(0.7, 0, 0.9, 0)  -- ✅ Reset ukuran
+		mainPanel.Size = UDim2.new(0.7, 0, 0.9, 0)
 		screenGui.Enabled = false
 	end)
 end
 
--- Event connections
 closeBtn.MouseButton1Click:Connect(hidePanel)
 
--- Create all donation cards
 for index, package in ipairs(DonateConfig.Packages) do
 	createDonationCard(package, index)
 end
 
--- ✅ TAMBAHKAN INI setelah create all donation cards:
 local spacer = Instance.new("Frame")
-spacer.Size = UDim2.new(1, 0, 0, 30)  -- ✅ Extra space di bawah
+spacer.Size = UDim2.new(1, 0, 0, 30)
 spacer.BackgroundTransparency = 1
 spacer.LayoutOrder = 999
 spacer.Parent = scrollFrame
 
-
--- Draggable
 local function makeDraggable(frame, dragHandle)
 	local dragging = false
 	local dragInput, mousePos, framePos
@@ -399,9 +363,8 @@ end
 
 makeDraggable(mainPanel, header)
 
--- TopbarPlus Icon
 local donateIcon = Icon.new()
-	:setImage("rbxassetid://105261272857289") -- Money icon
+	:setImage("rbxassetid://105261272857289")
 	:setLabel("Donate")
 	:bindEvent("selected", showPanel)
 	:bindEvent("deselected", hidePanel)

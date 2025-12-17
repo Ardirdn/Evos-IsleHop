@@ -1,13 +1,3 @@
---[[
-	Freecam - ANDROID OPTIMIZED
-	Place in ReplicatedStorage
-	
-	Android Controls:
-	- Left joystick: Move camera (forward/back/left/right/up/down)
-	- Right side touch: Look around (pan camera)
-	- Two-finger pinch: Zoom (FOV)
-]]
-
 local Freecam = {}
 
 local pi = math.pi
@@ -40,8 +30,6 @@ Workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
 	end
 end)
 
-------------------------------------------------------------------------
-
 local INPUT_PRIORITY = Enum.ContextActionPriority.High.Value
 
 local NAV_GAIN = Vector3.new(1, 1, 1) * 36
@@ -53,8 +41,6 @@ local PITCH_LIMIT = rad(90)
 local VEL_STIFFNESS = 1.5
 local PAN_STIFFNESS = 1.0
 local FOV_STIFFNESS = 4.0
-
-------------------------------------------------------------------------
 
 local Spring = {}
 do
@@ -91,8 +77,6 @@ do
 	end
 end
 
-------------------------------------------------------------------------
-
 local cameraPos = Vector3.new()
 local cameraRot = Vector2.new()
 local cameraFov = 0
@@ -101,10 +85,8 @@ local velSpring = Spring.new(VEL_STIFFNESS, Vector3.new())
 local panSpring = Spring.new(PAN_STIFFNESS, Vector2.new())
 local fovSpring = Spring.new(FOV_STIFFNESS, 0)
 
-------------------------------------------------------------------------
 local isActive = false
 local onEndedCallback = nil
-------------------------------------------------------------------------
 
 local PlayerState = {} do
 	local mouseBehavior
@@ -166,7 +148,6 @@ local PlayerState = {} do
 		mouseIconEnabled = UserInputService.MouseIconEnabled
 		UserInputService.MouseIconEnabled = false
 
-		-- Get PlayerModule controls
 		pcall(function()
 			local playerScripts = LocalPlayer:WaitForChild("PlayerScripts")
 			local playerModule = require(playerScripts:WaitForChild("PlayerModule"))
@@ -288,10 +269,10 @@ do
 
 	local PAN_MOUSE_SPEED = Vector2.new(1, 1) * (pi / 64)
 	local PAN_GAMEPAD_SPEED = Vector2.new(1, 1) * (pi / 8)
-	local PAN_TOUCH_SPEED = Vector2.new(1, 1) * (pi / 96) -- Smoother for touch
+	local PAN_TOUCH_SPEED = Vector2.new(1, 1) * (pi / 96)
 	local FOV_WHEEL_SPEED = 1.0
 	local FOV_GAMEPAD_SPEED = 0.25
-	local FOV_PINCH_SPEED = 0.08 -- More sensitive
+	local FOV_PINCH_SPEED = 0.08
 	local NAV_ADJ_SPEED = 0.75
 	local NAV_SHIFT_MUL = 0.25
 
@@ -302,21 +283,17 @@ do
 
 		local moveVector = Vector3.new()
 
-		-- Get movement from PlayerModule (joystick on mobile)
 		local controls = PlayerState.GetControlModule()
 		if controls then
 			moveVector = controls:GetMoveVector()
 		end
 
-		-- Vertical movement (E/Q keys or triggers)
 		local kbd_vertical = keyboard.E - keyboard.Q + (thumbstickCurve(gamepad.ButtonR2) - thumbstickCurve(gamepad.ButtonL2))
 
 		local finalMove
 		if moveVector.Magnitude > 0.01 then
-			-- Use joystick/WASD input
 			finalMove = Vector3.new(moveVector.X, kbd_vertical, moveVector.Z)
 		else
-			-- Fallback to keyboard
 			finalMove = Vector3.new(
 				keyboard.D - keyboard.A,
 				kbd_vertical,
@@ -375,18 +352,15 @@ do
 		local activeTouches = {}
 		local lastPinchDist = 0
 
-		-- ANDROID TOUCH HANDLER
 		local function HandleTouch(actionName, state, input)
-			if input.UserInputType ~= Enum.UserInputType.Touch then 
-				return Enum.ContextActionResult.Pass 
+			if input.UserInputType ~= Enum.UserInputType.Touch then
+				return Enum.ContextActionResult.Pass
 			end
 
 			local touchId = tostring(input)
 			local screenWidth = Camera.ViewportSize.X
 
 			if state == Enum.UserInputState.Begin then
-				-- Only track touches on right half (for camera pan)
-				-- Left half is reserved for joystick
 				if input.Position.X > screenWidth / 2 then
 					activeTouches[touchId] = input.Position
 				else
@@ -417,12 +391,10 @@ do
 				local count = #positions
 
 				if count == 1 then
-					-- Pan with one finger (right side only)
 					local delta = input.Delta
 					touch.Delta = Vector2.new(-delta.Y, -delta.X)
 
 				elseif count == 2 then
-					-- Pinch zoom with two fingers
 					local dist = (positions[1] - positions[2]).Magnitude
 
 					if lastPinchDist > 0 then

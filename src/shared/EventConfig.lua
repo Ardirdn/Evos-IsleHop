@@ -1,11 +1,5 @@
---[[
-    EVENT CONFIG
-    Place in ReplicatedStorage/EventConfig
-]]
-
 local EventConfig = {}
 
--- Available Events (mudah ditambah di masa depan)
 EventConfig.AvailableEvents = {
 	{
 		Id = "SummitX3",

@@ -1,21 +1,9 @@
---[[
-    INVENTORY SERVER (FIXED)
-    Place in ServerScriptService/InventoryServer
-    
-    FIXES:
-    - Block tool equip while being carried
-    - Proper cleanup when switching tools (move to backpack instead of destroy)
-    - Find tools/auras from subfolders
-    - Handle duplicate tools
-]]
-
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local DataHandler = require(script.Parent.DataHandler)
 local NotificationService = require(script.Parent.NotificationServer)
 
--- Create RemoteEvents
 local remoteFolder = ReplicatedStorage:FindFirstChild("InventoryRemotes")
 if not remoteFolder then
 	remoteFolder = Instance.new("Folder")
@@ -58,54 +46,46 @@ if not unequipToolEvent then
 	unequipToolEvent.Parent = remoteFolder
 end
 
--- ✅ Helper: Find aura in Auras folder (including OlderAuras subfolder)
 local function findAuraTemplate(auraId)
 	local aurasFolder = ReplicatedStorage:FindFirstChild("Auras")
 	if not aurasFolder then return nil end
-	
-	-- First try direct child
+
 	local template = aurasFolder:FindFirstChild(auraId)
 	if template then return template end
-	
-	-- Then try OlderAuras subfolder (Crystal Event auras: Aura1-Aura8)
+
 	local olderAuras = aurasFolder:FindFirstChild("OlderAuras")
 	if olderAuras then
 		template = olderAuras:FindFirstChild(auraId)
 		if template then return template end
 	end
-	
+
 	return nil
 end
 
--- ✅ Helper: Find tool in Tools folder (including subfolders)
 local function findToolTemplate(toolId)
 	local toolsFolder = ReplicatedStorage:FindFirstChild("Tools")
 	if not toolsFolder then return nil end
-	
-	-- First try direct child
+
 	local template = toolsFolder:FindFirstChild(toolId)
 	if template then return template end
-	
-	-- Then try ShopTools subfolder (purchasable tools from shop)
+
 	local shopTools = toolsFolder:FindFirstChild("ShopTools")
 	if shopTools then
 		template = shopTools:FindFirstChild(toolId)
 		if template then return template end
 	end
-	
-	-- Then try FlyingTools subfolder (FlyTogether Event tools: FlyingSpeed1-8)
+
 	local flyingTools = toolsFolder:FindFirstChild("FlyingTools")
 	if flyingTools then
 		template = flyingTools:FindFirstChild(toolId)
 		if template then return template end
 	end
-	
+
 	return nil
 end
 
 print("✅ [INVENTORY SERVER] Initialized")
 
--- Get player inventory
 getInventoryEvent.OnServerInvoke = function(player)
 	local data = DataHandler:GetData(player)
 	if not data then
@@ -125,7 +105,6 @@ getInventoryEvent.OnServerInvoke = function(player)
 	}
 end
 
--- Equip Aura
 equipAuraEvent.OnServerEvent:Connect(function(player, auraId)
 	if not player or not player.Parent then return end
 
@@ -179,7 +158,6 @@ equipAuraEvent.OnServerEvent:Connect(function(player, auraId)
 	print(string.format("✨ [INVENTORY SERVER] %s equipped aura: %s", player.Name, auraId))
 end)
 
--- Unequip Aura
 unequipAuraEvent.OnServerEvent:Connect(function(player)
 	if not player or not player.Parent then return end
 
@@ -206,7 +184,6 @@ unequipAuraEvent.OnServerEvent:Connect(function(player)
 	print(string.format("✨ [INVENTORY SERVER] %s unequipped aura", player.Name))
 end)
 
--- ✅ FIXED: Equip Tool with carry check and proper cleanup
 equipToolEvent.OnServerEvent:Connect(function(player, toolId)
 	if not player or not player.Parent then return end
 
@@ -219,7 +196,6 @@ equipToolEvent.OnServerEvent:Connect(function(player, toolId)
 		return
 	end
 
-	-- ✅ Block tool equip while being carried
 	if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
 		if player.Character.HumanoidRootPart:FindFirstChild("CarryWeld") then
 			NotificationService:Send(player, {
@@ -237,19 +213,16 @@ equipToolEvent.OnServerEvent:Connect(function(player, toolId)
 		return
 	end
 
-	-- ✅ UNEQUIP properly (don't destroy) - triggers Unequipped event
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-	
+
 	if humanoid then
-		humanoid:UnequipTools()  -- This properly triggers Unequipped event on the tool
+		humanoid:UnequipTools()
 	end
-	
-	-- ✅ Move old tool to backpack instead of destroying (prevents lag)
+
 	if character then
 		for _, child in ipairs(character:GetChildren()) do
 			if child:IsA("Tool") and child.Name ~= toolId then
-				-- Move to backpack instead of destroy to prevent lag
 				local backpack = player:FindFirstChild("Backpack")
 				if backpack then
 					child.Parent = backpack
@@ -258,10 +231,9 @@ equipToolEvent.OnServerEvent:Connect(function(player, toolId)
 		end
 	end
 
-	-- ✅ Equip new tool
 	if character then
 		local toolClone = toolTemplate:Clone()
-		toolClone.Parent = character  -- This triggers Equipped event
+		toolClone.Parent = character
 	end
 
 	DataHandler:Set(player, "EquippedTool", toolId)
@@ -277,20 +249,16 @@ equipToolEvent.OnServerEvent:Connect(function(player, toolId)
 	print(string.format("🔧 [INVENTORY SERVER] %s equipped tool: %s", player.Name, toolId))
 end)
 
-
--- ✅ FIXED: Unequip Tool (move to backpack, NO destroy)
 unequipToolEvent.OnServerEvent:Connect(function(player)
 	if not player or not player.Parent then return end
 
-	-- ✅ UNEQUIP properly (triggers Unequipped event)
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-	
+
 	if humanoid then
-		humanoid:UnequipTools()  -- Triggers Unequipped event, moves to Backpack
+		humanoid:UnequipTools()
 	end
-	
-	-- ✅ Move tool to backpack (NOT destroy - prevents lag)
+
 	if character then
 		for _, child in ipairs(character:GetChildren()) do
 			if child:IsA("Tool") then
@@ -302,7 +270,6 @@ unequipToolEvent.OnServerEvent:Connect(function(player)
 		end
 	end
 
-	-- Clear equipped tool data
 	DataHandler:Set(player, "EquippedTool", nil)
 	DataHandler:SavePlayer(player)
 
@@ -315,8 +282,6 @@ unequipToolEvent.OnServerEvent:Connect(function(player)
 	print(string.format("🔧 [INVENTORY SERVER] %s unequipped tool", player.Name))
 end)
 
-
--- ✅ FIXED: Reapply on respawn (combined aura + tool)
 Players.PlayerAdded:Connect(function(player)
 	player.CharacterAdded:Connect(function(character)
 		task.wait(0.5)
@@ -324,7 +289,6 @@ Players.PlayerAdded:Connect(function(player)
 		local data = DataHandler:GetData(player)
 		if not data then return end
 
-		-- Reapply Aura
 		if data.EquippedAura then
 			local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
 			if humanoidRootPart then
@@ -346,7 +310,6 @@ Players.PlayerAdded:Connect(function(player)
 			end
 		end
 
-		-- Reapply Tool
 		if data.EquippedTool then
 			local toolTemplate = findToolTemplate(data.EquippedTool)
 			if toolTemplate then

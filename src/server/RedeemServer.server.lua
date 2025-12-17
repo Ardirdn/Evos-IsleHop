@@ -1,8 +1,3 @@
---[[
-    REDEEM SERVER (CROSS-SERVER - FIXED)
-    Place in ServerScriptService/RedeemServer
-]]
-
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local DataStoreService = game:GetService("DataStoreService")
@@ -14,17 +9,14 @@ local TitleConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChi
 local ShopConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("ShopConfig"))
 local DataStoreConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("DataStoreConfig"))
 
--- ✅ DEBUG: Check ShopConfig
 print("🔍 [REDEEM DEBUG] ShopConfig:", ShopConfig)
 if ShopConfig then
 	print("🔍 [REDEEM DEBUG] ShopConfig.Auras:", ShopConfig.Auras and #ShopConfig.Auras or "NIL")
 	print("🔍 [REDEEM DEBUG] ShopConfig.Tools:", ShopConfig.Tools and #ShopConfig.Tools or "NIL")
 end
 
--- ✅ FIXED: CROSS-SERVER DATASTORE (using centralized config)
 local RedeemCodesStore = DataStoreService:GetDataStore(DataStoreConfig.RedeemCodes)
 
--- Create RemoteEvents
 local remoteFolder = ReplicatedStorage:FindFirstChild("RedeemRemotes")
 if not remoteFolder then
 	remoteFolder = Instance.new("Folder")
@@ -69,16 +61,12 @@ end
 
 print("✅ [REDEEM SERVER] Initialized")
 
--- ==================== HELPER FUNCTIONS ====================
-
 local function isAdmin(player)
-	-- ✅ Check 1: Via equipped title
 	local data = DataHandler:GetData(player)
 	if data and data.EquippedTitle == "Admin" then
 		return true
 	end
 
-	-- ✅ Check 2: Via TitleConfig.AdminIds (fallback)
 	if TitleConfig.AdminIds then
 		for _, adminId in ipairs(TitleConfig.AdminIds) do
 			if player.UserId == adminId then
@@ -113,7 +101,6 @@ end
 local function getTitleRank(titleId)
 	if not titleId then return 0 end
 
-	-- ✅ CHECK SummitTitles
 	if TitleConfig.SummitTitles then
 		for i, title in ipairs(TitleConfig.SummitTitles) do
 			if title.Name == titleId then
@@ -122,7 +109,6 @@ local function getTitleRank(titleId)
 		end
 	end
 
-	-- ✅ CHECK SpecialTitles
 	if TitleConfig.SpecialTitles and TitleConfig.SpecialTitles[titleId] then
 		return TitleConfig.SpecialTitles[titleId].Priority or 999
 	end
@@ -130,19 +116,14 @@ local function getTitleRank(titleId)
 	return 0
 end
 
--- ==================== CHECK ADMIN ====================
-
 checkAdminFunc.OnServerInvoke = function(player)
 	if not player or not player.Parent then return false end
 	return isAdmin(player)
 end
 
--- ==================== CREATE CODE ====================
-
 createCodeEvent.OnServerEvent:Connect(function(player, codeString, rewardType, rewardValue, maxUses)
 	if not player or not player.Parent then return end
 
-	-- Check if admin
 	if not isAdmin(player) then
 		NotificationService:Send(player, {
 			Message = "You don't have permission to create codes!",
@@ -152,7 +133,6 @@ createCodeEvent.OnServerEvent:Connect(function(player, codeString, rewardType, r
 		return
 	end
 
-	-- Validate inputs
 	if not codeString or codeString == "" then
 		NotificationService:Send(player, {
 			Message = "Code cannot be empty!",
@@ -173,7 +153,6 @@ createCodeEvent.OnServerEvent:Connect(function(player, codeString, rewardType, r
 
 	maxUses = maxUses or 1
 
-	-- Check if code already exists
 	local existingCode = getCodeData(codeString)
 	if existingCode then
 		NotificationService:Send(player, {
@@ -184,7 +163,6 @@ createCodeEvent.OnServerEvent:Connect(function(player, codeString, rewardType, r
 		return
 	end
 
-	-- Create code data
 	local codeData = {
 		CodeId = codeString,
 		RewardType = rewardType,
@@ -195,11 +173,9 @@ createCodeEvent.OnServerEvent:Connect(function(player, codeString, rewardType, r
 		CreatedAt = os.time()
 	}
 
-	-- Save to DataStore
 	local success = saveCodeData(codeString, codeData)
 
 	if success then
-		-- ✅ TRACK CODE (save to tracking list)
 		local trackingKey = "RedeemCodes_Tracking"
 		local success2, existingList = pcall(function()
 			return RedeemCodesStore:GetAsync(trackingKey) or {}
@@ -221,7 +197,7 @@ createCodeEvent.OnServerEvent:Connect(function(player, codeString, rewardType, r
 			Icon = "🎁"
 		})
 
-		print(string.format("🎁 [REDEEM] %s created code: %s (Type: %s, Value: %s, Max: %d)", 
+		print(string.format("🎁 [REDEEM] %s created code: %s (Type: %s, Value: %s, Max: %d)",
 			player.Name, codeString, rewardType, tostring(rewardValue), maxUses))
 	else
 		NotificationService:Send(player, {
@@ -231,8 +207,6 @@ createCodeEvent.OnServerEvent:Connect(function(player, codeString, rewardType, r
 		})
 	end
 end)
-
--- ==================== REDEEM CODE ====================
 
 redeemCodeEvent.OnServerEvent:Connect(function(player, codeString)
 	if not player or not player.Parent then return end
@@ -246,7 +220,6 @@ redeemCodeEvent.OnServerEvent:Connect(function(player, codeString)
 		return
 	end
 
-	-- Get code data
 	local codeData = getCodeData(codeString)
 
 	if not codeData then
@@ -259,7 +232,6 @@ redeemCodeEvent.OnServerEvent:Connect(function(player, codeString)
 		return
 	end
 
-	-- Check if already redeemed by this player
 	if DataHandler:ArrayContains(player, "RedeemedCodes", codeString) then
 		NotificationService:Send(player, {
 			Message = "You already redeemed this code!",
@@ -270,7 +242,6 @@ redeemCodeEvent.OnServerEvent:Connect(function(player, codeString)
 		return
 	end
 
-	-- Check if code is still available
 	if codeData.CurrentUses >= codeData.MaxUses then
 		NotificationService:Send(player, {
 			Message = "This code has been fully redeemed!",
@@ -281,13 +252,11 @@ redeemCodeEvent.OnServerEvent:Connect(function(player, codeString)
 		return
 	end
 
-	-- ✅ PROCESS REWARD
 	local rewardMessage = ""
 	local rewardType = codeData.RewardType
 	local rewardValue = codeData.RewardValue
 
 	if rewardType == "Title" then
-		-- Check if player already has higher title
 		local data = DataHandler:GetData(player)
 		if not data then
 			NotificationService:Send(player, {
@@ -308,7 +277,6 @@ redeemCodeEvent.OnServerEvent:Connect(function(player, codeString)
 				Type = "info",
 				Duration = 3
 			})
-			-- ✅ MASIH MARK AS REDEEMED + UPDATE CODE USES
 			DataHandler:AddToArray(player, "RedeemedCodes", codeString)
 			DataHandler:SavePlayer(player)
 
@@ -317,7 +285,6 @@ redeemCodeEvent.OnServerEvent:Connect(function(player, codeString)
 			return
 		end
 
-		-- Give title
 		if not DataHandler:ArrayContains(player, "OwnedTitles", rewardValue) then
 			DataHandler:AddToArray(player, "OwnedTitles", rewardValue)
 		end
@@ -326,29 +293,24 @@ redeemCodeEvent.OnServerEvent:Connect(function(player, codeString)
 		rewardMessage = string.format("Title: %s", rewardValue)
 
 	elseif rewardType == "Aura" then
-		-- Give aura
 		if not DataHandler:ArrayContains(player, "OwnedAuras", rewardValue) then
 			DataHandler:AddToArray(player, "OwnedAuras", rewardValue)
 		end
 		rewardMessage = string.format("Aura: %s", rewardValue)
 
 	elseif rewardType == "Tool" then
-		-- Give tool
 		if not DataHandler:ArrayContains(player, "OwnedTools", rewardValue) then
 			DataHandler:AddToArray(player, "OwnedTools", rewardValue)
 		end
 		rewardMessage = string.format("Tool: %s", rewardValue)
 
 	elseif rewardType == "Money" then
-		-- Give money
 		DataHandler:Increment(player, "Money", rewardValue)
 		rewardMessage = string.format("$%d", rewardValue)
 
 	elseif rewardType == "Summit" then
-		-- ✅ Give summit value
 		DataHandler:Increment(player, "TotalSummits", rewardValue)
 
-		-- ✅ UPDATE PLAYERSTATS (like CheckpointSystem does)
 		local playerStats = player:FindFirstChild("PlayerStats")
 		if playerStats then
 			local summitValue = playerStats:FindFirstChild("Summit")
@@ -360,7 +322,6 @@ redeemCodeEvent.OnServerEvent:Connect(function(player, codeString)
 
 		rewardMessage = string.format("+%d Summit Value", rewardValue)
 
-		-- ✅ TRIGGER LEADERBOARD UPDATE (optional but recommended)
 		task.spawn(function()
 			task.wait(1)
 			local CheckpointSystem = require(game.ServerScriptService:WaitForChild("CheckpointSystem"))
@@ -368,15 +329,12 @@ redeemCodeEvent.OnServerEvent:Connect(function(player, codeString)
 		end)
 	end
 
-	-- ✅ UPDATE CODE DATA (INCREMENT USES)
 	codeData.CurrentUses = codeData.CurrentUses + 1
 	saveCodeData(codeString, codeData)
 
-	-- Mark as redeemed for this player
 	DataHandler:AddToArray(player, "RedeemedCodes", codeString)
 	DataHandler:SavePlayer(player)
 
-	-- Send success notification
 	NotificationService:Send(player, {
 		Message = string.format("Code redeemed! You received: %s", rewardMessage),
 		Type = "success",
@@ -384,11 +342,9 @@ redeemCodeEvent.OnServerEvent:Connect(function(player, codeString)
 		Icon = "🎁"
 	})
 
-	print(string.format("🎁 [REDEEM] %s redeemed code: %s (%s: %s) [%d/%d]", 
+	print(string.format("🎁 [REDEEM] %s redeemed code: %s (%s: %s) [%d/%d]",
 		player.Name, codeString, rewardType, tostring(rewardValue), codeData.CurrentUses, codeData.MaxUses))
 end)
-
--- ==================== GET REWARD OPTIONS ====================
 
 getRewardOptionsFunc.OnServerInvoke = function(player, rewardType)
 	if not isAdmin(player) then return {} end
@@ -398,7 +354,6 @@ getRewardOptionsFunc.OnServerInvoke = function(player, rewardType)
 	if rewardType == "Title" then
 		local titles = {}
 
-		-- ✅ SummitTitles
 		if TitleConfig.SummitTitles then
 			for _, title in ipairs(TitleConfig.SummitTitles) do
 				table.insert(titles, {
@@ -409,7 +364,6 @@ getRewardOptionsFunc.OnServerInvoke = function(player, rewardType)
 			end
 		end
 
-		-- ✅ SpecialTitles (kecuali Admin)
 		if TitleConfig.SpecialTitles then
 			for titleId, titleData in pairs(TitleConfig.SpecialTitles) do
 				if titleId ~= "Admin" then
@@ -497,8 +451,6 @@ getRewardOptionsFunc.OnServerInvoke = function(player, rewardType)
 	warn(string.format("⚠️ [REDEEM] Unknown reward type: %s", rewardType))
 	return {}
 end
-
--- ==================== GET ALL CODES (ADMIN ONLY) ====================
 
 getAllCodesFunc.OnServerInvoke = function(player)
 	if not isAdmin(player) then return {} end

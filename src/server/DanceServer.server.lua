@@ -1,15 +1,7 @@
---[[
-    DANCE SYSTEM SERVER (MERGED - COMPLETE WITH FAVORITES)
-    Place in ServerScriptService/DanceServer
-]]
-
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
--- ==================== CREATE REMOTEEVENTS ====================
-
--- DanceComm folder (for animation sync)
 local danceComm = ReplicatedStorage:FindFirstChild("DanceComm")
 if not danceComm then
 	danceComm = Instance.new("Folder")
@@ -52,7 +44,6 @@ if not SetSpeedEvent then
 	SetSpeedEvent.Parent = danceComm
 end
 
--- DanceRemotes folder (for coordinate dance & UI)
 local remoteFolder = ReplicatedStorage:FindFirstChild("DanceRemotes")
 if not remoteFolder then
 	remoteFolder = Instance.new("Folder")
@@ -95,7 +86,6 @@ if not stopDanceEvent then
 	stopDanceEvent.Parent = remoteFolder
 end
 
--- ✅ FAVORITES REMOTES
 local toggleFavoriteEvent = remoteFolder:FindFirstChild("ToggleFavorite")
 if not toggleFavoriteEvent then
 	toggleFavoriteEvent = Instance.new("RemoteEvent")
@@ -112,8 +102,6 @@ end
 
 print("✅ [DANCE SERVER] RemoteEvents created")
 
--- ==================== STATE TRACKING ====================
-
 local PlayerAnims = {}
 local PlayerSpeeds = {}
 local SynchronizedPlayer = {}
@@ -122,8 +110,6 @@ local playerDances = {}
 local coordinateDanceGroups = {}
 local playerToLeader = {}
 local pendingCoordinates = {}
-
--- ==================== ANIMATION SYNC FUNCTIONS ====================
 
 local function PlayAnim(player, data, synchronizedPlayer)
 	if data == nil then return end
@@ -140,7 +126,7 @@ local function PlayAnim(player, data, synchronizedPlayer)
 		end
 	end
 
-	print(string.format("💃 [DANCE SERVER] %s started dancing (sync: %s)", 
+	print(string.format("💃 [DANCE SERVER] %s started dancing (sync: %s)",
 		player.Name, synchronizedPlayer and synchronizedPlayer.Name or "none"))
 end
 
@@ -191,9 +177,9 @@ local function SyncDance(player, synchronizedPlayer)
 	while SynchronizedPlayer[targetPlayer] ~= nil do
 		targetPlayer = SynchronizedPlayer[targetPlayer]
 	end
-	if PlayerAnims[targetPlayer] == nil then 
+	if PlayerAnims[targetPlayer] == nil then
 		print(string.format("⚠️ [DANCE SERVER] %s is not dancing, cannot sync", targetPlayer.Name))
-		return 
+		return
 	end
 
 	PlayAnim(player, PlayerAnims[targetPlayer], targetPlayer)
@@ -209,8 +195,6 @@ local function UnsyncDance(player)
 
 	print(string.format("🔓 [DANCE SERVER] %s unsynchronized", player.Name))
 end
-
--- ==================== COORDINATE DANCE FUNCTIONS ====================
 
 local function getPlayerDanceData(player)
 	if playerDances[player] then
@@ -328,8 +312,6 @@ RunService.Heartbeat:Connect(function()
 	end
 end)
 
--- ==================== EVENT CONNECTIONS ====================
-
 StartDance.OnServerEvent:Connect(function(player, data)
 	PlayAnim(player, data, SynchronizedPlayer[player])
 
@@ -367,7 +349,7 @@ UnsyncDanceEvent.OnServerEvent:Connect(function(player)
 end)
 
 updateDanceEvent.OnServerEvent:Connect(function(player, animData, speed)
-	print(string.format("📝 [DANCE SERVER] Update dance: %s (%s, speed: %.2f)", 
+	print(string.format("📝 [DANCE SERVER] Update dance: %s (%s, speed: %.2f)",
 		player.Name, animData and animData.Title or "NIL", speed))
 
 	playerDances[player] = {
@@ -403,8 +385,6 @@ stopCoordinateDanceEvent.OnServerEvent:Connect(function(follower)
 	stopCoordinateDance(follower)
 end)
 
--- ==================== FAVORITES SYSTEM (NEW!) ====================
-
 toggleFavoriteEvent.OnServerEvent:Connect(function(player, danceTitle)
 	if not player or not player.Parent or not danceTitle then return end
 
@@ -413,12 +393,10 @@ toggleFavoriteEvent.OnServerEvent:Connect(function(player, danceTitle)
 	local isFavorite = DataHandler:ArrayContains(player, "FavoriteDances", danceTitle)
 
 	if isFavorite then
-		-- Remove from favorites
 		DataHandler:RemoveFromArray(player, "FavoriteDances", danceTitle)
 		DataHandler:SavePlayer(player)
 		print(string.format("💃 [DANCE SERVER] %s removed favorite: %s", player.Name, danceTitle))
 	else
-		-- Add to favorites
 		DataHandler:AddToArray(player, "FavoriteDances", danceTitle)
 		DataHandler:SavePlayer(player)
 		print(string.format("💃 [DANCE SERVER] %s added favorite: %s", player.Name, danceTitle))
@@ -435,8 +413,6 @@ getFavoritesFunc.OnServerInvoke = function(player)
 
 	return {}
 end
-
--- ==================== CLEANUP ON PLAYER LEAVE ====================
 
 Players.PlayerRemoving:Connect(function(player)
 	PlayerAnims[player] = nil

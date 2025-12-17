@@ -1,8 +1,3 @@
---[[
-    SHOP SYSTEM CLIENT - COMPLETE & FINAL FIXED
-    Place in StarterPlayerScripts
-]]
-
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local MarketplaceService = game:GetService("MarketplaceService")
@@ -23,7 +18,6 @@ local purchaseGamepassEvent = remoteFolder:WaitForChild("PurchaseGamepass")
 local purchaseMoneyPackEvent = remoteFolder:WaitForChild("PurchaseMoneyPack")
 local updatePlayerDataEvent = remoteFolder:WaitForChild("UpdatePlayerData")
 
--- ==================== CONSTANTS ====================
 local COLORS = {
 	Background = Color3.fromRGB(20, 20, 23),
 	Panel = Color3.fromRGB(25, 25, 28),
@@ -40,7 +34,6 @@ local COLORS = {
 	Premium = Color3.fromRGB(255, 215, 0),
 }
 
--- State - Initialize with empty tables
 local currentMoney = 0
 local ownedAuras = {}
 local ownedTools = {}
@@ -49,7 +42,6 @@ local currentTab = "Auras"
 local currentAuraFilter = "All"
 local currentToolFilter = "All"
 
--- ==================== HELPER FUNCTIONS ====================
 local function createCorner(radius)
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0, radius)
@@ -74,7 +66,6 @@ local function formatMoney(amount)
 	end
 end
 
--- ✅ Helper: Create adaptive text with TextScaled and UITextSizeConstraint
 local function makeTextAdaptive(textLabel, maxTextSize)
 	textLabel.TextScaled = true
 	local constraint = Instance.new("UITextSizeConstraint")
@@ -82,7 +73,6 @@ local function makeTextAdaptive(textLabel, maxTextSize)
 	constraint.Parent = textLabel
 end
 
--- ✅ Helper: Add UIAspectRatioConstraint to main frames
 local function addAspectRatio(frame, ratio)
 	local aspectRatio = Instance.new("UIAspectRatioConstraint")
 	aspectRatio.AspectRatio = ratio or 0.8
@@ -90,7 +80,6 @@ local function addAspectRatio(frame, ratio)
 	aspectRatio.Parent = frame
 end
 
--- ✅ Helper: Tween Size with animation
 local function tweenSize(object, endSize, time, callback)
 	local tweenInfo = TweenInfo.new(time or 0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
 	local tween = TweenService:Create(object, tweenInfo, {Size = endSize})
@@ -109,7 +98,6 @@ local function showNotification(message, color)
 	})
 end
 
--- ==================== CREATE GUI ====================
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "ShopGUI"
 screenGui.ResetOnSpawn = false
@@ -117,10 +105,9 @@ screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 screenGui.Enabled = false
 screenGui.Parent = playerGui
 
--- Main Panel (✅ FULLY ADAPTIVE)
 local mainPanel = Instance.new("Frame")
 mainPanel.Name = "MainPanel"
-mainPanel.Size = UDim2.new(0.7, 0, 0.9, 0)  -- ✅ Scale-based yang lebih besar
+mainPanel.Size = UDim2.new(0.7, 0, 0.9, 0)
 mainPanel.Position = UDim2.new(0.5, 0, 0.5, 0)
 mainPanel.AnchorPoint = Vector2.new(0.5, 0.5)
 mainPanel.BackgroundColor3 = COLORS.Background
@@ -131,12 +118,11 @@ mainPanel.Parent = screenGui
 
 createCorner(15).Parent = mainPanel
 createStroke(COLORS.Border, 2).Parent = mainPanel
-addAspectRatio(mainPanel, 1.3)  -- ✅ AspectRatio dengan DominantAxis = Width
+addAspectRatio(mainPanel, 1.3)
 
--- Header (✅ SCALE-BASED)
 local header = Instance.new("Frame")
 header.Name = "Header"
-header.Size = UDim2.new(1, 0, 0.1, 0)  -- ✅ Scale-based
+header.Size = UDim2.new(1, 0, 0.1, 0)
 header.BackgroundColor3 = COLORS.Panel
 header.BorderSizePixel = 0
 header.Parent = mainPanel
@@ -144,8 +130,8 @@ header.Parent = mainPanel
 createCorner(15).Parent = header
 
 local headerBottom = Instance.new("Frame")
-headerBottom.Size = UDim2.new(1, 0, 0.3, 0)  -- ✅ Scale-based
-headerBottom.Position = UDim2.new(0, 0, 0.7, 0)  -- ✅ Scale-based
+headerBottom.Size = UDim2.new(1, 0, 0.3, 0)
+headerBottom.Position = UDim2.new(0, 0, 0.7, 0)
 headerBottom.BackgroundColor3 = COLORS.Panel
 headerBottom.BorderSizePixel = 0
 headerBottom.Parent = header
@@ -159,12 +145,11 @@ headerTitle.Text = "SHOP"
 headerTitle.TextColor3 = COLORS.Text
 headerTitle.TextXAlignment = Enum.TextXAlignment.Left
 headerTitle.Parent = header
-makeTextAdaptive(headerTitle, 20)  -- ✅ Adaptive text
+makeTextAdaptive(headerTitle, 20)
 
--- Money Display in Header
 local moneyFrame = Instance.new("Frame")
-moneyFrame.Size = UDim2.new(0.25, 0, 0.583, 0)  -- 200/800, 35/60
-moneyFrame.Position = UDim2.new(0.575, 0, 0.5, 0)  -- (800-340)/800
+moneyFrame.Size = UDim2.new(0.25, 0, 0.583, 0)
+moneyFrame.Position = UDim2.new(0.575, 0, 0.5, 0)
 moneyFrame.AnchorPoint = Vector2.new(0, 0.5)
 moneyFrame.BackgroundColor3 = COLORS.Background
 moneyFrame.BorderSizePixel = 0
@@ -173,7 +158,7 @@ moneyFrame.Parent = header
 createCorner(8).Parent = moneyFrame
 
 local moneyIcon = Instance.new("ImageLabel")
-moneyIcon.Size = UDim2.new(0.12, 0, 0.686, 0)  -- 24/200, 24/35
+moneyIcon.Size = UDim2.new(0.12, 0, 0.686, 0)
 moneyIcon.Position = UDim2.new(0.95, 0, 0.5, 0)
 moneyIcon.AnchorPoint = Vector2.new(1, 0.5)
 moneyIcon.BackgroundTransparency = 1
@@ -190,7 +175,7 @@ moneyLabel.Text = "$0"
 moneyLabel.TextColor3 = COLORS.Success
 moneyLabel.TextXAlignment = Enum.TextXAlignment.Left
 moneyLabel.Parent = moneyFrame
-makeTextAdaptive(moneyLabel, 16)  -- ✅ Adaptive text
+makeTextAdaptive(moneyLabel, 16)
 
 local addMoneyBtn = Instance.new("TextButton")
 addMoneyBtn.Size = UDim2.new(0.044, 0, 0.583, 0)
@@ -202,11 +187,10 @@ addMoneyBtn.Text = "+"
 addMoneyBtn.Font = Enum.Font.GothamBold
 addMoneyBtn.TextColor3 = COLORS.Text
 addMoneyBtn.Parent = header
-makeTextAdaptive(addMoneyBtn, 20)  -- ✅ Adaptive text
+makeTextAdaptive(addMoneyBtn, 20)
 
 createCorner(8).Parent = addMoneyBtn
 
--- Close Button (✅ SCALE-BASED)
 local closeBtn = Instance.new("TextButton")
 closeBtn.Size = UDim2.new(0.05, 0, 0.667, 0)
 closeBtn.Position = UDim2.new(0.95, 0, 0.5, 0)
@@ -217,36 +201,33 @@ closeBtn.Text = "✕"
 closeBtn.Font = Enum.Font.GothamBold
 closeBtn.TextColor3 = COLORS.Text
 closeBtn.Parent = header
-makeTextAdaptive(closeBtn, 20)  -- ✅ Adaptive text
+makeTextAdaptive(closeBtn, 20)
 
 createCorner(10).Parent = closeBtn
 
--- Tab Frame (✅ SCALE-BASED)
 local tabFrame = Instance.new("Frame")
-tabFrame.Size = UDim2.new(0.94, 0, 0.07, 0)  -- ✅ Scale-based
-tabFrame.Position = UDim2.new(0.03, 0, 0.12, 0)  -- ✅ Scale-based
+tabFrame.Size = UDim2.new(0.94, 0, 0.07, 0)
+tabFrame.Position = UDim2.new(0.03, 0, 0.12, 0)
 tabFrame.BackgroundTransparency = 1
 tabFrame.Parent = mainPanel
 
 local tabLayout = Instance.new("UIListLayout")
 tabLayout.FillDirection = Enum.FillDirection.Horizontal
-tabLayout.Padding = UDim.new(0.015, 0)  -- ✅ Scale-based
+tabLayout.Padding = UDim.new(0.015, 0)
 tabLayout.SortOrder = Enum.SortOrder.LayoutOrder
 tabLayout.Parent = tabFrame
 
--- Content Frame (✅ SCALE-BASED)
 local contentFrame = Instance.new("Frame")
-contentFrame.Size = UDim2.new(0.94, 0, 0.78, 0)  -- ✅ Scale-based
-contentFrame.Position = UDim2.new(0.03, 0, 0.2, 0)  -- ✅ Scale-based
+contentFrame.Size = UDim2.new(0.94, 0, 0.78, 0)
+contentFrame.Position = UDim2.new(0.03, 0, 0.2, 0)
 contentFrame.BackgroundTransparency = 1
 contentFrame.Parent = mainPanel
 
--- ==================== TAB CREATION ====================
 local tabs = {}
 
 local function createTab(tabName, order)
 	local tab = Instance.new("TextButton")
-	tab.Size = UDim2.new(0.22, 0, 1, 0)  -- ✅ Scale-based
+	tab.Size = UDim2.new(0.22, 0, 1, 0)
 	tab.BackgroundColor3 = tabName == "Auras" and COLORS.Accent or COLORS.Button
 	tab.BorderSizePixel = 0
 	tab.Font = Enum.Font.GothamBold
@@ -257,9 +238,8 @@ local function createTab(tabName, order)
 	tab.Parent = tabFrame
 
 	createCorner(8).Parent = tab
-	makeTextAdaptive(tab, 14)  -- ✅ Adaptive text
+	makeTextAdaptive(tab, 14)
 
-	-- Content container
 	local content = Instance.new("Frame")
 	content.Name = tabName .. "Content"
 	content.Size = UDim2.new(1, 0, 1, 0)
@@ -270,13 +250,11 @@ local function createTab(tabName, order)
 	tabs[tabName] = {Button = tab, Content = content}
 
 	tab.MouseButton1Click:Connect(function()
-		-- Hide all tabs
 		for _, tabData in pairs(tabs) do
 			tabData.Content.Visible = false
 			tabData.Button.BackgroundColor3 = COLORS.Button
 		end
 
-		-- Show selected tab
 		content.Visible = true
 		tab.BackgroundColor3 = COLORS.Accent
 		currentTab = tabName
@@ -285,14 +263,11 @@ local function createTab(tabName, order)
 	return content
 end
 
--- Create tabs
 local aurasContent = createTab("Auras", 1)
 local toolsContent = createTab("Tools", 2)
 local gamepassesContent = createTab("Gamepasses", 3)
 local moneyContent = createTab("Money", 4)
 
--- ==================== AURAS TAB ====================
--- Filter Frame
 local auraFilterFrame = Instance.new("Frame")
 auraFilterFrame.Size = UDim2.new(1, 0, 0.092, 0)
 auraFilterFrame.BackgroundTransparency = 1
@@ -305,7 +280,7 @@ auraFilterLayout.Parent = auraFilterFrame
 
 local function createFilterBtn(text, filter)
 	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0.2, 0, 1, 0)  -- ✅ Scale-based
+	btn.Size = UDim2.new(0.2, 0, 1, 0)
 	btn.BackgroundColor3 = filter == "All" and COLORS.Accent or COLORS.Button
 	btn.BorderSizePixel = 0
 	btn.Font = Enum.Font.GothamBold
@@ -315,7 +290,7 @@ local function createFilterBtn(text, filter)
 	btn.Parent = auraFilterFrame
 
 	createCorner(6).Parent = btn
-	makeTextAdaptive(btn, 13)  -- ✅ Adaptive text
+	makeTextAdaptive(btn, 13)
 
 	btn.MouseButton1Click:Connect(function()
 		currentAuraFilter = filter
@@ -335,9 +310,8 @@ createFilterBtn("All", "All")
 createFilterBtn("Premium", "Premium")
 createFilterBtn("Normal", "Normal")
 
--- Auras Scroll
 local aurasScroll = Instance.new("ScrollingFrame")
-aurasScroll.Size = UDim2.new(1, 0, 0.882, 0)  -- (380-45)/380
+aurasScroll.Size = UDim2.new(1, 0, 0.882, 0)
 aurasScroll.Position = UDim2.new(0, 0, 0.118, 0)
 aurasScroll.BackgroundTransparency = 1
 aurasScroll.BorderSizePixel = 0
@@ -348,23 +322,21 @@ aurasScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 aurasScroll.Parent = aurasContent
 
 local aurasGrid = Instance.new("UIGridLayout")
-aurasGrid.CellSize = UDim2.new(0.312, 0, 0.737, 0)  -- 240/770, 280/380
-aurasGrid.CellPadding = UDim2.new(0.013, 0, 0.026, 0)  -- 10/770, 10/380
+aurasGrid.CellSize = UDim2.new(0.312, 0, 0.737, 0)
+aurasGrid.CellPadding = UDim2.new(0.013, 0, 0.026, 0)
 aurasGrid.SortOrder = Enum.SortOrder.LayoutOrder
 aurasGrid.Parent = aurasScroll
 
 local aurasEmptyLabel = Instance.new("TextLabel")
-aurasEmptyLabel.Size = UDim2.new(1, 0, 0.25, 0)  -- ✅ Scale-based
+aurasEmptyLabel.Size = UDim2.new(1, 0, 0.25, 0)
 aurasEmptyLabel.BackgroundTransparency = 1
 aurasEmptyLabel.Font = Enum.Font.Gotham
 aurasEmptyLabel.Text = "Kamu sudah membeli semua aura, Terimakasih"
 aurasEmptyLabel.TextColor3 = COLORS.TextSecondary
 aurasEmptyLabel.Visible = false
 aurasEmptyLabel.Parent = aurasScroll
-makeTextAdaptive(aurasEmptyLabel, 14)  -- ✅ Adaptive text
+makeTextAdaptive(aurasEmptyLabel, 14)
 
--- ==================== TOOLS TAB ====================
--- Filter Frame
 local toolFilterFrame = Instance.new("Frame")
 toolFilterFrame.Size = UDim2.new(1, 0, 0.092, 0)
 toolFilterFrame.BackgroundTransparency = 1
@@ -372,12 +344,12 @@ toolFilterFrame.Parent = toolsContent
 
 local toolFilterLayout = Instance.new("UIListLayout")
 toolFilterLayout.FillDirection = Enum.FillDirection.Horizontal
-toolFilterLayout.Padding = UDim.new(0.02, 0)  -- ✅ Scale-based
+toolFilterLayout.Padding = UDim.new(0.02, 0)
 toolFilterLayout.Parent = toolFilterFrame
 
 local function createToolFilterBtn(text, filter)
 	local btn = Instance.new("TextButton")
-	btn.Size = UDim2.new(0.2, 0, 1, 0)  -- ✅ Scale-based
+	btn.Size = UDim2.new(0.2, 0, 1, 0)
 	btn.BackgroundColor3 = filter == "All" and COLORS.Accent or COLORS.Button
 	btn.BorderSizePixel = 0
 	btn.Font = Enum.Font.GothamBold
@@ -387,7 +359,7 @@ local function createToolFilterBtn(text, filter)
 	btn.Parent = toolFilterFrame
 
 	createCorner(6).Parent = btn
-	makeTextAdaptive(btn, 13)  -- ✅ Adaptive text
+	makeTextAdaptive(btn, 13)
 
 	btn.MouseButton1Click:Connect(function()
 		currentToolFilter = filter
@@ -407,7 +379,6 @@ createToolFilterBtn("All", "All")
 createToolFilterBtn("Premium", "Premium")
 createToolFilterBtn("Normal", "Normal")
 
--- Tools Scroll
 local toolsScroll = Instance.new("ScrollingFrame")
 toolsScroll.Size = UDim2.new(1, 0, 0.882, 0)
 toolsScroll.Position = UDim2.new(0, 0, 0.118, 0)
@@ -426,16 +397,15 @@ toolsGrid.SortOrder = Enum.SortOrder.LayoutOrder
 toolsGrid.Parent = toolsScroll
 
 local toolsEmptyLabel = Instance.new("TextLabel")
-toolsEmptyLabel.Size = UDim2.new(1, 0, 0.25, 0)  -- ✅ Scale-based
+toolsEmptyLabel.Size = UDim2.new(1, 0, 0.25, 0)
 toolsEmptyLabel.BackgroundTransparency = 1
 toolsEmptyLabel.Font = Enum.Font.Gotham
 toolsEmptyLabel.Text = "Kamu sudah membeli semua tools, Terimakasih"
 toolsEmptyLabel.TextColor3 = COLORS.TextSecondary
 toolsEmptyLabel.Visible = false
 toolsEmptyLabel.Parent = toolsScroll
-makeTextAdaptive(toolsEmptyLabel, 14)  -- ✅ Adaptive text
+makeTextAdaptive(toolsEmptyLabel, 14)
 
--- ==================== GAMEPASSES TAB ====================
 local gamepassScroll = Instance.new("ScrollingFrame")
 gamepassScroll.Size = UDim2.new(1, 0, 1, 0)
 gamepassScroll.BackgroundTransparency = 1
@@ -448,7 +418,7 @@ gamepassScroll.ScrollingDirection = Enum.ScrollingDirection.X
 gamepassScroll.Parent = gamepassesContent
 
 local gamepassLayout = Instance.new("UIListLayout")
-gamepassLayout.Padding = UDim.new(0.02, 0)  -- ✅ Scale-based
+gamepassLayout.Padding = UDim.new(0.02, 0)
 gamepassLayout.FillDirection = Enum.FillDirection.Horizontal
 gamepassLayout.SortOrder = Enum.SortOrder.LayoutOrder
 gamepassLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
@@ -456,22 +426,21 @@ gamepassLayout.VerticalAlignment = Enum.VerticalAlignment.Top
 gamepassLayout.Parent = gamepassScroll
 
 local gamepassPadding = Instance.new("UIPadding")
-gamepassPadding.PaddingLeft = UDim.new(0.01, 0)  -- ✅ Scale-based
+gamepassPadding.PaddingLeft = UDim.new(0.01, 0)
 gamepassPadding.PaddingRight = UDim.new(0.01, 0)
 gamepassPadding.PaddingTop = UDim.new(0.01, 0)
 gamepassPadding.Parent = gamepassScroll
 
 local gamepassEmptyLabel = Instance.new("TextLabel")
-gamepassEmptyLabel.Size = UDim2.new(1, 0, 0.25, 0)  -- ✅ Scale-based
+gamepassEmptyLabel.Size = UDim2.new(1, 0, 0.25, 0)
 gamepassEmptyLabel.BackgroundTransparency = 1
 gamepassEmptyLabel.Font = Enum.Font.Gotham
 gamepassEmptyLabel.Text = "Kamu sudah membeli semua gamepass, Terimakasih"
 gamepassEmptyLabel.TextColor3 = COLORS.TextSecondary
 gamepassEmptyLabel.Visible = false
 gamepassEmptyLabel.Parent = gamepassScroll
-makeTextAdaptive(gamepassEmptyLabel, 14)  -- ✅ Adaptive text
+makeTextAdaptive(gamepassEmptyLabel, 14)
 
--- ==================== MONEY TAB ====================
 local moneyScroll = Instance.new("ScrollingFrame")
 moneyScroll.Size = UDim2.new(1, 0, 1, 0)
 moneyScroll.BackgroundTransparency = 1
@@ -484,7 +453,7 @@ moneyScroll.ScrollingDirection = Enum.ScrollingDirection.X
 moneyScroll.Parent = moneyContent
 
 local moneyLayout = Instance.new("UIListLayout")
-moneyLayout.Padding = UDim.new(0.02, 0)  -- ✅ Scale-based
+moneyLayout.Padding = UDim.new(0.02, 0)
 moneyLayout.FillDirection = Enum.FillDirection.Horizontal
 moneyLayout.SortOrder = Enum.SortOrder.LayoutOrder
 moneyLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
@@ -492,12 +461,10 @@ moneyLayout.VerticalAlignment = Enum.VerticalAlignment.Top
 moneyLayout.Parent = moneyScroll
 
 local moneyPadding = Instance.new("UIPadding")
-moneyPadding.PaddingLeft = UDim.new(0.01, 0)  -- ✅ Scale-based
+moneyPadding.PaddingLeft = UDim.new(0.01, 0)
 moneyPadding.PaddingRight = UDim.new(0.01, 0)
 moneyPadding.PaddingTop = UDim.new(0.01, 0)
 moneyPadding.Parent = moneyScroll
-
--- ==================== ITEM CREATION FUNCTIONS ====================
 
 local function createAuraItem(auraData)
 	local frame = Instance.new("Frame")
@@ -507,7 +474,6 @@ local function createAuraItem(auraData)
 
 	createCorner(10).Parent = frame
 
-	-- Thumbnail
 	local thumbnail = Instance.new("ImageLabel")
 	thumbnail.Size = UDim2.new(0.917, 0, 0.5, 0)
 	thumbnail.Position = UDim2.new(0.042, 0, 0.036, 0)
@@ -518,7 +484,6 @@ local function createAuraItem(auraData)
 
 	createCorner(8).Parent = thumbnail
 
-	-- Premium Badge
 	if auraData.IsPremium then
 		local badge = Instance.new("Frame")
 		badge.Size = UDim2.new(0.364, 0, 0.171, 0)
@@ -536,10 +501,9 @@ local function createAuraItem(auraData)
 		badgeLabel.Text = "PREMIUM"
 		badgeLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
 		badgeLabel.Parent = badge
-		makeTextAdaptive(badgeLabel, 11)  -- ✅ Adaptive text
+		makeTextAdaptive(badgeLabel, 11)
 	end
 
-	-- Title
 	local titleLabel = Instance.new("TextLabel")
 	titleLabel.Size = UDim2.new(0.943, 0, 0.079, 0)
 	titleLabel.Position = UDim2.new(0.029, 0, 0.474, 0)
@@ -550,9 +514,8 @@ local function createAuraItem(auraData)
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 	titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	titleLabel.Parent = frame
-	makeTextAdaptive(titleLabel, 14)  -- ✅ Adaptive text
+	makeTextAdaptive(titleLabel, 14)
 
-	-- Price
 	local priceLabel = Instance.new("TextLabel")
 	priceLabel.Size = UDim2.new(0.917, 0, 0.071, 0)
 	priceLabel.Position = UDim2.new(0.042, 0, 0.679, 0)
@@ -562,9 +525,8 @@ local function createAuraItem(auraData)
 	priceLabel.TextColor3 = auraData.IsPremium and COLORS.Premium or COLORS.Success
 	priceLabel.TextXAlignment = Enum.TextXAlignment.Left
 	priceLabel.Parent = frame
-	makeTextAdaptive(priceLabel, 16)  -- ✅ Adaptive text
+	makeTextAdaptive(priceLabel, 16)
 
-	-- Buy Button
 	local buyBtn = Instance.new("TextButton")
 	buyBtn.Size = UDim2.new(0.917, 0, 0.161, 0)
 	buyBtn.Position = UDim2.new(0.042, 0, 0.804, 0)
@@ -575,21 +537,18 @@ local function createAuraItem(auraData)
 	buyBtn.TextColor3 = COLORS.Text
 	buyBtn.AutoButtonColor = false
 	buyBtn.Parent = frame
-	makeTextAdaptive(buyBtn, 15)  -- ✅ Adaptive text
+	makeTextAdaptive(buyBtn, 15)
 
 	createCorner(8).Parent = buyBtn
 
-	-- Bagian buy button di createAuraItem
 	buyBtn.MouseButton1Click:Connect(function()
 		if auraData.IsPremium then
-			-- Premium purchase with Robux
 			if not auraData.ProductId or auraData.ProductId == 0 then
 				showNotification("Product ID not set!", COLORS.Danger)
 			else
 				purchaseItemEvent:FireServer("Aura", auraData.AuraId, auraData.Price, true, auraData.ProductId)
 			end
 		else
-			-- In-game money purchase
 			if currentMoney >= auraData.Price then
 				purchaseItemEvent:FireServer("Aura", auraData.AuraId, auraData.Price, false, nil)
 				showNotification("Purchased: " .. auraData.Title, COLORS.Success)
@@ -598,7 +557,6 @@ local function createAuraItem(auraData)
 			end
 		end
 	end)
-
 
 	return frame
 end
@@ -611,7 +569,6 @@ local function createToolItem(toolData)
 
 	createCorner(10).Parent = frame
 
-	-- Thumbnail
 	local thumbnail = Instance.new("ImageLabel")
 	thumbnail.Size = UDim2.new(0.917, 0, 0.5, 0)
 	thumbnail.Position = UDim2.new(0.042, 0, 0.036, 0)
@@ -622,7 +579,6 @@ local function createToolItem(toolData)
 
 	createCorner(8).Parent = thumbnail
 
-	-- Premium Badge
 	if toolData.IsPremium then
 		local badge = Instance.new("Frame")
 		badge.Size = UDim2.new(0.364, 0, 0.171, 0)
@@ -640,10 +596,9 @@ local function createToolItem(toolData)
 		badgeLabel.Text = "PREMIUM"
 		badgeLabel.TextColor3 = Color3.fromRGB(0, 0, 0)
 		badgeLabel.Parent = badge
-		makeTextAdaptive(badgeLabel, 11)  -- ✅ Adaptive text
+		makeTextAdaptive(badgeLabel, 11)
 	end
 
-	-- Title
 	local titleLabel = Instance.new("TextLabel")
 	titleLabel.Size = UDim2.new(0.917, 0, 0.089, 0)
 	titleLabel.Position = UDim2.new(0.042, 0, 0.571, 0)
@@ -654,9 +609,8 @@ local function createToolItem(toolData)
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 	titleLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	titleLabel.Parent = frame
-	makeTextAdaptive(titleLabel, 14)  -- ✅ Adaptive text
+	makeTextAdaptive(titleLabel, 14)
 
-	-- Price
 	local priceLabel = Instance.new("TextLabel")
 	priceLabel.Size = UDim2.new(0.917, 0, 0.071, 0)
 	priceLabel.Position = UDim2.new(0.042, 0, 0.679, 0)
@@ -666,9 +620,8 @@ local function createToolItem(toolData)
 	priceLabel.TextColor3 = toolData.IsPremium and COLORS.Premium or COLORS.Success
 	priceLabel.TextXAlignment = Enum.TextXAlignment.Left
 	priceLabel.Parent = frame
-	makeTextAdaptive(priceLabel, 16)  -- ✅ Adaptive text
+	makeTextAdaptive(priceLabel, 16)
 
-	-- Buy Button
 	local buyBtn = Instance.new("TextButton")
 	buyBtn.Size = UDim2.new(0.917, 0, 0.161, 0)
 	buyBtn.Position = UDim2.new(0.042, 0, 0.804, 0)
@@ -679,21 +632,18 @@ local function createToolItem(toolData)
 	buyBtn.TextColor3 = COLORS.Text
 	buyBtn.AutoButtonColor = false
 	buyBtn.Parent = frame
-	makeTextAdaptive(buyBtn, 15)  -- ✅ Adaptive text
+	makeTextAdaptive(buyBtn, 15)
 
 	createCorner(8).Parent = buyBtn
 
-	-- Bagian buy button di createToolItem
 	buyBtn.MouseButton1Click:Connect(function()
 		if toolData.IsPremium then
-			-- Premium purchase with Robux
 			if not toolData.ProductId or toolData.ProductId == 0 then
 				showNotification("Product ID not set!", COLORS.Danger)
 			else
 				purchaseItemEvent:FireServer("Tool", toolData.ToolId, toolData.Price, true, toolData.ProductId)
 			end
 		else
-			-- In-game money purchase
 			if currentMoney >= toolData.Price then
 				purchaseItemEvent:FireServer("Tool", toolData.ToolId, toolData.Price, false, nil)
 				showNotification("Purchased: " .. toolData.Title, COLORS.Success)
@@ -708,14 +658,13 @@ end
 
 local function createGamepassItem(gamepassData)
 	local frame = Instance.new("Frame")
-	frame.Size = UDim2.new(0.455, 0, 1, 0) -- Kurangi height dari 450 ke 380
+	frame.Size = UDim2.new(0.455, 0, 1, 0)
 	frame.BackgroundColor3 = COLORS.Panel
 	frame.BorderSizePixel = 0
 	frame.Parent = gamepassScroll
 
 	createCorner(10).Parent = frame
 
-	-- Thumbnail
 	local thumbnail = Instance.new("ImageLabel")
 	thumbnail.Size = UDim2.new(0.943, 0, 0.421, 0)
 	thumbnail.Position = UDim2.new(0.029, 0, 0.026, 0)
@@ -726,7 +675,6 @@ local function createGamepassItem(gamepassData)
 
 	createCorner(8).Parent = thumbnail
 
-	-- Title
 	local titleLabel = Instance.new("TextLabel")
 	titleLabel.Size = UDim2.new(0.943, 0, 0.079, 0)
 	titleLabel.Position = UDim2.new(0.029, 0, 0.474, 0)
@@ -736,9 +684,8 @@ local function createGamepassItem(gamepassData)
 	titleLabel.TextColor3 = COLORS.Text
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 	titleLabel.Parent = frame
-	makeTextAdaptive(titleLabel, 18)  -- ✅ Adaptive text
+	makeTextAdaptive(titleLabel, 18)
 
-	-- Description
 	local descLabel = Instance.new("TextLabel")
 	descLabel.Size = UDim2.new(0.943, 0, 0.132, 0)
 	descLabel.Position = UDim2.new(0.029, 0, 0.566, 0)
@@ -750,9 +697,8 @@ local function createGamepassItem(gamepassData)
 	descLabel.TextXAlignment = Enum.TextXAlignment.Left
 	descLabel.TextYAlignment = Enum.TextYAlignment.Top
 	descLabel.Parent = frame
-	makeTextAdaptive(descLabel, 12)  -- ✅ Adaptive text
+	makeTextAdaptive(descLabel, 12)
 
-	-- Price
 	local priceLabel = Instance.new("TextLabel")
 	priceLabel.Size = UDim2.new(0.943, 0, 0.066, 0)
 	priceLabel.Position = UDim2.new(0.029, 0, 0.711, 0)
@@ -762,9 +708,8 @@ local function createGamepassItem(gamepassData)
 	priceLabel.TextColor3 = COLORS.Premium
 	priceLabel.TextXAlignment = Enum.TextXAlignment.Left
 	priceLabel.Parent = frame
-	makeTextAdaptive(priceLabel, 20)  -- ✅ Adaptive text
+	makeTextAdaptive(priceLabel, 20)
 
-	-- Buy Button
 	local buyBtn = Instance.new("TextButton")
 	buyBtn.Size = UDim2.new(0.943, 0, 0.118, 0)
 	buyBtn.Position = UDim2.new(0.029, 0, 0.803, 0)
@@ -775,7 +720,7 @@ local function createGamepassItem(gamepassData)
 	buyBtn.TextColor3 = COLORS.Text
 	buyBtn.AutoButtonColor = false
 	buyBtn.Parent = frame
-	makeTextAdaptive(buyBtn, 16)  -- ✅ Adaptive text
+	makeTextAdaptive(buyBtn, 16)
 
 	createCorner(8).Parent = buyBtn
 
@@ -795,9 +740,8 @@ local function createMoneyPackItem(packData)
 
 	createCorner(10).Parent = frame
 
-	-- Thumbnail
 	local thumbnail = Instance.new("ImageLabel")
-	thumbnail.Size = UDim2.new(0.943, 0, 0.421, 0)  -- (350-20)/350, 160/380
+	thumbnail.Size = UDim2.new(0.943, 0, 0.421, 0)
 	thumbnail.Position = UDim2.new(0.029, 0, 0.026, 0)
 	thumbnail.BackgroundColor3 = COLORS.Button
 	thumbnail.BorderSizePixel = 0
@@ -806,7 +750,6 @@ local function createMoneyPackItem(packData)
 
 	createCorner(8).Parent = thumbnail
 
-	-- Title
 	local titleLabel = Instance.new("TextLabel")
 	titleLabel.Size = UDim2.new(0.929, 0, 0.078, 0)
 	titleLabel.Position = UDim2.new(0.036, 0, 0.556, 0)
@@ -816,9 +759,8 @@ local function createMoneyPackItem(packData)
 	titleLabel.TextColor3 = COLORS.Text
 	titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 	titleLabel.Parent = frame
-	makeTextAdaptive(titleLabel, 16)  -- ✅ Adaptive text
+	makeTextAdaptive(titleLabel, 16)
 
-	-- Reward
 	local rewardLabel = Instance.new("TextLabel")
 	rewardLabel.Size = UDim2.new(0.929, 0, 0.083, 0)
 	rewardLabel.Position = UDim2.new(0.036, 0, 0.647, 0)
@@ -828,9 +770,8 @@ local function createMoneyPackItem(packData)
 	rewardLabel.TextColor3 = COLORS.Success
 	rewardLabel.TextXAlignment = Enum.TextXAlignment.Left
 	rewardLabel.Parent = frame
-	makeTextAdaptive(rewardLabel, 22)  -- ✅ Adaptive text
+	makeTextAdaptive(rewardLabel, 22)
 
-	-- Price
 	local priceLabel = Instance.new("TextLabel")
 	priceLabel.Size = UDim2.new(0.929, 0, 0.061, 0)
 	priceLabel.Position = UDim2.new(0.036, 0, 0.744, 0)
@@ -840,9 +781,8 @@ local function createMoneyPackItem(packData)
 	priceLabel.TextColor3 = COLORS.Premium
 	priceLabel.TextXAlignment = Enum.TextXAlignment.Left
 	priceLabel.Parent = frame
-	makeTextAdaptive(priceLabel, 18)  -- ✅ Adaptive text
+	makeTextAdaptive(priceLabel, 18)
 
-	-- Buy Button
 	local buyBtn = Instance.new("TextButton")
 	buyBtn.Size = UDim2.new(0.943, 0, 0.118, 0)
 	buyBtn.Position = UDim2.new(0.029, 0, 0.803, 0)
@@ -853,7 +793,7 @@ local function createMoneyPackItem(packData)
 	buyBtn.TextColor3 = COLORS.Text
 	buyBtn.AutoButtonColor = false
 	buyBtn.Parent = frame
-	makeTextAdaptive(buyBtn, 16)  -- ✅ Adaptive text
+	makeTextAdaptive(buyBtn, 16)
 
 	createCorner(8).Parent = buyBtn
 
@@ -864,10 +804,7 @@ local function createMoneyPackItem(packData)
 	return frame
 end
 
--- ==================== UPDATE FUNCTIONS ====================
-
 function updateAurasList()
-	-- Clear existing
 	for _, child in ipairs(aurasScroll:GetChildren()) do
 		if child:IsA("Frame") and child ~= aurasEmptyLabel then
 			child:Destroy()
@@ -876,27 +813,23 @@ function updateAurasList()
 
 	local itemsToShow = {}
 
-	-- Safety check
 	if not ShopConfig.Auras or type(ShopConfig.Auras) ~= "table" then
 		aurasEmptyLabel.Visible = true
 		aurasEmptyLabel.Text = "No auras available"
 		return
 	end
 
-	-- Ensure ownedAuras is a table
 	if not ownedAuras or type(ownedAuras) ~= "table" then
 		ownedAuras = {}
 	end
 
 	for _, aura in ipairs(ShopConfig.Auras) do
-		-- Check if already owned (with safety check)
 		local isOwned = false
 		if ownedAuras and type(ownedAuras) == "table" then
 			isOwned = table.find(ownedAuras, aura.AuraId) ~= nil
 		end
 
 		if not isOwned then
-			-- Check filter
 			if currentAuraFilter == "All" then
 				table.insert(itemsToShow, aura)
 			elseif currentAuraFilter == "Premium" and aura.IsPremium then
@@ -918,7 +851,6 @@ function updateAurasList()
 end
 
 function updateToolsList()
-	-- Clear existing
 	for _, child in ipairs(toolsScroll:GetChildren()) do
 		if child:IsA("Frame") and child ~= toolsEmptyLabel then
 			child:Destroy()
@@ -927,27 +859,23 @@ function updateToolsList()
 
 	local itemsToShow = {}
 
-	-- Safety check
 	if not ShopConfig.Tools or type(ShopConfig.Tools) ~= "table" then
 		toolsEmptyLabel.Visible = true
 		toolsEmptyLabel.Text = "No tools available"
 		return
 	end
 
-	-- Ensure ownedTools is a table
 	if not ownedTools or type(ownedTools) ~= "table" then
 		ownedTools = {}
 	end
 
 	for _, tool in ipairs(ShopConfig.Tools) do
-		-- Check if already owned (with safety check)
 		local isOwned = false
 		if ownedTools and type(ownedTools) == "table" then
 			isOwned = table.find(ownedTools, tool.ToolId) ~= nil
 		end
 
 		if not isOwned then
-			-- Check filter
 			if currentToolFilter == "All" then
 				table.insert(itemsToShow, tool)
 			elseif currentToolFilter == "Premium" and tool.IsPremium then
@@ -969,7 +897,6 @@ function updateToolsList()
 end
 
 function updateGamepassesList()
-	-- Clear existing
 	for _, child in ipairs(gamepassScroll:GetChildren()) do
 		if child:IsA("Frame") and child ~= gamepassEmptyLabel then
 			child:Destroy()
@@ -978,20 +905,17 @@ function updateGamepassesList()
 
 	local itemsToShow = {}
 
-	-- Safety check
 	if not ShopConfig.Gamepasses or type(ShopConfig.Gamepasses) ~= "table" then
 		gamepassEmptyLabel.Visible = true
 		gamepassEmptyLabel.Text = "No gamepasses available"
 		return
 	end
 
-	-- Ensure ownedGamepasses is a table
 	if not ownedGamepasses or type(ownedGamepasses) ~= "table" then
 		ownedGamepasses = {}
 	end
 
 	for _, gp in ipairs(ShopConfig.Gamepasses) do
-		-- Check if already owned (with safety check)
 		local isOwned = false
 		if ownedGamepasses and type(ownedGamepasses) == "table" then
 			isOwned = table.find(ownedGamepasses, gp.Name) ~= nil
@@ -1013,14 +937,12 @@ function updateGamepassesList()
 end
 
 function updateMoneyPacksList()
-	-- Clear existing
 	for _, child in ipairs(moneyScroll:GetChildren()) do
 		if child:IsA("Frame") then
 			child:Destroy()
 		end
 	end
 
-	-- Safety check
 	if not ShopConfig.MoneyPacks or type(ShopConfig.MoneyPacks) ~= "table" then
 		return
 	end
@@ -1040,13 +962,11 @@ function refreshShopData()
 	end)
 
 	if success and result then
-		-- Update with default values if nil
 		currentMoney = result.Money or 0
 		ownedAuras = result.OwnedAuras or {}
 		ownedTools = result.OwnedTools or {}
 		ownedGamepasses = result.OwnedGamepasses or {}
 
-		-- Ensure they are tables
 		if type(ownedAuras) ~= "table" then ownedAuras = {} end
 		if type(ownedTools) ~= "table" then ownedTools = {} end
 		if type(ownedGamepasses) ~= "table" then ownedGamepasses = {} end
@@ -1058,7 +978,6 @@ function refreshShopData()
 		updateMoneyPacksList()
 	else
 		warn("Failed to get shop data:", result)
-		-- Set defaults on error
 		ownedAuras = {}
 		ownedTools = {}
 		ownedGamepasses = {}
@@ -1072,15 +991,12 @@ function refreshShopData()
 	end
 end
 
--- ==================== EVENTS ====================
-
 closeBtn.MouseButton1Click:Connect(function()
 	mainPanel.Visible = false
 	screenGui.Enabled = false
 end)
 
 addMoneyBtn.MouseButton1Click:Connect(function()
-	-- Switch to Money tab
 	for _, tabData in pairs(tabs) do
 		tabData.Content.Visible = false
 		tabData.Button.BackgroundColor3 = COLORS.Button
@@ -1091,7 +1007,6 @@ addMoneyBtn.MouseButton1Click:Connect(function()
 	currentTab = "Money"
 end)
 
--- Listen for data updates
 updatePlayerDataEvent.OnClientEvent:Connect(function(data)
 	if not data then return end
 
@@ -1099,13 +1014,11 @@ updatePlayerDataEvent.OnClientEvent:Connect(function(data)
 	ownedAuras = data.OwnedAuras or {}
 	ownedTools = data.OwnedTools or {}
 
-	-- Ensure they are tables
 	if type(ownedAuras) ~= "table" then ownedAuras = {} end
 	if type(ownedTools) ~= "table" then ownedTools = {} end
 
 	updateMoneyDisplay()
 
-	-- Refresh current tab
 	if currentTab == "Auras" then
 		updateAurasList()
 	elseif currentTab == "Tools" then
@@ -1115,7 +1028,6 @@ updatePlayerDataEvent.OnClientEvent:Connect(function(data)
 	end
 end)
 
--- Money value changed
 local moneyValue = player:WaitForChild("Money", 10)
 if moneyValue then
 	moneyValue.Changed:Connect(function(value)
@@ -1123,12 +1035,10 @@ if moneyValue then
 		updateMoneyDisplay()
 	end)
 
-	-- Initial value
 	currentMoney = moneyValue.Value
 	updateMoneyDisplay()
 end
 
--- Drag functionality
 local function makeDraggable(frame, dragHandle)
 	local dragging = false
 	local dragInput, mousePos, framePos
@@ -1158,15 +1068,14 @@ local function makeDraggable(frame, dragHandle)
 			local delta = input.Position - mousePos
 			local viewport = workspace.CurrentCamera.ViewportSize
 
-			-- ✅ Konversi ke scale
 			local deltaScaleX = delta.X / viewport.X
 			local deltaScaleY = delta.Y / viewport.Y
 
 			frame.Position = UDim2.new(
 				framePos.X.Scale + deltaScaleX,
-				0,  -- ✅ Offset = 0
+				0,
 				framePos.Y.Scale + deltaScaleY,
-				0   -- ✅ Offset = 0
+				0
 			)
 		end
 	end)
@@ -1174,7 +1083,6 @@ end
 
 makeDraggable(mainPanel, header)
 
--- ==================== TOPBAR ICON ====================
 local shopIcon = Icon.new()
 	:setImage("rbxassetid://99623444925621")
 	:setLabel("Shop")
@@ -1182,18 +1090,17 @@ local shopIcon = Icon.new()
 		screenGui.Enabled = true
 		mainPanel.Size = UDim2.new(0, 0, 0, 0)
 		mainPanel.Visible = true
-		tweenSize(mainPanel, UDim2.new(0.7, 0, 0.9, 0), 0.3)  -- ✅ Animate open
+		tweenSize(mainPanel, UDim2.new(0.7, 0, 0.9, 0), 0.3)
 		refreshShopData()
 	end)
 	:bindEvent("deselected", function()
 		tweenSize(mainPanel, UDim2.new(0, 0, 0, 0), 0.3, function()
 			mainPanel.Visible = false
-			mainPanel.Size = UDim2.new(0.7, 0, 0.9, 0)  -- ✅ Reset ukuran
+			mainPanel.Size = UDim2.new(0.7, 0, 0.9, 0)
 			screenGui.Enabled = false
 		end)
 	end)
 
--- Initial load with delay
 task.spawn(function()
 	task.wait(2)
 	refreshShopData()

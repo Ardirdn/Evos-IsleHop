@@ -1,11 +1,5 @@
---[[
-    INVENTORY CONFIG
-    Place in ReplicatedStorage/InventoryConfig
-]]
-
 local InventoryConfig = {}
 
--- UI Colors (match dengan sistem lain)
 InventoryConfig.Colors = {
 	Background = Color3.fromRGB(20, 20, 23),
 	Panel = Color3.fromRGB(25, 25, 28),
@@ -22,15 +16,12 @@ InventoryConfig.Colors = {
 	Equipped = Color3.fromRGB(90, 200, 120)
 }
 
--- Panel Settings
 InventoryConfig.PanelSize = UDim2.new(0, 700, 0, 400)
 InventoryConfig.AnimationDuration = 0.3
 
--- Grid Settings
 InventoryConfig.GridCellSize = UDim2.new(0, 90, 0, 90)
-InventoryConfig.GridCellPadding = UDim2.new(0, 10, 0, 10) -- ✅ FIXED: UDim2, bukan UDim!
+InventoryConfig.GridCellPadding = UDim2.new(0, 10, 0, 10)
 
--- Categories
 InventoryConfig.Categories = {
 	"All",
 	"Auras",

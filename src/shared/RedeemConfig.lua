@@ -1,11 +1,5 @@
---[[
-    REDEEM CONFIG
-    Place in ReplicatedStorage/RedeemConfig
-]]
-
 local RedeemConfig = {}
 
--- UI Colors
 RedeemConfig.Colors = {
 	Background = Color3.fromRGB(20, 20, 23),
 	Panel = Color3.fromRGB(25, 25, 28),
@@ -24,11 +18,9 @@ RedeemConfig.Colors = {
 
 RedeemConfig.AnimationDuration = 0.3
 
--- Reward Options
 RedeemConfig.MoneyOptions = {100, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000}
 RedeemConfig.SummitOptions = {3, 5, 10, 25, 50, 100}
 
--- Tab Categories
 RedeemConfig.AdminTabs = {"Title", "Auras", "Tools", "Money", "Summit"}
 RedeemConfig.PlayerTabs = {"Redeem Codes"}
 
