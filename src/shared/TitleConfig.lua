@@ -128,7 +128,8 @@ TitleConfig.AccessRules = {
 
 	["EVOSZones"] = {"EVOS TEAM", "Admin", "Owner"},
 	["AkamsiZones"] = {"Akamsi", "Admin", "Owner"},
-	["BoatAccess"] = {"VIP", "VVIP", "Donatur", "EVOS TEAM","Admin", "Owner", "SahabatAdmin", "Akamsi"},
+
+	["BoatAccess"] = {"VIP", "VVIP", "Donatur", "EVOS TEAM", "Admin", "Owner", "SahabatAdmin", "CDP"},
 }
 
 TitleConfig.ZoneColors = {

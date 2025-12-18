@@ -134,7 +134,6 @@ local function getZoneDisplayName(zoneFolderName)
 		["EVOSZones"] = "EVOS",
 		["TrimatraZones"] = "Trimatra",
 		["AkamsiZones"] = "Akamsi",
-		["BoatAccess"] = "Boat",
 	}
 	return displayNames[zoneFolderName] or zoneFolderName
 end
