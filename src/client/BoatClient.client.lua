@@ -1,10 +1,3 @@
---[[
-	BoatClient.client.lua
-	
-	Client-side script for handling boat-related UI events.
-	- Opens shop gamepass tab when player is denied boat access
-]]
-
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
