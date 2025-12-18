@@ -748,7 +748,7 @@ local currentSearchQuery = ""
 
 local playerDetailPanel = Instance.new("Frame")
 playerDetailPanel.Name = "PlayerDetail"
-playerDetailPanel.Size = UDim2.new(0.208, 0, 0.509, 0)
+playerDetailPanel.Size = UDim2.new(0.25, 0, 0.8, 0)
 playerDetailPanel.Position = UDim2.new(0.5, 0, 0.5, 0)
 playerDetailPanel.AnchorPoint = Vector2.new(0.5, 0.5)
 playerDetailPanel.BackgroundColor3 = COLORS.Background
@@ -797,8 +797,8 @@ createCorner(6).Parent = detailCloseButton
 detailCloseButton.MouseButton1Click:Connect(function()
 	tweenSize(playerDetailPanel, UDim2.new(0, 0, 0, 0), 0.3, function()
 		playerDetailPanel.Visible = false
-		playerDetailPanel.Size = UDim2.new(0.25, 0, 0.509, 0)
-
+		playerDetailPanel.Size = UDim2.new(0.25, 0, 0.8, 0)
+		mainContainer.Visible = true
 	end)
 end)
 
@@ -2086,7 +2086,7 @@ local function createPlayerCard(targetPlayer)
 				end)
 
 				local tabFrame = Instance.new("Frame")
-				tabFrame.Size = UDim2.new(0.94, 0, 0.07, 0)
+				tabFrame.Size = UDim2.new(0.94, 0, 0.08, 0)
 				tabFrame.Position = UDim2.new(0.03, 0, 0.1, 0)
 				tabFrame.BackgroundTransparency = 1
 				tabFrame.ClipsDescendants = true
@@ -2140,7 +2140,7 @@ local function createPlayerCard(targetPlayer)
 				createTextSizeConstraint(14).Parent = moneyTab
 
 				local contentFrame = Instance.new("Frame")
-				contentFrame.Size = UDim2.new(0.94, 0, 0.6, 0)
+				contentFrame.Size = UDim2.new(0.94, 0, 0.64, 0)
 				contentFrame.Position = UDim2.new(0.03, 0, 0.19, 0)
 				contentFrame.BackgroundTransparency = 1
 				contentFrame.ClipsDescendants = true
@@ -2404,8 +2404,8 @@ local function createPlayerCard(targetPlayer)
 				end)
 
 				local giveBtn = createButton("Give Selected Items", COLORS.Success, COLORS.Success)
-				giveBtn.Size = UDim2.new(1, -40, 0, 50)
-				giveBtn.Position = UDim2.new(0, 20, 0, 485)
+				giveBtn.Size = UDim2.new(0.94, 0, 0.1, 0)
+				giveBtn.Position = UDim2.new(0.03, 0, 0.85, 0)
 				giveBtn.Parent = giveItemsPopup
 
 				giveBtn.MouseButton1Click:Connect(function()
@@ -2422,9 +2422,10 @@ local function createPlayerCard(targetPlayer)
 
 			end)
 
+			mainContainer.Visible = false
 			playerDetailPanel.Size = UDim2.new(0, 0, 0, 0)
 			playerDetailPanel.Visible = true
-			tweenSize(playerDetailPanel, UDim2.new(0.208, 0, 0.7, 0), 0.3)
+			tweenSize(playerDetailPanel, UDim2.new(0.25, 0, 0.8, 0), 0.3)
 
 	end)
 

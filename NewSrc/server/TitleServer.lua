@@ -132,7 +132,6 @@ local function getZoneDisplayName(zoneFolderName)
 		["VVIPZones"] = "VVIP",
 		["VIPZones"] = "VIP",
 		["EVOSZones"] = "EVOS",
-		["TrimatraZones"] = "Trimatra",
 		["AkamsiZones"] = "Akamsi",
 		["BoatAccess"] = "Boat",
 	}
@@ -655,7 +654,6 @@ local TEAM_CONFIG = {
 	{Name = "SahabatAdmin", Titles = {"SahabatAdmin"}, Priority = 92},
 	{Name = "EVOS", Titles = {"EVOS TEAM"}, Priority = 90},
 	{Name = "Akamsi", Titles = {"Akamsi"}, Priority = 89},
-	{Name = "Trimatra", Titles = {"Trimatra"}, Priority = 85},
 	{Name = "VVIP", Titles = {"VVIP"}, Priority = 80},
 	{Name = "VIP", Titles = {"VIP"}, Priority = 70},
 	{Name = "Donatur", Titles = {"Donatur"}, Priority = 60},

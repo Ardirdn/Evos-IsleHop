@@ -75,10 +75,10 @@ TitleConfig.SpecialTitles = {
 		Priority = 150,
 		Givable = true
 	},
-	Akamsi = {
-		DisplayName = "AKAMSI",
-		Color = Color3.fromRGB(255, 165, 0),
-		Icon = "🎯",
+	CDP = {
+		DisplayName = "CDP",
+		Color = Color3.fromRGB(90, 157, 78),
+		Icon = "",
 		Priority = 250,
 		Givable = true,
 		Privileges = {
@@ -94,7 +94,7 @@ TitleConfig.SpecialTitles = {
 	},
 	Owner = {
 		DisplayName = "OWNER",
-		Color = Color3.fromRGB(237, 66, 69),
+		Color = Color3.fromRGB(220, 3, 22),
 		Icon = "👑",
 		Priority = 1000,
 		Givable = false
@@ -109,14 +109,7 @@ TitleConfig.SpecialTitles = {
 	["EVOS TEAM"] = {
 		DisplayName = "EVOS TEAM",
 		Color = Color3.fromRGB(255, 0, 0),
-		Icon = "🔥",
-		Priority = 998,
-		Givable = true
-	},
-	Trimatra = {
-		DisplayName = "TRIMATRA",
-		Color = Color3.fromRGB(0, 150, 255),
-		Icon = "🛡️",
+		Icon = "",
 		Priority = 998,
 		Givable = true
 	}
@@ -125,21 +118,19 @@ TitleConfig.SpecialTitles = {
 TitleConfig.AccessRules = {
 	["AdminZones"] = {"Admin", "Owner"},
 
-	["VVIPZones"] = {"VVIP", "Donatur", "EVOS TEAM", "Trimatra", "Admin", "Owner", "SahabatAdmin"},
-	["VIPZones"] = {"VIP", "VVIP", "Donatur", "EVOS TEAM", "Trimatra", "Admin", "Owner", "SahabatAdmin", "Akamsi"},
+	["VVIPZones"] = {"VVIP", "Donatur", "EVOS TEAM", "Admin", "Owner", "SahabatAdmin"},
+	["VIPZones"] = {"VIP", "VVIP", "Donatur", "EVOS TEAM","Admin", "Owner", "SahabatAdmin", "Akamsi"},
 
 	["EVOSZones"] = {"EVOS TEAM", "Admin", "Owner"},
-	["TrimatraZones"] = {"Trimatra", "Admin", "Owner"},
 	["AkamsiZones"] = {"Akamsi", "Admin", "Owner"},
-	["BoatAccess"] = {"VIP", "VVIP", "Donatur", "EVOS TEAM", "Trimatra", "Admin", "Owner", "SahabatAdmin", "Akamsi"},
+	["BoatAccess"] = {"VIP", "VVIP", "Donatur", "EVOS TEAM","Admin", "Owner", "SahabatAdmin", "Akamsi"},
 }
 
 TitleConfig.ZoneColors = {
 	["AdminZones"] = Color3.fromRGB(237, 66, 69),
 	["VVIPZones"] = Color3.fromRGB(138, 43, 226),
 	["VIPZones"] = Color3.fromRGB(255, 215, 0),
-	["EVOSZones"] = Color3.fromRGB(255, 0, 0),
-	["TrimatraZones"] = Color3.fromRGB(0, 150, 255),
+	["EVOSZones"] = Color3.fromRGB(255, 0, 0)
 }
 
 TitleConfig.PrimaryAdminIds = {

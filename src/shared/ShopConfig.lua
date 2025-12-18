@@ -180,13 +180,6 @@ ShopConfig.Tools = {
 		ToolId = "SpeedCoil"
 	},
 	{
-		Title = "Gravity Coil",
-		IsPremium = false,
-		Price = 750,
-		Thumbnail = "rbxassetid://78073594661667",
-		ToolId = "GravityCoil"
-	},
-	{
 		Title = "Paint Bucket",
 		IsPremium = false,
 		Price = 300,
@@ -216,13 +209,6 @@ ShopConfig.Tools = {
 		Price = 500,
 		Thumbnail = "rbxassetid://126083559497297",
 		ToolId = "SpeedCoil"
-	},
-	{
-		Title = "Gravity Coil",
-		IsPremium = false,
-		Price = 750,
-		Thumbnail = "rbxassetid://78073594661667",
-		ToolId = "GravityCoil"
 	},
 	{
 		Title = "Double Coil",
