@@ -1,11 +1,18 @@
 local MusicConfig = {}
 
 MusicConfig.Playlists = {
-	["Indonesian DJ"] = {
+	["Yatagarashi"] = {
 		Songs = {
-			{ Title = "Workout Mix", AssetId = "rbxassetid://1838457617" },
-			{ Title = "Workout Mix 2", AssetId = "rbxassetid://1839638511" },
-			{ Title = "Party Vibes", AssetId = "rbxassetid://1837196544" },
+			{ Title = "More", AssetId = "rbxassetid://83734186463062" },
+			{ Title = "Only For You", AssetId = "rbxassetid://129770427656755" },
+			{ Title = "Empty Seat", AssetId = "rbxassetid://113350331501815" },
+			{ Title = "Under The Tree", AssetId = "rbxassetid://133764100357892" },
+			{ Title = "It Was", AssetId = "rbxassetid://130185672905990" },
+			{ Title = "I'll Do It For You", AssetId = "rbxassetid://79029886809697" },
+			{ Title = "I Don't Wanna", AssetId = "rbxassetid://138665451112521" },
+			{ Title = "Take Me", AssetId = "rbxassetid://122215417753225" },
+			{ Title = "I'll Love Them For You", AssetId = "rbxassetid://130712206628678" },
+			{ Title = "Sweet Candy Pain", AssetId = "rbxassetid://115895191786933" },
 		}
 	},
 
@@ -17,21 +24,6 @@ MusicConfig.Playlists = {
 		}
 	},
 
-	["Energetic"] = {
-		Songs = {
-			{ Title = "City Lights", AssetId = "rbxassetid://1838457617" },
-			{ Title = "Neon Nights", AssetId = "rbxassetid://9047050075" },
-			{ Title = "Electric Pulse", AssetId = "rbxassetid://1848354536" },
-		}
-	},
-
-	["Study Focus"] = {
-		Songs = {
-			{ Title = "Focus Flow", AssetId = "rbxassetid://1840684529" },
-			{ Title = "Study Beats", AssetId = "rbxassetid://1838457617"},
-			{ Title = "Calm Piano", AssetId = "rbxassetid://1840684529" },
-		}
-	},
 }
 
 MusicConfig.Settings = {

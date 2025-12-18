@@ -562,27 +562,79 @@ function TitleServer:ApplyPrivileges(player, titleName)
 	if not titleData or not titleData.Privileges then return end
 
 	local privileges = titleData.Privileges
+	local data = DataHandler:GetData(player)
+	if not data then return end
+
+	local rewardsGivenKey = "VIPRewardsGranted_" .. titleName
+	local alreadyGranted = data[rewardsGivenKey]
+
+	if alreadyGranted then
+		return
+	end
+
+	local rewardsList = {}
 
 	if privileges.Tools and #privileges.Tools > 0 then
-		for _, toolName in ipairs(privileges.Tools) do
-			self:GiveTool(player, toolName)
+		for _, toolId in ipairs(privileges.Tools) do
+			if not DataHandler:ArrayContains(player, "OwnedTools", toolId) then
+				DataHandler:AddToArray(player, "OwnedTools", toolId)
+				table.insert(rewardsList, "🔧 " .. toolId)
+			end
 		end
 	end
 
+	if privileges.Auras and #privileges.Auras > 0 then
+		for _, auraId in ipairs(privileges.Auras) do
+			if not DataHandler:ArrayContains(player, "OwnedAuras", auraId) then
+				DataHandler:AddToArray(player, "OwnedAuras", auraId)
+				table.insert(rewardsList, "✨ " .. auraId)
+			end
+		end
+	end
+
+	if privileges.MoneyReward and privileges.MoneyReward > 0 then
+		DataHandler:Increment(player, "Money", privileges.MoneyReward)
+		table.insert(rewardsList, "💰 $" .. privileges.MoneyReward)
+	end
+
+	if TitleConfig.SpecialTitles[titleName] and TitleConfig.SpecialTitles[titleName].IncludesVIP then
+		local vipData = TitleConfig.SpecialTitles.VIP
+		if vipData and vipData.Privileges then
+			local vipPrivileges = vipData.Privileges
+			if vipPrivileges.Tools then
+				for _, toolId in ipairs(vipPrivileges.Tools) do
+					if not DataHandler:ArrayContains(player, "OwnedTools", toolId) then
+						DataHandler:AddToArray(player, "OwnedTools", toolId)
+						table.insert(rewardsList, "🔧 " .. toolId .. " (VIP)")
+					end
+				end
+			end
+			if vipPrivileges.Auras then
+				for _, auraId in ipairs(vipPrivileges.Auras) do
+					if not DataHandler:ArrayContains(player, "OwnedAuras", auraId) then
+						DataHandler:AddToArray(player, "OwnedAuras", auraId)
+						table.insert(rewardsList, "✨ " .. auraId .. " (VIP)")
+					end
+				end
+			end
+		end
+	end
+
+	DataHandler:Set(player, rewardsGivenKey, true)
+	DataHandler:SavePlayer(player)
+
+	if #rewardsList > 0 then
+		local rewardsText = table.concat(rewardsList, ", ")
+		NotificationService:Send(player, {
+			Message = "Hadiah " .. titleName .. " diterima: " .. rewardsText,
+			Type = "success",
+			Duration = 7,
+			Icon = titleData.Icon or "🎁"
+		})
+	end
 end
 
 function TitleServer:RemovePrivileges(player, titleName)
-	local titleData = self:GetTitleData(titleName)
-	if not titleData or not titleData.Privileges then return end
-
-	local privileges = titleData.Privileges
-
-	if privileges.Tools and #privileges.Tools > 0 then
-		for _, toolName in ipairs(privileges.Tools) do
-			self:RemoveTool(player, toolName)
-		end
-	end
-
 end
 
 function TitleServer:GiveTool(player, toolName)
@@ -616,20 +668,6 @@ function TitleServer:GiveTool(player, toolName)
 end
 
 function TitleServer:RemoveTool(player, toolName)
-	local backpack = player:FindFirstChild("Backpack")
-	if backpack then
-		local tool = backpack:FindFirstChild(toolName)
-		if tool then
-			tool:Destroy()
-		end
-	end
-
-	if player.Character then
-		local tool = player.Character:FindFirstChild(toolName)
-		if tool then
-			tool:Destroy()
-		end
-	end
 
 end
 

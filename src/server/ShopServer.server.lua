@@ -187,12 +187,14 @@ MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, gamep
 
 			if gp.Name ~= "x2 Summit" and gp.Name ~= "x4 Summit" then
 				TitleServer:SetTitle(player, gp.Name, "gamepass", true)
+				TitleServer:UnlockTitle(player, gp.Name)
+				TitleServer:ApplyPrivileges(player, gp.Name)
 			end
 
 			DataHandler:SavePlayer(player)
 
 			NotificationService:Send(player, {
-				Message = string.format("You now have %s! 🎉", gp.DisplayName),
+				Message = string.format("You now have %s! 🎉", gp.Name),
 				Type = "success",
 				Duration = 5,
 				Icon = gp.Icon or "🌟"

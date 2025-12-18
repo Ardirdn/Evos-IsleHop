@@ -51,10 +51,12 @@ TitleConfig.SpecialTitles = {
 		Color = Color3.fromRGB(255, 215, 0),
 		Icon = "⭐",
 		Priority = 100,
-		GamepassId = 0,
+		GamepassId = 1635503506,
 		Givable = true,
 		Privileges = {
-			Tools = {"SpeedCoil", "BubbleGun"}
+			Tools = {"SpeedCoil", "DoubleCoil"},
+			Auras = {},
+			MoneyReward = 0,
 		}
 	},
 	VVIP = {
@@ -62,10 +64,13 @@ TitleConfig.SpecialTitles = {
 		Color = Color3.fromRGB(138, 43, 226),
 		Icon = "💎",
 		Priority = 200,
-		GamepassId = 0,
+		GamepassId = 1635215580,
 		Givable = true,
+		IncludesVIP = true,
 		Privileges = {
-			Tools = {"SpeedCoil", "BubbleGun"}
+			Tools = {"Boombox"},
+			Auras = {"RainbowAura", "GalaxyAura"},
+			MoneyReward = 5000,
 		}
 	},
 	Donatur = {

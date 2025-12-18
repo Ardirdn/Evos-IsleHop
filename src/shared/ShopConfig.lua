@@ -6,14 +6,14 @@ ShopConfig.Gamepasses = {
 		Price = 100,
 		Thumbnail = "rbxassetid://93839116673767",
 		GamepassId = 1635503506,
-		Description = "Unlock VIP features and exclusive perks!"
+		Description = "⭐ Title VIP Eksklusif | 🚪 Akses Area VIP | 🔧 Speed Coil & Double Coil"
 	},
 	{
 		Name = "VVIP",
 		Price = 500,
 		Thumbnail = "rbxassetid://113168148931190",
 		GamepassId = 1635215580,
-		Description = "Ultimate VIP with premium benefits!"
+		Description = "💎 Semua Reward VIP | ⭐ Title VVIP Eksklusif | 🎵 Boombox | ✨ Rainbow & Galaxy Aura | 💰 Money Large Pack"
 	},
 	{
         Name = "x2 Summit",

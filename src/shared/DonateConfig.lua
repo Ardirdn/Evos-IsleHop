@@ -7,7 +7,7 @@ DonateConfig.Packages = {
 		Title = "Starter",
 		Description = "Support kecil",
 		Amount = 10,
-		ProductId = 3465203706,
+		ProductId = 3482521031,
 		Thumbnail = "rbxassetid://7733992358",
 		Color = Color3.fromRGB(100, 149, 237)
 	},
@@ -15,7 +15,7 @@ DonateConfig.Packages = {
 		Title = "Bronze",
 		Description = "Dukungan Bronze",
 		Amount = 25,
-		ProductId = 3465203890,
+		ProductId = 3482521169,
 		Thumbnail = "rbxassetid://7733992358",
 		Color = Color3.fromRGB(205, 127, 50)
 	},
@@ -23,7 +23,7 @@ DonateConfig.Packages = {
 		Title = "Silver",
 		Description = "Dukungan Silver",
 		Amount = 50,
-		ProductId = 3465204030,
+		ProductId = 3482521369,
 		Thumbnail = "rbxassetid://7733992358",
 		Color = Color3.fromRGB(192, 192, 192)
 	},
@@ -31,7 +31,7 @@ DonateConfig.Packages = {
 		Title = "Gold",
 		Description = "Dukungan Gold",
 		Amount = 100,
-		ProductId = 3465204182,
+		ProductId = 3482521479,
 		Thumbnail = "rbxassetid://7733992358",
 		Color = Color3.fromRGB(255, 215, 0)
 	},
@@ -39,7 +39,7 @@ DonateConfig.Packages = {
 		Title = "Platinum",
 		Description = "Dukungan Platinum",
 		Amount = 250,
-		ProductId = 3465204299,
+		ProductId = 3482521764,
 		Thumbnail = "rbxassetid://7733992358",
 		Color = Color3.fromRGB(229, 228, 226)
 	},
@@ -47,7 +47,7 @@ DonateConfig.Packages = {
 		Title = "Diamond",
 		Description = "Dukungan Diamond",
 		Amount = 500,
-		ProductId = 3465204387,
+		ProductId = 3482522098,
 		Thumbnail = "rbxassetid://7733992358",
 		Color = Color3.fromRGB(185, 242, 255)
 	},
@@ -55,7 +55,7 @@ DonateConfig.Packages = {
 		Title = "Master",
 		Description = "Dukungan Master",
 		Amount = 1000,
-		ProductId = 3465204599,
+		ProductId = 3482522221,
 		Thumbnail = "rbxassetid://7733992358",
 		Color = Color3.fromRGB(138, 43, 226)
 	},
@@ -63,7 +63,7 @@ DonateConfig.Packages = {
 		Title = "Champion",
 		Description = "Dukungan Champion",
 		Amount = 2500,
-		ProductId = 3465204761,
+		ProductId = 3482522387,
 		Thumbnail = "rbxassetid://7733992358",
 		Color = Color3.fromRGB(255, 69, 0)
 	},
@@ -71,7 +71,7 @@ DonateConfig.Packages = {
 		Title = "Legend",
 		Description = "Dukungan Legend",
 		Amount = 5000,
-		ProductId = 3465204885,
+		ProductId = 3482522774,
 		Thumbnail = "rbxassetid://7733992358",
 		Color = Color3.fromRGB(255, 0, 255)
 	},
@@ -79,7 +79,7 @@ DonateConfig.Packages = {
 		Title = "Mythic",
 		Description = "Dukungan Mythic",
 		Amount = 10000,
-		ProductId = 3465205043,
+		ProductId = 3482522930,
 		Thumbnail = "rbxassetid://7733992358",
 		Color = Color3.fromRGB(255, 20, 147)
 	},
@@ -87,7 +87,7 @@ DonateConfig.Packages = {
 		Title = "Divine",
 		Description = "Dukungan Divine",
 		Amount = 25000,
-		ProductId = 3465205182,
+		ProductId = 3482523090,
 		Thumbnail = "rbxassetid://7733992358",
 		Color = Color3.fromRGB(255, 255, 0)
 	},
@@ -95,7 +95,7 @@ DonateConfig.Packages = {
 		Title = "Supreme",
 		Description = "Dukungan Supreme",
 		Amount = 50000,
-		ProductId = 3465205311,
+		ProductId = 3482523266,
 		Thumbnail = "rbxassetid://7733992358",
 		Color = Color3.fromRGB(255, 0, 0)
 	},
