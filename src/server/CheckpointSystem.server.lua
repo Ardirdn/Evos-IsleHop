@@ -124,6 +124,14 @@ if not checkpointsFolder then
 	return
 end
 
+local mainSpawnLocation = checkpointsFolder:FindFirstChild("MainSpawnLocation")
+if not mainSpawnLocation then
+	warn("[WARNING] MainSpawnLocation not found in Checkpoints folder - will use Checkpoint0 SpawnLocation instead")
+end
+
+local deathTriggerFolder = checkpointsFolder:FindFirstChild("DeathTrigger")
+local playerSwimmingMode = {}
+
 local checkpoints = {}
 local checkpointCount = 0
 
@@ -184,6 +192,23 @@ teleportToBasecamp.Parent = remoteFolder
 local skipCheckpoint = Instance.new("RemoteEvent")
 skipCheckpoint.Name = "SkipCheckpoint"
 skipCheckpoint.Parent = remoteFolder
+
+local toggleSwimmingMode = Instance.new("RemoteEvent")
+toggleSwimmingMode.Name = "ToggleSwimmingMode"
+toggleSwimmingMode.Parent = remoteFolder
+
+local teleportToLastCheckpoint = Instance.new("RemoteEvent")
+teleportToLastCheckpoint.Name = "TeleportToLastCheckpoint"
+teleportToLastCheckpoint.Parent = remoteFolder
+
+local getSwimmingStatus = Instance.new("RemoteFunction")
+getSwimmingStatus.Name = "GetSwimmingStatus"
+getSwimmingStatus.Parent = remoteFolder
+
+local swimmingModeChanged = Instance.new("RemoteEvent")
+swimmingModeChanged.Name = "SwimmingModeChanged"
+swimmingModeChanged.Parent = remoteFolder
+
 
 local function formatPlaytime(seconds)
 	local days = math.floor(seconds / 86400)
@@ -461,19 +486,48 @@ Players.PlayerAdded:Connect(function(player)
 			return
 		end
 
-		local spawnCheckpoint = checkpoints[currentData.LastCheckpoint]
-		if spawnCheckpoint then
-			local spawnLocation = spawnCheckpoint:FindFirstChild("SpawnLocation")
-			if spawnLocation then
-				character:MoveTo(spawnLocation.Position + Vector3.new(0, 3, 0))
-				for i = 1, currentData.LastCheckpoint do
-					setCheckpointColor(i, Color3.fromRGB(0, 255, 0))
+		local lastCP = currentData.LastCheckpoint
+
+		if lastCP == 0 then
+			if mainSpawnLocation then
+				local spawnPart = mainSpawnLocation:FindFirstChild("SpawnLocation") or mainSpawnLocation
+				if spawnPart:IsA("BasePart") then
+					character:MoveTo(spawnPart.Position + Vector3.new(0, 3, 0))
+				elseif spawnPart:IsA("Model") and spawnPart.PrimaryPart then
+					character:MoveTo(spawnPart.PrimaryPart.Position + Vector3.new(0, 3, 0))
+				else
+					local basecamp = checkpoints[0]
+					if basecamp then
+						local spawnLoc = basecamp:FindFirstChild("SpawnLocation")
+						if spawnLoc then
+							character:MoveTo(spawnLoc.Position + Vector3.new(0, 3, 0))
+						end
+					end
 				end
 			else
-				warn("[SPAWN] SpawnLocation not found in checkpoint:", currentData.LastCheckpoint)
+				local basecamp = checkpoints[0]
+				if basecamp then
+					local spawnLoc = basecamp:FindFirstChild("SpawnLocation")
+					if spawnLoc then
+						character:MoveTo(spawnLoc.Position + Vector3.new(0, 3, 0))
+					end
+				end
 			end
 		else
-			warn("[SPAWN] Checkpoint not found:", currentData.LastCheckpoint)
+			local spawnCheckpoint = checkpoints[lastCP]
+			if spawnCheckpoint then
+				local spawnLocation = spawnCheckpoint:FindFirstChild("SpawnLocation")
+				if spawnLocation then
+					character:MoveTo(spawnLocation.Position + Vector3.new(0, 3, 0))
+					for i = 1, lastCP do
+						setCheckpointColor(i, Color3.fromRGB(0, 255, 0))
+					end
+				else
+					warn("[SPAWN] SpawnLocation not found in checkpoint:", lastCP)
+				end
+			else
+				warn("[SPAWN] Checkpoint not found:", lastCP)
+			end
 		end
 
 		hideSummitButton:FireClient(player)
@@ -502,6 +556,10 @@ for checkpointNum, checkpoint in pairs(checkpoints) do
 		local data = playerData[userId]
 
 		if not data then return end
+
+		if playerSwimmingMode[userId] then
+			return
+		end
 
 		if not playerCooldowns[userId] then
 			playerCooldowns[userId] = {}
@@ -953,6 +1011,135 @@ end
 
 syncEvent.Event:Connect(function(player)
 	CheckpointSystem.SyncPlayerData(player)
+end)
+
+local function teleportPlayerToLastCheckpoint(player)
+	local character = player.Character
+	if not character then return end
+	
+	local userId = player.UserId
+	local data = playerData[userId]
+	if not data then return end
+	
+	local lastCP = data.LastCheckpoint
+	
+	local spawnCheckpoint = checkpoints[lastCP]
+	if spawnCheckpoint then
+		local spawnLocation = spawnCheckpoint:FindFirstChild("SpawnLocation")
+		if spawnLocation then
+			character:MoveTo(spawnLocation.Position + Vector3.new(0, 3, 0))
+		else
+			character:MoveTo(spawnCheckpoint.Position + Vector3.new(0, 5, 0))
+		end
+	else
+		local basecamp = checkpoints[0]
+		if basecamp then
+			local spawnLoc = basecamp:FindFirstChild("SpawnLocation")
+			if spawnLoc then
+				character:MoveTo(spawnLoc.Position + Vector3.new(0, 3, 0))
+			end
+		end
+	end
+end
+
+if deathTriggerFolder then
+	local function setupDeathTrigger(triggerPart)
+		if not triggerPart:IsA("BasePart") then return end
+		
+		triggerPart.CanCollide = false
+		triggerPart.Transparency = 1
+		
+		triggerPart.Touched:Connect(function(hit)
+			local character = hit.Parent
+			local player = Players:GetPlayerFromCharacter(character)
+			
+			if not player then return end
+			
+			local userId = player.UserId
+			
+			if playerSwimmingMode[userId] then
+				return
+			end
+			
+			local humanoid = character:FindFirstChild("Humanoid")
+			if not humanoid or humanoid.Health <= 0 then return end
+			
+			local cooldownKey = "deathTrigger"
+			if not playerCooldowns[userId] then
+				playerCooldowns[userId] = {}
+			end
+			
+			local lastTouch = playerCooldowns[userId][cooldownKey] or 0
+			local currentTime = tick()
+			
+			if currentTime - lastTouch < 0.5 then
+				return
+			end
+			
+			playerCooldowns[userId][cooldownKey] = currentTime
+			
+			teleportPlayerToLastCheckpoint(player)
+		end)
+	end
+	
+	for _, triggerPart in pairs(deathTriggerFolder:GetChildren()) do
+		setupDeathTrigger(triggerPart)
+	end
+	
+	deathTriggerFolder.ChildAdded:Connect(function(child)
+		task.wait(0.1)
+		setupDeathTrigger(child)
+	end)
+end
+
+getSwimmingStatus.OnServerInvoke = function(player)
+	local userId = player.UserId
+	return playerSwimmingMode[userId] == true
+end
+
+toggleSwimmingMode.OnServerEvent:Connect(function(player, enableSwimming)
+	local userId = player.UserId
+	
+	if enableSwimming then
+		playerSwimmingMode[userId] = true
+		
+		swimmingModeChanged:FireClient(player, true)
+		
+		NotificationServer:Send(player, {
+			Message = "🏊 Mode Berenang aktif! Kamu bisa berenang, tapi checkpoint dinonaktifkan.",
+			Type = "info",
+			Icon = "🏊",
+			Duration = 4
+		})
+	else
+		playerSwimmingMode[userId] = false
+		
+		swimmingModeChanged:FireClient(player, false)
+		
+		teleportPlayerToLastCheckpoint(player)
+		
+		NotificationServer:Send(player, {
+			Message = "⛰️ Mode Berenang nonaktif! Kamu kembali ke checkpoint terakhir.",
+			Type = "info",
+			Icon = "⛰️",
+			Duration = 4
+		})
+	end
+end)
+
+teleportToLastCheckpoint.OnServerEvent:Connect(function(player)
+	teleportPlayerToLastCheckpoint(player)
+	
+	NotificationServer:Send(player, {
+		Message = "📍 Teleport ke checkpoint terakhir!",
+		Type = "info",
+		Icon = "📍",
+		Duration = 2
+	})
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+	playerSwimmingMode[player.UserId] = nil
 end)
 
 return CheckpointSystem
