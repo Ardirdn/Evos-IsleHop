@@ -72,7 +72,7 @@ local playerAccessCache = {}
 local broadcastDebounce = {}
 local TOUCH_COOLDOWN = 0.5
 local ACCESS_CACHE_DURATION = 2
-local BROADCAST_DEBOUNCE = 2
+local BROADCAST_DEBOUNCE = 0.5
 
 local DEBUG_MODE = false
 

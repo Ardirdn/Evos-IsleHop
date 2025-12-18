@@ -1659,7 +1659,12 @@ playAllBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
+local lastHeartbeatUpdate = 0
 RunService.Heartbeat:Connect(function()
+	local now = tick()
+	if now - lastHeartbeatUpdate < 0.1 then return end
+	lastHeartbeatUpdate = now
+
 	if currentSound and currentSound.IsPlaying then
 		local progress = currentSound.TimePosition / currentSound.TimeLength
 		if not isDraggingProgress then

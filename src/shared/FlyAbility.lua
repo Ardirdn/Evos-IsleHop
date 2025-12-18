@@ -627,13 +627,20 @@ if RunService:IsClient() then
         disableCollision(character)
         humanoid.PlatformStand = true
 
+        local cachedParts = {}
+        for _, part in ipairs(character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                table.insert(cachedParts, part)
+            end
+        end
+
         flightConnection = RunService.RenderStepped:Connect(function()
             if not isFlying then return end
             if not character or not character.Parent then return end
             if humanoid.Health <= 0 then return end
 
-            for _, part in ipairs(character:GetDescendants()) do
-                if part:IsA("BasePart") then
+            for _, part in ipairs(cachedParts) do
+                if part and part.Parent then
                     part.CanCollide = false
                 end
             end

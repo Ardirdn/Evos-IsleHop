@@ -231,8 +231,24 @@ local function updateMoney(targetPlayer, money)
 	end
 end
 
+local playerConnections = {}
+
+local function cleanupPlayerConnections(targetPlayer)
+	if playerConnections[targetPlayer] then
+		for _, conn in ipairs(playerConnections[targetPlayer]) do
+			if conn and conn.Connected then
+				conn:Disconnect()
+			end
+		end
+		playerConnections[targetPlayer] = nil
+	end
+end
+
 local function setupPlayer(targetPlayer)
 	local function onCharacterAdded(character)
+		cleanupPlayerConnections(targetPlayer)
+		playerConnections[targetPlayer] = {}
+
 		local billboard = nil
 		local retries = 0
 
@@ -250,11 +266,12 @@ local function setupPlayer(targetPlayer)
 		end
 
 		task.spawn(function()
-			task.wait(2)
+			task.wait(0.5)
 			if not targetPlayer or not targetPlayer.Parent then return end
+			if not billboardCache[targetPlayer] then return end
 
 			local success, title = nil, nil
-			for attempt = 1, 3 do
+			for attempt = 1, 5 do
 				success, title = pcall(function()
 					return getTitleFunc:InvokeServer(targetPlayer)
 				end)
@@ -262,7 +279,7 @@ local function setupPlayer(targetPlayer)
 				if success and title then
 					break
 				end
-				task.wait(1)
+				task.wait(0.5)
 			end
 
 			if success and title then
@@ -276,9 +293,10 @@ local function setupPlayer(targetPlayer)
 				local summit = playerStats:FindFirstChild("Summit")
 				if summit then
 					updateSummit(targetPlayer, summit.Value)
-					summit:GetPropertyChangedSignal("Value"):Connect(function()
+					local conn = summit:GetPropertyChangedSignal("Value"):Connect(function()
 						updateSummit(targetPlayer, summit.Value)
 					end)
+					table.insert(playerConnections[targetPlayer], conn)
 				end
 			end
 		end
@@ -289,20 +307,25 @@ local function setupPlayer(targetPlayer)
 		local moneyValue = targetPlayer:FindFirstChild("Money")
 		if moneyValue then
 			updateMoney(targetPlayer, moneyValue.Value)
-			moneyValue:GetPropertyChangedSignal("Value"):Connect(function()
+			local conn = moneyValue:GetPropertyChangedSignal("Value"):Connect(function()
 				updateMoney(targetPlayer, moneyValue.Value)
 			end)
+			table.insert(playerConnections[targetPlayer], conn)
 		else
 			local conn
 			conn = targetPlayer.ChildAdded:Connect(function(child)
 				if child.Name == "Money" and child:IsA("IntValue") then
 					updateMoney(targetPlayer, child.Value)
-					child:GetPropertyChangedSignal("Value"):Connect(function()
+					local moneyConn = child:GetPropertyChangedSignal("Value"):Connect(function()
 						updateMoney(targetPlayer, child.Value)
 					end)
+					if playerConnections[targetPlayer] then
+						table.insert(playerConnections[targetPlayer], moneyConn)
+					end
 					conn:Disconnect()
 				end
 			end)
+			table.insert(playerConnections[targetPlayer], conn)
 		end
 	end
 
@@ -313,6 +336,7 @@ local function setupPlayer(targetPlayer)
 end
 
 local function onPlayerRemoving(targetPlayer)
+	cleanupPlayerConnections(targetPlayer)
 	billboardCache[targetPlayer] = nil
 	playerCountries[targetPlayer] = nil
 end
@@ -327,9 +351,17 @@ end
 local updateOtherEvent = remoteFolder:FindFirstChild("UpdateOtherPlayerTitle")
 if updateOtherEvent then
 	updateOtherEvent.OnClientEvent:Connect(function(targetPlayer, titleName)
-		if targetPlayer and targetPlayer ~= player then
-			updateTitle(targetPlayer, titleName)
-		end
+		if not targetPlayer then return end
+		
+		task.spawn(function()
+			for attempt = 1, 10 do
+				if billboardCache[targetPlayer] then
+					updateTitle(targetPlayer, titleName)
+					return
+				end
+				task.wait(0.3)
+			end
+		end)
 	end)
 end
 
@@ -361,3 +393,28 @@ Players.PlayerAdded:Connect(function(targetPlayer)
 	setupHideDefaultName(targetPlayer)
 end)
 Players.PlayerRemoving:Connect(onPlayerRemoving)
+
+task.spawn(function()
+	while task.wait(30) do
+		local players = Players:GetPlayers()
+		local count = 0
+		for _, targetPlayer in ipairs(players) do
+			if targetPlayer ~= player and billboardCache[targetPlayer] then
+				count = count + 1
+				if count > 10 then break end
+				
+				task.spawn(function()
+					local success, title = pcall(function()
+						return getTitleFunc:InvokeServer(targetPlayer)
+					end)
+					
+					if success and title then
+						updateTitle(targetPlayer, title)
+					end
+				end)
+				task.wait(0.3)
+			end
+		end
+	end
+end)
+
