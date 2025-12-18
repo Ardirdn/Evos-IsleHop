@@ -46,8 +46,8 @@ local COLORS = {
 	Success = Color3.fromRGB(67, 181, 129),
 	SuccessHover = Color3.fromRGB(87, 201, 149),
 	Border = Color3.fromRGB(50, 50, 55),
-	Swimming = Color3.fromRGB(64, 224, 208),
-	SwimmingHover = Color3.fromRGB(84, 244, 228),
+	Swimming = Color3.fromRGB(255, 159, 67),
+	SwimmingHover = Color3.fromRGB(255, 179, 97),
 }
 
 local isSwimmingMode = false
@@ -317,7 +317,7 @@ createStroke(COLORS.Border, 2).Parent = confirmPopup
 
 local confirmHeader = Instance.new("Frame")
 confirmHeader.Size = UDim2.new(1, 0, 0, 50)
-confirmHeader.BackgroundColor3 = COLORS.Swimming
+confirmHeader.BackgroundColor3 = COLORS.Header
 confirmHeader.BorderSizePixel = 0
 confirmHeader.ZIndex = 21
 confirmHeader.Parent = confirmPopup
@@ -327,7 +327,7 @@ createCorner(12).Parent = confirmHeader
 local confirmHeaderBottom = Instance.new("Frame")
 confirmHeaderBottom.Size = UDim2.new(1, 0, 0, 15)
 confirmHeaderBottom.Position = UDim2.new(0, 0, 1, -15)
-confirmHeaderBottom.BackgroundColor3 = COLORS.Swimming
+confirmHeaderBottom.BackgroundColor3 = COLORS.Header
 confirmHeaderBottom.BorderSizePixel = 0
 confirmHeaderBottom.ZIndex = 21
 confirmHeaderBottom.Parent = confirmHeader
@@ -387,7 +387,7 @@ createCorner(8).Parent = confirmCancelBtn
 local confirmAcceptBtn = Instance.new("TextButton")
 confirmAcceptBtn.Size = UDim2.new(0.48, 0, 1, 0)
 confirmAcceptBtn.Position = UDim2.new(0.52, 0, 0, 0)
-confirmAcceptBtn.BackgroundColor3 = COLORS.Swimming
+confirmAcceptBtn.BackgroundColor3 = COLORS.Accent
 confirmAcceptBtn.BorderSizePixel = 0
 confirmAcceptBtn.Font = Enum.Font.GothamBold
 confirmAcceptBtn.Text = "Lanjutkan"
@@ -414,7 +414,7 @@ createStroke(COLORS.Border, 2).Parent = disablePopup
 
 local disableHeader = Instance.new("Frame")
 disableHeader.Size = UDim2.new(1, 0, 0, 50)
-disableHeader.BackgroundColor3 = COLORS.Danger
+disableHeader.BackgroundColor3 = COLORS.Header
 disableHeader.BorderSizePixel = 0
 disableHeader.ZIndex = 21
 disableHeader.Parent = disablePopup
@@ -424,7 +424,7 @@ createCorner(12).Parent = disableHeader
 local disableHeaderBottom = Instance.new("Frame")
 disableHeaderBottom.Size = UDim2.new(1, 0, 0, 15)
 disableHeaderBottom.Position = UDim2.new(0, 0, 1, -15)
-disableHeaderBottom.BackgroundColor3 = COLORS.Danger
+disableHeaderBottom.BackgroundColor3 = COLORS.Header
 disableHeaderBottom.BorderSizePixel = 0
 disableHeaderBottom.ZIndex = 21
 disableHeaderBottom.Parent = disableHeader
@@ -484,7 +484,7 @@ createCorner(8).Parent = disableCancelBtn
 local disableAcceptBtn = Instance.new("TextButton")
 disableAcceptBtn.Size = UDim2.new(0.48, 0, 1, 0)
 disableAcceptBtn.Position = UDim2.new(0.52, 0, 0, 0)
-disableAcceptBtn.BackgroundColor3 = COLORS.Danger
+disableAcceptBtn.BackgroundColor3 = COLORS.Accent
 disableAcceptBtn.BorderSizePixel = 0
 disableAcceptBtn.Font = Enum.Font.GothamBold
 disableAcceptBtn.Text = "Lanjutkan"
@@ -546,6 +546,12 @@ local function togglePanel()
 end
 
 local function showConfirmPopup()
+	popupPanel.Visible = false
+	panelOpen = false
+	TweenService:Create(cpButton, TweenInfo.new(0.2), {
+		BackgroundColor3 = COLORS.Panel
+	}):Play()
+	
 	confirmPopup.Size = UDim2.new(0, 0, 0, 0)
 	confirmPopup.Visible = true
 	TweenService:Create(confirmPopup, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
@@ -563,6 +569,12 @@ local function hideConfirmPopup()
 end
 
 local function showDisablePopup()
+	popupPanel.Visible = false
+	panelOpen = false
+	TweenService:Create(cpButton, TweenInfo.new(0.2), {
+		BackgroundColor3 = COLORS.Panel
+	}):Play()
+	
 	disablePopup.Size = UDim2.new(0, 0, 0, 0)
 	disablePopup.Visible = true
 	TweenService:Create(disablePopup, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
@@ -717,6 +729,7 @@ end)
 
 confirmCancelBtn.MouseButton1Click:Connect(function()
 	hideConfirmPopup()
+	togglePanel()
 end)
 
 confirmAcceptBtn.MouseButton1Click:Connect(function()
@@ -733,6 +746,7 @@ end)
 
 disableCancelBtn.MouseButton1Click:Connect(function()
 	hideDisablePopup()
+	togglePanel()
 end)
 
 disableAcceptBtn.MouseButton1Click:Connect(function()

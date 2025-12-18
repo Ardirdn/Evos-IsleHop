@@ -569,7 +569,7 @@ contentLayout.Padding = UDim.new(0, 8)
 contentLayout.Parent = contentScroll
 
 local songDetailsFrame = Instance.new("Frame")
-songDetailsFrame.Size = UDim2.new(0.234, 0, 0.463, 0)
+songDetailsFrame.Size = UDim2.new(0.7, 0, 0.8, 0)
 songDetailsFrame.Position = UDim2.new(0.5, 0, -0.5, 0)
 songDetailsFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 songDetailsFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 23)
@@ -691,6 +691,58 @@ local isDraggingVolume = false
 local currentTab = "all"
 local currentPlaylistSongs = {}
 local autoPlayStarted = false
+
+local panelStack = {}
+
+local function hidePanel(panel, callback)
+	local closeTween = TweenService:Create(panel, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+		Position = UDim2.new(0.5, 0, -0.5, 0)
+	})
+	closeTween:Play()
+	closeTween.Completed:Connect(function()
+		panel.Visible = false
+		if callback then callback() end
+	end)
+end
+
+local function showPanel(panel)
+	panel.Visible = true
+	local openTween = TweenService:Create(panel, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+		Position = UDim2.new(0.5, 0, 0.5, 0)
+	})
+	openTween:Play()
+end
+
+local function openPanelWithStack(panel, hideCurrentPanel)
+	if hideCurrentPanel and #panelStack > 0 then
+		local currentPanel = panelStack[#panelStack]
+		if currentPanel ~= panel then
+			hidePanel(currentPanel)
+		end
+	end
+	
+	if not table.find(panelStack, panel) then
+		table.insert(panelStack, panel)
+	end
+	
+	showPanel(panel)
+end
+
+local function closePanelWithStack(panel)
+	for i = #panelStack, 1, -1 do
+		if panelStack[i] == panel then
+			table.remove(panelStack, i)
+			break
+		end
+	end
+	
+	hidePanel(panel, function()
+		if #panelStack > 0 then
+			local previousPanel = panelStack[#panelStack]
+			showPanel(previousPanel)
+		end
+	end)
+end
 
 local updateLibraryContent
 local updateFavoriteButton
@@ -1264,11 +1316,7 @@ updateLibraryContent = function()
 
 				songListScroll.CanvasSize = UDim2.new(0, 0, 0, songListLayout.AbsoluteContentSize.Y)
 
-				songDetailsFrame.Visible = true
-				local openTween = TweenService:Create(songDetailsFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-					Position = UDim2.new(0.5, 0, 0.5, 0)
-				})
-				openTween:Play()
+				openPanelWithStack(songDetailsFrame, true)
 			end)
 		end
 
@@ -1578,24 +1626,34 @@ UserInputService.InputEnded:Connect(function(input)
 end)
 
 queueBtn.MouseButton1Click:Connect(function()
+	hidePanel(musicFrame)
+	
 	queuePanel.Visible = true
 	updateQueuePanel()
 	local openTween = TweenService:Create(queuePanel, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-		Position = UDim2.new(0.622, 0, 0.5, 0)
+		Position = UDim2.new(0.5, 0, 0.5, 0)
 	})
 	openTween:Play()
 end)
 
 queueCloseBtn.MouseButton1Click:Connect(function()
 	local closeTween = TweenService:Create(queuePanel, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-		Position = UDim2.new(0.622, 0, -0.5, 0)
+		Position = UDim2.new(0.5, 0, -0.5, 0)
 	})
 	closeTween:Play()
 	closeTween.Completed:Wait()
 	queuePanel.Visible = false
+	
+	showPanel(musicFrame)
 end)
 
 libraryBtn.MouseButton1Click:Connect(function()
+	panelStack = {}
+	table.insert(panelStack, musicFrame)
+	table.insert(panelStack, libraryFrame)
+	
+	hidePanel(musicFrame)
+	
 	libraryFrame.Visible = true
 	setActiveTab("all")
 
@@ -1609,12 +1667,15 @@ libraryBtn.MouseButton1Click:Connect(function()
 end)
 
 libraryCloseBtn.MouseButton1Click:Connect(function()
+	panelStack = {}
 	local closeTween = TweenService:Create(libraryFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
 		Position = UDim2.new(0.5, 0, -0.5, 0)
 	})
 	closeTween:Play()
 	closeTween.Completed:Wait()
 	libraryFrame.Visible = false
+	
+	showPanel(musicFrame)
 end)
 
 allTab.MouseButton1Click:Connect(function()
@@ -1630,12 +1691,7 @@ favoritesTab.MouseButton1Click:Connect(function()
 end)
 
 songDetailsCloseBtn.MouseButton1Click:Connect(function()
-	local closeTween = TweenService:Create(songDetailsFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-		Position = UDim2.new(0.5, 0, -0.5, 0)
-	})
-	closeTween:Play()
-	closeTween.Completed:Wait()
-	songDetailsFrame.Visible = false
+	closePanelWithStack(songDetailsFrame)
 end)
 
 playAllBtn.MouseButton1Click:Connect(function()
@@ -1650,12 +1706,7 @@ playAllBtn.MouseButton1Click:Connect(function()
 		updateQueueDisplay()
 		updateQueuePanel()
 
-		local closeTween = TweenService:Create(songDetailsFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-			Position = UDim2.new(0.5, 0, -0.5, 0)
-		})
-		closeTween:Play()
-		closeTween.Completed:Wait()
-		songDetailsFrame.Visible = false
+		closePanelWithStack(songDetailsFrame)
 	end
 end)
 

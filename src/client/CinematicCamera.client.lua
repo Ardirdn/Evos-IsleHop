@@ -257,18 +257,6 @@ local function startCinematicCamera()
 	end
 end
 
-cancelBtn.MouseButton1Click:Connect(function()
-	hideConfirmation()
-end)
-
-confirmBtn.MouseButton1Click:Connect(function()
-	startCinematicCamera()
-end)
-
-mobileExitBtn.MouseButton1Click:Connect(function()
-	stopCinematicCamera()
-end)
-
 local function addHoverEffect(button, normalColor, hoverColor)
 	button.MouseEnter:Connect(function()
 		TweenService:Create(button, TweenInfo.new(0.2), {
@@ -294,9 +282,18 @@ local cameraIcon = Icon.new()
 		showConfirmation()
 	end)
 	:bindEvent("deselected", function()
+		hideConfirmation()
 	end)
 
-cameraIcon.selected:Connect(function()
-	task.wait(0.1)
+confirmBtn.MouseButton1Click:Connect(function()
+	cameraIcon:deselect()
+	startCinematicCamera()
+end)
+
+mobileExitBtn.MouseButton1Click:Connect(function()
+	stopCinematicCamera()
+end)
+
+cancelBtn.MouseButton1Click:Connect(function()
 	cameraIcon:deselect()
 end)
