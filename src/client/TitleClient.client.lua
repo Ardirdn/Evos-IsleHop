@@ -20,7 +20,9 @@ local playerCountries = {}
 local hideTitlesEnabled = false
 
 local CONFIG = {
-	MAX_DISTANCE = 100,
+	MAX_DISTANCE = 200,
+	BILLBOARD_RETRY_COUNT = 10,
+	BILLBOARD_RETRY_DELAY = 0.3,
 }
 
 local DESIGN = {
@@ -252,16 +254,30 @@ local function setupPlayer(targetPlayer)
 		local billboard = nil
 		local retries = 0
 
-		while not billboard and retries < 5 do
+		while not billboard and retries < CONFIG.BILLBOARD_RETRY_COUNT do
 			billboard = createBillboard(character, targetPlayer)
 			if not billboard then
 				retries = retries + 1
-				task.wait(0.5)
+				task.wait(CONFIG.BILLBOARD_RETRY_DELAY)
 			end
 		end
 
 		if not billboard then
-			warn("[TITLE] Failed to create billboard for", targetPlayer.Name)
+			warn("[TITLE] Failed to create billboard for", targetPlayer.Name, "after", retries, "attempts")
+
+			task.delay(5, function()
+				if targetPlayer and targetPlayer.Parent and targetPlayer.Character then
+					local recoveredBillboard = createBillboard(targetPlayer.Character, targetPlayer)
+					if recoveredBillboard then
+						local success, title = pcall(function()
+							return getTitleFunc:InvokeServer(targetPlayer)
+						end)
+						if success and title then
+							updateTitle(targetPlayer, title)
+						end
+					end
+				end
+			end)
 			return
 		end
 
@@ -333,6 +349,18 @@ local function setupPlayer(targetPlayer)
 	if targetPlayer.Character then
 		onCharacterAdded(targetPlayer.Character)
 	end
+
+	task.delay(10, function()
+		if targetPlayer and targetPlayer.Parent and targetPlayer.Character then
+			if not billboardCache[targetPlayer] then
+				local head = targetPlayer.Character:FindFirstChild("Head")
+				local existingBillboard = head and head:FindFirstChild("PlayerInfoBillboard")
+				if not existingBillboard then
+					onCharacterAdded(targetPlayer.Character)
+				end
+			end
+		end
+	end)
 end
 
 local function onPlayerRemoving(targetPlayer)

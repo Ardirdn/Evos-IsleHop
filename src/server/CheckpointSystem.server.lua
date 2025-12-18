@@ -28,25 +28,63 @@ local function setupPlayerCollisionGroup()
 
 end
 
-local function applyNoCollisionToCharacter(character)
+local characterCollisionConnections = {}
+
+local function applyNoCollisionToCharacter(character, player)
 	if not CONFIG.DISABLE_BODY_BLOCK then return end
 	if not character then return end
 
-	local partCount = 0
+	local userId = player and player.UserId
 
-	for _, part in pairs(character:GetDescendants()) do
-		if part:IsA("BasePart") then
-			part.CollisionGroup = PLAYERS_COLLISION_GROUP
-			partCount = partCount + 1
+	if userId and characterCollisionConnections[userId] then
+		characterCollisionConnections[userId]:Disconnect()
+		characterCollisionConnections[userId] = nil
+	end
+
+	local function applyCollisionGroup()
+		for _, part in pairs(character:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.CollisionGroup = PLAYERS_COLLISION_GROUP
+			end
 		end
 	end
 
-	character.DescendantAdded:Connect(function(descendant)
+	applyCollisionGroup()
+
+	task.delay(0.5, applyCollisionGroup)
+	task.delay(1.5, applyCollisionGroup)
+
+	local conn = character.DescendantAdded:Connect(function(descendant)
 		if descendant:IsA("BasePart") then
 			descendant.CollisionGroup = PLAYERS_COLLISION_GROUP
 		end
 	end)
 
+	if userId then
+		characterCollisionConnections[userId] = conn
+	end
+end
+
+local function getDefaultSpawnPosition()
+	if mainSpawnLocation then
+		local spawnPart = mainSpawnLocation:FindFirstChild("SpawnLocation") or mainSpawnLocation
+		if spawnPart:IsA("BasePart") then
+			return spawnPart.Position + Vector3.new(0, 3, 0)
+		elseif spawnPart:IsA("Model") and spawnPart.PrimaryPart then
+			return spawnPart.PrimaryPart.Position + Vector3.new(0, 3, 0)
+		end
+	end
+
+	local basecamp = checkpoints[0]
+	if basecamp then
+		local spawnLoc = basecamp:FindFirstChild("SpawnLocation")
+		if spawnLoc then
+			return spawnLoc.Position + Vector3.new(0, 3, 0)
+		end
+		return basecamp.Position + Vector3.new(0, 5, 0)
+	end
+
+	return Vector3.new(0, 50, 0)
 end
 
 setupPlayerCollisionGroup()
@@ -453,6 +491,20 @@ Players.PlayerAdded:Connect(function(player)
 		playerCurrentCheckpoint[userId] = 0
 	end
 
+	local leaderstats = Instance.new("Folder")
+	leaderstats.Name = "leaderstats"
+	leaderstats.Parent = player
+
+	local summitStat = Instance.new("IntValue")
+	summitStat.Name = "Summit"
+	summitStat.Value = data.TotalSummits or 0
+	summitStat.Parent = leaderstats
+
+	local cpStat = Instance.new("IntValue")
+	cpStat.Name = "CP"
+	cpStat.Value = data.LastCheckpoint or 0
+	cpStat.Parent = leaderstats
+
 	local playerStats = Instance.new("Folder")
 	playerStats.Name = "PlayerStats"
 	playerStats.Parent = player
@@ -474,60 +526,72 @@ Players.PlayerAdded:Connect(function(player)
 
 	playerCooldowns[player.UserId] = {}
 
-	player.CharacterAdded:Connect(function(character)
-		local humanoid = character:WaitForChild("Humanoid")
-		task.wait(0.2)
-
-		applyNoCollisionToCharacter(character)
-
-		local currentData = playerData[player.UserId]
-		if not currentData then
-			warn("[SPAWN] No data found for:", player.Name)
-			return
-		end
-
-		local lastCP = currentData.LastCheckpoint
-
-		if lastCP == 0 then
+	local function getSpawnPosition(checkpointNumber)
+		if checkpointNumber == 0 or not checkpointNumber then
 			if mainSpawnLocation then
 				local spawnPart = mainSpawnLocation:FindFirstChild("SpawnLocation") or mainSpawnLocation
 				if spawnPart:IsA("BasePart") then
-					character:MoveTo(spawnPart.Position + Vector3.new(0, 3, 0))
+					return spawnPart.Position + Vector3.new(0, 3, 0)
 				elseif spawnPart:IsA("Model") and spawnPart.PrimaryPart then
-					character:MoveTo(spawnPart.PrimaryPart.Position + Vector3.new(0, 3, 0))
-				else
-					local basecamp = checkpoints[0]
-					if basecamp then
-						local spawnLoc = basecamp:FindFirstChild("SpawnLocation")
-						if spawnLoc then
-							character:MoveTo(spawnLoc.Position + Vector3.new(0, 3, 0))
-						end
-					end
-				end
-			else
-				local basecamp = checkpoints[0]
-				if basecamp then
-					local spawnLoc = basecamp:FindFirstChild("SpawnLocation")
-					if spawnLoc then
-						character:MoveTo(spawnLoc.Position + Vector3.new(0, 3, 0))
-					end
+					return spawnPart.PrimaryPart.Position + Vector3.new(0, 3, 0)
 				end
 			end
+
+			local basecamp = checkpoints[0]
+			if basecamp then
+				local spawnLoc = basecamp:FindFirstChild("SpawnLocation")
+				if spawnLoc then
+					return spawnLoc.Position + Vector3.new(0, 3, 0)
+				end
+				return basecamp.Position + Vector3.new(0, 5, 0)
+			end
 		else
-			local spawnCheckpoint = checkpoints[lastCP]
+			local spawnCheckpoint = checkpoints[checkpointNumber]
 			if spawnCheckpoint then
 				local spawnLocation = spawnCheckpoint:FindFirstChild("SpawnLocation")
 				if spawnLocation then
-					character:MoveTo(spawnLocation.Position + Vector3.new(0, 3, 0))
-					for i = 1, lastCP do
-						setCheckpointColor(i, Color3.fromRGB(0, 255, 0))
-					end
-				else
-					warn("[SPAWN] SpawnLocation not found in checkpoint:", lastCP)
+					return spawnLocation.Position + Vector3.new(0, 3, 0)
 				end
-			else
-				warn("[SPAWN] Checkpoint not found:", lastCP)
 			end
+
+			return getSpawnPosition(0)
+		end
+
+		return Vector3.new(0, 50, 0)
+	end
+
+	local function teleportToSpawn(character, checkpointNumber)
+		local spawnPos = getSpawnPosition(checkpointNumber)
+		character:MoveTo(spawnPos)
+
+		if checkpointNumber and checkpointNumber > 0 then
+			for i = 1, checkpointNumber do
+				setCheckpointColor(i, Color3.fromRGB(0, 255, 0))
+			end
+		end
+	end
+
+	local isFirstSpawn = true
+
+	player.CharacterAdded:Connect(function(character)
+		local humanoid = character:WaitForChild("Humanoid")
+
+		applyNoCollisionToCharacter(character, player)
+
+		local currentData = playerData[player.UserId]
+		local lastCP = currentData and currentData.LastCheckpoint or 0
+
+		if isFirstSpawn then
+			isFirstSpawn = false
+
+			task.wait(0.1)
+
+			teleportToSpawn(character, lastCP)
+			print(string.format("[SPAWN] ✅ Initial spawn %s at CP %d", player.Name, lastCP))
+		else
+			task.wait(0.1)
+
+			teleportToSpawn(character, lastCP)
 		end
 
 		hideSummitButton:FireClient(player)
@@ -537,7 +601,15 @@ Players.PlayerAdded:Connect(function(player)
 		end
 
 		playerCooldowns[player.UserId] = {}
-		playerCurrentCheckpoint[player.UserId] = currentData.LastCheckpoint
+		playerCurrentCheckpoint[player.UserId] = lastCP
+
+		local ls = player:FindFirstChild("leaderstats")
+		if ls then
+			local cpValue = ls:FindFirstChild("CP")
+			if cpValue then
+				cpValue.Value = lastCP
+			end
+		end
 	end)
 end)
 
@@ -612,6 +684,14 @@ for checkpointNum, checkpoint in pairs(checkpoints) do
 			savePlayerData(player)
 			setCheckpointColor(checkpointNum, Color3.fromRGB(0, 255, 0))
 
+			local ls = player:FindFirstChild("leaderstats")
+			if ls then
+				local cpValue = ls:FindFirstChild("CP")
+				if cpValue then
+					cpValue.Value = checkpointNum
+				end
+			end
+
 			if CONFIG.DISTRIBUTE_MONEY_TO_CHECKPOINTS then
 				local totalCheckpoints = #checkpoints - 2
 				local moneyPerCheckpoint = math.floor(CONFIG.MONEY_PER_SUMMIT / totalCheckpoints)
@@ -684,6 +764,18 @@ for checkpointNum, checkpoint in pairs(checkpoints) do
 			local pStats = player:FindFirstChild("PlayerStats")
 			if pStats and pStats:FindFirstChild("Summit") then
 				pStats.Summit.Value = data.TotalSummits
+			end
+
+			local ls = player:FindFirstChild("leaderstats")
+			if ls then
+				local summitStat = ls:FindFirstChild("Summit")
+				if summitStat then
+					summitStat.Value = data.TotalSummits
+				end
+				local cpStat = ls:FindFirstChild("CP")
+				if cpStat then
+					cpStat.Value = 0
+				end
 			end
 
 			DataHandler:Set(player, "TotalSummits", data.TotalSummits)
@@ -1139,7 +1231,13 @@ teleportToLastCheckpoint.OnServerEvent:Connect(function(player)
 end)
 
 Players.PlayerRemoving:Connect(function(player)
-	playerSwimmingMode[player.UserId] = nil
+	local userId = player.UserId
+	playerSwimmingMode[userId] = nil
+
+	if characterCollisionConnections[userId] then
+		characterCollisionConnections[userId]:Disconnect()
+		characterCollisionConnections[userId] = nil
+	end
 end)
 
 return CheckpointSystem

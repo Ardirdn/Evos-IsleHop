@@ -127,6 +127,7 @@ TitleConfig.AccessRules = {
 	["VIPZones"] = {"VIP", "VVIP", "Donatur", "EVOS TEAM","Admin", "Owner", "SahabatAdmin", "Akamsi"},
 
 	["EVOSZones"] = {"EVOS TEAM", "Admin", "Owner"},
+	["CDPZones"] = {"CDP", "Admin", "Owner"},
 	["AkamsiZones"] = {"Akamsi", "Admin", "Owner"},
 
 	["BoatAccess"] = {"VIP", "VVIP", "Donatur", "EVOS TEAM", "Admin", "Owner", "SahabatAdmin", "CDP"},
@@ -136,7 +137,9 @@ TitleConfig.ZoneColors = {
 	["AdminZones"] = Color3.fromRGB(237, 66, 69),
 	["VVIPZones"] = Color3.fromRGB(138, 43, 226),
 	["VIPZones"] = Color3.fromRGB(255, 215, 0),
-	["EVOSZones"] = Color3.fromRGB(255, 0, 0)
+	["EVOSZones"] = Color3.fromRGB(255, 0, 0),
+	["CDPZones"] = Color3.fromRGB(90, 157, 78),
+	["AkamsiZones"] = Color3.fromRGB(255, 215, 0),
 }
 
 TitleConfig.PrimaryAdminIds = {

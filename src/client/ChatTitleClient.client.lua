@@ -119,13 +119,14 @@ TextChatService.OnIncomingMessage = function(message: TextChatMessage)
 		local tagText = string.format("[%s %s]", icon, displayName)
 		local gradientTag = GradientText(tagText, colors)
 
-		local playerName = message.TextSource.Name
+		local targetPlayer = Players:GetPlayerByUserId(userId)
+		local playerDisplayName = targetPlayer and targetPlayer.DisplayName or message.TextSource.Name
 		local nameColorRGB = string.format("rgb(%d,%d,%d)",
 			math.floor(mainColor.R * 255),
 			math.floor(mainColor.G * 255),
 			math.floor(mainColor.B * 255))
 
-		local coloredName = string.format("<font color='%s'>%s:</font>", nameColorRGB, playerName)
+		local coloredName = string.format("<font color='%s'>%s:</font>", nameColorRGB, playerDisplayName)
 
 		properties.PrefixText = gradientTag .. " " .. coloredName
 

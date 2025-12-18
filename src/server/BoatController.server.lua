@@ -219,6 +219,16 @@ local function cancelResetTimer(boat)
 	end
 end
 
+local function setProximityPromptEnabled(boat, enabled)
+	local body = boat:FindFirstChild("Body")
+	if body then
+		local prompt = body:FindFirstChild("ProximityPrompt")
+		if prompt then
+			prompt.Enabled = enabled
+		end
+	end
+end
+
 local function onSeatOccupantChanged(seat, boat)
 	return function()
 		local occupant = seat.Occupant
@@ -235,6 +245,8 @@ local function onSeatOccupantChanged(seat, boat)
 					task.defer(function()
 						throwPlayer(player, seat)
 					end)
+				else
+					setProximityPromptEnabled(boat, false)
 				end
 			end
 		else
@@ -246,6 +258,7 @@ local function onSeatOccupantChanged(seat, boat)
 			
 			if not driverOccupied and not passengerOccupied then
 				startResetTimer(boat)
+				setProximityPromptEnabled(boat, true)
 			end
 		end
 	end

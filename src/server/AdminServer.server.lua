@@ -235,6 +235,27 @@ if not sendGlobalNotificationEvent then
 	sendGlobalNotificationEvent.Parent = remoteFolder
 end
 
+local getPlayerCheckpointFunc = remoteFolder:FindFirstChild("GetPlayerCheckpoint")
+if not getPlayerCheckpointFunc then
+	getPlayerCheckpointFunc = Instance.new("RemoteFunction")
+	getPlayerCheckpointFunc.Name = "GetPlayerCheckpoint"
+	getPlayerCheckpointFunc.Parent = remoteFolder
+end
+
+getPlayerCheckpointFunc.OnServerInvoke = function(admin, targetUserId)
+	if not isAdmin(admin.UserId) then
+		return 0
+	end
+
+	local targetPlayer = Players:GetPlayerByUserId(targetUserId)
+	if targetPlayer then
+		local checkpoint = DataHandler:Get(targetPlayer, "LastCheckpoint")
+		return checkpoint or 0
+	end
+
+	return 0
+end
+
 kickPlayerEvent.OnServerEvent:Connect(function(admin, targetUserId)
 	if not isAdmin(admin.UserId) then
 		warn(string.format("⚠️ [ADMIN SERVER] Non-admin tried to kick: %s", admin.Name))

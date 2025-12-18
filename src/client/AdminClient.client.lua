@@ -1733,6 +1733,48 @@ local function createPlayerCard(targetPlayer)
 
 	createTextSizeConstraint(12).Parent = displayLabel
 
+	local statsLabel = Instance.new("TextLabel")
+	statsLabel.Name = "StatsLabel"
+	statsLabel.Size = UDim2.new(0.4, 0, 0.45, 0)
+	statsLabel.Position = UDim2.new(0.58, 0, 0.5, 0)
+	statsLabel.AnchorPoint = Vector2.new(0, 0.5)
+	statsLabel.BackgroundTransparency = 1
+	statsLabel.Font = Enum.Font.Gotham
+	statsLabel.Text = "⛰️ -- | 📍 --"
+	statsLabel.TextColor3 = COLORS.TextSecondary
+	statsLabel.TextScaled = true
+	statsLabel.TextXAlignment = Enum.TextXAlignment.Left
+	statsLabel.Parent = card
+
+	createTextSizeConstraint(11).Parent = statsLabel
+
+	task.spawn(function()
+		local playerStats = targetPlayer:FindFirstChild("PlayerStats")
+		local summitValue = 0
+		local checkpointValue = 0
+
+		if playerStats then
+			local summit = playerStats:FindFirstChild("Summit")
+			if summit then
+				summitValue = summit.Value
+			end
+		end
+
+		local getPlayerDataFunc = remoteFolder:FindFirstChild("GetPlayerCheckpoint")
+		if getPlayerDataFunc and getPlayerDataFunc:IsA("RemoteFunction") then
+			local success, cpData = pcall(function()
+				return getPlayerDataFunc:InvokeServer(targetPlayer.UserId)
+			end)
+			if success and cpData then
+				checkpointValue = cpData
+			end
+		end
+
+		if statsLabel and statsLabel.Parent then
+			statsLabel.Text = string.format("⛰️ %d | 📍 CP%d", summitValue, checkpointValue)
+		end
+	end)
+
 	local TitleConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("TitleConfig"))
 
 	local function updateTitleLabel()
