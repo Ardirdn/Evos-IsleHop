@@ -822,9 +822,24 @@ giveItemsEvent.OnServerEvent:Connect(function(admin, targetUserId, auras, tools,
 end)
 
 sendGlobalNotificationEvent.OnServerEvent:Connect(function(admin, notifType, message, textColor, notificationType, duration)
-	if not isPrimaryAdmin(admin.UserId) then
+	if not isAdmin(admin.UserId) then
+		return
+	end
+
+	if notifType == "event" then
+		if not isPrimaryAdmin(admin.UserId) then
+			NotificationService:Send(admin, {
+				Message = "Only Primary Admin can send event notifications!",
+				Type = "error",
+				Duration = 3
+			})
+			return
+		end
+	end
+
+	if isThirdpartyAdmin(admin.UserId) and not hasThirdpartyPermission("CanSendNotifications") then
 		NotificationService:Send(admin, {
-			Message = "Only Primary Admin can send notifications!",
+			Message = "You don't have permission to send notifications!",
 			Type = "error",
 			Duration = 3
 		})
@@ -837,7 +852,7 @@ sendGlobalNotificationEvent.OnServerEvent:Connect(function(admin, notifType, mes
 			colorData = {textColor.R, textColor.G, textColor.B}
 		end
 
-		NotificationService:SendToAll({
+		local notifData = {
 			Message = message,
 			NotificationType = notificationType or "SideTextOnly",
 			Duration = duration or 10,
@@ -849,13 +864,23 @@ sendGlobalNotificationEvent.OnServerEvent:Connect(function(admin, notifType, mes
 				Name = admin.Name,
 				DisplayName = admin.DisplayName
 			}
-		}, admin)
+		}
 
-		NotificationService:Send(admin, {
-			Message = "Global notification sent!",
-			NotificationType = "SideTextOnly",
-			Duration = 3
-		})
+		if notifType == "global" then
+			NotificationService:SendGlobal(notifData)
+			NotificationService:Send(admin, {
+				Message = "Global notification sent to ALL SERVERS!",
+				NotificationType = "SideTextOnly",
+				Duration = 3
+			})
+		else
+			NotificationService:SendToAll(notifData)
+			NotificationService:Send(admin, {
+				Message = "Notification sent to THIS SERVER only!",
+				NotificationType = "SideTextOnly",
+				Duration = 3
+			})
+		end
 
 		AdminLogServer:Log(admin.UserId, admin.Name, "notification", {UserId = 0, Name = "All Players"}, "Type: " .. notifType .. ", Msg: " .. string.sub(message, 1, 50))
 	end

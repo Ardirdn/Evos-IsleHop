@@ -3,14 +3,14 @@ local ShopConfig = {}
 ShopConfig.Gamepasses = {
 	{
 		Name = "VIP",
-		Price = 100,
+		Price = 129,
 		Thumbnail = "rbxassetid://93839116673767",
 		GamepassId = 1635503506,
 		Description = "⭐ Title VIP Eksklusif | 🚪 Akses Area VIP | ⛵ Akses Boat | 🔧 Speed Coil & Double Coil"
 	},
 	{
 		Name = "VVIP",
-		Price = 500,
+		Price = 249,
 		Thumbnail = "rbxassetid://113168148931190",
 		GamepassId = 1635215580,
 		Description = "💎 Semua Reward VIP | ⭐ Title VVIP Eksklusif | ⛵ Akses Boat | 🎵 Boombox | ✨ Rainbow & Galaxy Aura | 💰 Money Large Pack"
@@ -19,7 +19,7 @@ ShopConfig.Gamepasses = {
         Name = "x2 Summit",
         DisplayName = "x2 Summit",
         Description = "Dapatkan 2x lipat summit setiap mencapai puncak!",
-        Price = 100,
+        Price = 199,
 		GamepassId = 1635605352,
         Thumbnail = "rbxassetid://130384558824672",
         Icon = "⚡",
@@ -31,28 +31,28 @@ ShopConfig.Auras = {
 	{
 		Title = "Fire Aura",
 		IsPremium = false,
-		Price = 1000,
+		Price = 1065,
 		Thumbnail = "rbxassetid://137186433949829",
 		AuraId = "FireAura"
 	},
 	{
 		Title = "Ice Aura",
 		IsPremium = false,
-		Price = 1500,
+		Price = 5325,
 		Thumbnail = "rbxassetid://117932928077084",
 		AuraId = "IceAura"
 	},
 	{
 		Title = "Lightning Aura",
 		IsPremium = false,
-		Price = 2000,
+		Price = 10650,
 		Thumbnail = "rbxassetid://138063742624133",
 		AuraId = "LightningAura"
 	},
 	{
 		Title = "Shadow Aura",
 		IsPremium = false,
-		Price = 2500,
+		Price = 7455,
 		Thumbnail = "rbxassetid://99172280237398",
 		AuraId = "ShadowAura"
 	},
@@ -129,28 +129,28 @@ ShopConfig.Tools = {
 ShopConfig.MoneyPacks = {
 	{
 		Title = "Starter Pack",
-		Price = 50,
+		Price = 29,
 		Thumbnail = "rbxassetid://79418658322705",
 		MoneyReward = 1000,
 		ProductId = 3481884364
 	},
 	{
 		Title = "Medium Pack",
-		Price = 150,
+		Price = 39,
 		Thumbnail = "rbxassetid://73578426695423",
 		MoneyReward = 5000,
 		ProductId = 3481884609
 	},
 	{
 		Title = "Large Pack",
-		Price = 400,
+		Price = 79,
 		Thumbnail = "rbxassetid://85712527609444",
 		MoneyReward = 15000,
 		ProductId = 3481884804
 	},
 	{
 		Title = "Mega Pack",
-		Price = 1000,
+		Price = 119,
 		Thumbnail = "rbxassetid://111605086890519",
 		MoneyReward = 50000,
 		ProductId = 3481884989

@@ -16,6 +16,7 @@ local redeemCodeEvent = remoteFolder:WaitForChild("RedeemCode")
 local getRewardOptionsFunc = remoteFolder:WaitForChild("GetRewardOptions")
 local checkAdminFunc = remoteFolder:WaitForChild("CheckAdmin")
 local getAllCodesFunc = remoteFolder:WaitForChild("GetAllCodes")
+local deleteCodeEvent = remoteFolder:WaitForChild("DeleteCode")
 
 local COLORS = RedeemConfig.Colors
 
@@ -455,15 +456,37 @@ local function refreshAvailableCodes()
 				makeTextAdaptive(rewardLabel, 12)
 
 				local remainingLabel = Instance.new("TextLabel")
-				remainingLabel.Size = UDim2.new(0.3, 0, 0.4, 0)
-				remainingLabel.Position = UDim2.new(0.65, 0, 0.1, 0)
+				remainingLabel.Size = UDim2.new(0.2, 0, 0.4, 0)
+				remainingLabel.Position = UDim2.new(0.55, 0, 0.1, 0)
 				remainingLabel.BackgroundTransparency = 1
 				remainingLabel.Font = Enum.Font.GothamBold
 				remainingLabel.Text = string.format("%d/%d", codeData.Remaining, codeData.MaxUses)
 				remainingLabel.TextColor3 = codeData.Remaining > 0 and COLORS.Success or COLORS.Danger
 				remainingLabel.TextXAlignment = Enum.TextXAlignment.Right
 				remainingLabel.Parent = codeCard
-				makeTextAdaptive(remainingLabel, 16)
+				makeTextAdaptive(remainingLabel, 14)
+
+				local deleteBtn = Instance.new("TextButton")
+				deleteBtn.Size = UDim2.new(0.18, 0, 0.6, 0)
+				deleteBtn.Position = UDim2.new(0.79, 0, 0.2, 0)
+				deleteBtn.BackgroundColor3 = COLORS.Danger
+				deleteBtn.BorderSizePixel = 0
+				deleteBtn.Font = Enum.Font.GothamBold
+				deleteBtn.Text = "🗑️ Delete"
+				deleteBtn.TextColor3 = COLORS.Text
+				deleteBtn.AutoButtonColor = false
+				deleteBtn.Parent = codeCard
+				makeTextAdaptive(deleteBtn, 11)
+
+				createCorner(6).Parent = deleteBtn
+
+				deleteBtn.MouseButton1Click:Connect(function()
+					deleteBtn.Text = "..."
+					deleteBtn.BackgroundColor3 = COLORS.Button
+					deleteCodeEvent:FireServer(codeData.Code)
+					task.wait(0.5)
+					refreshAvailableCodes()
+				end)
 			end
 		else
 			warn("⚠️ Failed to get available codes")

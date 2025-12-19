@@ -19,8 +19,38 @@ if not chatTitleUpdate then
 end
 
 local BroadcastTitle = titleRemotes:WaitForChild("BroadcastTitle", 10)
+local getTitleFunc = titleRemotes:WaitForChild("GetTitle", 10)
 
 local playerTitles = {}
+
+task.spawn(function()
+	task.wait(3)
+	
+	if getTitleFunc then
+		local success, myTitle = pcall(function()
+			return getTitleFunc:InvokeServer(player)
+		end)
+		
+		if success and myTitle then
+			playerTitles[player.UserId] = myTitle
+		end
+	end
+	
+	local Players = game:GetService("Players")
+	for _, otherPlayer in ipairs(Players:GetPlayers()) do
+		if otherPlayer ~= player and getTitleFunc then
+			task.spawn(function()
+				local success, title = pcall(function()
+					return getTitleFunc:InvokeServer(otherPlayer)
+				end)
+				if success and title then
+					playerTitles[otherPlayer.UserId] = title
+				end
+			end)
+			task.wait(0.1)
+		end
+	end
+end)
 
 local summitTitleLookup = {}
 for _, titleData in ipairs(TitleConfig.SummitTitles) do

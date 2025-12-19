@@ -4,6 +4,7 @@ MusicConfig.Playlists = {
 	["Yatagarashi"] = {
 		Songs = {
 			
+			{ Title = "Sweet Candy Pain", AssetId = "rbxassetid://115895191786933" },
 			{ Title = "Only For You", AssetId = "rbxassetid://129770427656755" },
 			{ Title = "Empty Seat", AssetId = "rbxassetid://113350331501815" },
 			{ Title = "Under The Tree", AssetId = "rbxassetid://133764100357892" },
@@ -13,7 +14,6 @@ MusicConfig.Playlists = {
 			{ Title = "I Don't Wanna", AssetId = "rbxassetid://138665451112521" },
 			{ Title = "Take Me", AssetId = "rbxassetid://122215417753225" },
 			{ Title = "I'll Love Them For You", AssetId = "rbxassetid://130712206628678" },
-			{ Title = "Sweet Candy Pain", AssetId = "rbxassetid://115895191786933" },
 		}
 	},
 

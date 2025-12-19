@@ -135,6 +135,37 @@ closeBtn.MouseLeave:Connect(function()
 	TweenService:Create(closeBtn, TweenInfo.new(0.15), {BackgroundColor3 = COLORS.Button}):Play()
 end)
 
+local dragging = false
+local dragStart = nil
+local startPos = nil
+
+header.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = panel.Position
+		
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+		local delta = input.Position - dragStart
+		local viewportSize = workspace.CurrentCamera.ViewportSize
+		panel.Position = UDim2.new(
+			startPos.X.Scale + (delta.X / viewportSize.X),
+			startPos.X.Offset,
+			startPos.Y.Scale + (delta.Y / viewportSize.Y),
+			startPos.Y.Offset
+		)
+	end
+end)
+
 local content = Instance.new("Frame")
 content.Name = "Content"
 content.Size = UDim2.new(0.9, 0, 0.78, 0)

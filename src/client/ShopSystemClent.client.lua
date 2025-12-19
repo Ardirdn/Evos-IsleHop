@@ -307,7 +307,6 @@ local function createFilterBtn(text, filter)
 end
 
 createFilterBtn("All", "All")
-createFilterBtn("Premium", "Premium")
 createFilterBtn("Normal", "Normal")
 
 local aurasScroll = Instance.new("ScrollingFrame")
@@ -376,7 +375,6 @@ local function createToolFilterBtn(text, filter)
 end
 
 createToolFilterBtn("All", "All")
-createToolFilterBtn("Premium", "Premium")
 createToolFilterBtn("Normal", "Normal")
 
 local toolsScroll = Instance.new("ScrollingFrame")
@@ -521,8 +519,13 @@ local function createAuraItem(auraData)
 	priceLabel.Position = UDim2.new(0.042, 0, 0.679, 0)
 	priceLabel.BackgroundTransparency = 1
 	priceLabel.Font = Enum.Font.GothamBold
-	priceLabel.Text = auraData.IsPremium and ("R$ " .. auraData.Price) or formatMoney(auraData.Price)
-	priceLabel.TextColor3 = auraData.IsPremium and COLORS.Premium or COLORS.Success
+	if auraData.IsPremium then
+		priceLabel.Text = "VIP / VVIP Only"
+		priceLabel.TextColor3 = COLORS.Premium
+	else
+		priceLabel.Text = formatMoney(auraData.Price)
+		priceLabel.TextColor3 = COLORS.Success
+	end
 	priceLabel.TextXAlignment = Enum.TextXAlignment.Left
 	priceLabel.Parent = frame
 	makeTextAdaptive(priceLabel, 16)
@@ -530,24 +533,33 @@ local function createAuraItem(auraData)
 	local buyBtn = Instance.new("TextButton")
 	buyBtn.Size = UDim2.new(0.917, 0, 0.161, 0)
 	buyBtn.Position = UDim2.new(0.042, 0, 0.804, 0)
-	buyBtn.BackgroundColor3 = COLORS.Accent
 	buyBtn.BorderSizePixel = 0
 	buyBtn.Font = Enum.Font.GothamBold
-	buyBtn.Text = "Buy"
-	buyBtn.TextColor3 = COLORS.Text
 	buyBtn.AutoButtonColor = false
 	buyBtn.Parent = frame
 	makeTextAdaptive(buyBtn, 15)
+
+	if auraData.IsPremium then
+		buyBtn.BackgroundColor3 = COLORS.Premium
+		buyBtn.Text = "⭐ VIP Items"
+		buyBtn.TextColor3 = Color3.fromRGB(0, 0, 0)
+	else
+		buyBtn.BackgroundColor3 = COLORS.Accent
+		buyBtn.Text = "Buy"
+		buyBtn.TextColor3 = COLORS.Text
+	end
 
 	createCorner(8).Parent = buyBtn
 
 	buyBtn.MouseButton1Click:Connect(function()
 		if auraData.IsPremium then
-			if not auraData.ProductId or auraData.ProductId == 0 then
-				showNotification("Product ID not set!", COLORS.Danger)
-			else
-				purchaseItemEvent:FireServer("Aura", auraData.AuraId, auraData.Price, true, auraData.ProductId)
+			for _, tabData in pairs(tabs) do
+				tabData.Content.Visible = false
+				tabData.Button.BackgroundColor3 = COLORS.Button
 			end
+			tabs["Gamepasses"].Content.Visible = true
+			tabs["Gamepasses"].Button.BackgroundColor3 = COLORS.Accent
+			currentTab = "Gamepasses"
 		else
 			if currentMoney >= auraData.Price then
 				purchaseItemEvent:FireServer("Aura", auraData.AuraId, auraData.Price, false, nil)
@@ -616,8 +628,13 @@ local function createToolItem(toolData)
 	priceLabel.Position = UDim2.new(0.042, 0, 0.679, 0)
 	priceLabel.BackgroundTransparency = 1
 	priceLabel.Font = Enum.Font.GothamBold
-	priceLabel.Text = toolData.IsPremium and ("R$ " .. toolData.Price) or formatMoney(toolData.Price)
-	priceLabel.TextColor3 = toolData.IsPremium and COLORS.Premium or COLORS.Success
+	if toolData.IsPremium then
+		priceLabel.Text = "VIP / VVIP Only"
+		priceLabel.TextColor3 = COLORS.Premium
+	else
+		priceLabel.Text = formatMoney(toolData.Price)
+		priceLabel.TextColor3 = COLORS.Success
+	end
 	priceLabel.TextXAlignment = Enum.TextXAlignment.Left
 	priceLabel.Parent = frame
 	makeTextAdaptive(priceLabel, 16)
@@ -625,24 +642,33 @@ local function createToolItem(toolData)
 	local buyBtn = Instance.new("TextButton")
 	buyBtn.Size = UDim2.new(0.917, 0, 0.161, 0)
 	buyBtn.Position = UDim2.new(0.042, 0, 0.804, 0)
-	buyBtn.BackgroundColor3 = COLORS.Accent
 	buyBtn.BorderSizePixel = 0
 	buyBtn.Font = Enum.Font.GothamBold
-	buyBtn.Text = "Buy"
-	buyBtn.TextColor3 = COLORS.Text
 	buyBtn.AutoButtonColor = false
 	buyBtn.Parent = frame
 	makeTextAdaptive(buyBtn, 15)
+
+	if toolData.IsPremium then
+		buyBtn.BackgroundColor3 = COLORS.Premium
+		buyBtn.Text = "⭐ VIP Items"
+		buyBtn.TextColor3 = Color3.fromRGB(0, 0, 0)
+	else
+		buyBtn.BackgroundColor3 = COLORS.Accent
+		buyBtn.Text = "Buy"
+		buyBtn.TextColor3 = COLORS.Text
+	end
 
 	createCorner(8).Parent = buyBtn
 
 	buyBtn.MouseButton1Click:Connect(function()
 		if toolData.IsPremium then
-			if not toolData.ProductId or toolData.ProductId == 0 then
-				showNotification("Product ID not set!", COLORS.Danger)
-			else
-				purchaseItemEvent:FireServer("Tool", toolData.ToolId, toolData.Price, true, toolData.ProductId)
+			for _, tabData in pairs(tabs) do
+				tabData.Content.Visible = false
+				tabData.Button.BackgroundColor3 = COLORS.Button
 			end
+			tabs["Gamepasses"].Content.Visible = true
+			tabs["Gamepasses"].Button.BackgroundColor3 = COLORS.Accent
+			currentTab = "Gamepasses"
 		else
 			if currentMoney >= toolData.Price then
 				purchaseItemEvent:FireServer("Tool", toolData.ToolId, toolData.Price, false, nil)

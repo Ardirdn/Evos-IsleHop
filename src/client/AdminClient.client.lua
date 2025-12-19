@@ -3484,45 +3484,51 @@ deleteAllButton.MouseButton1Click:Connect(function()
 	tweenSize(confirmDialog, UDim2.new(0, 380, 0, 200), 0.3)
 end)
 
-if not hasPrimaryAccess then
-	if notifTabBtn then
-		notifTabBtn.Visible = false
-		notifTabBtn.Active = false
-	end
-	if notifTab then
-		notifTab.Visible = false
-	end
 
-	if eventsTabBtn then
-		eventsTabBtn.Visible = false
-		eventsTabBtn.Active = false
-	end
-	if eventsTab then
-		eventsTab.Visible = false
-	end
+local canSendNotifications = hasPrimaryAccess or hasFullAccess or (isThirdparty and TitleConfig.ThirdpartyPermissions and TitleConfig.ThirdpartyPermissions.CanSendNotifications)
 
-	if playersTab and playersTabBtn then
-		playersTab.Visible = true
-		playersTabBtn.BackgroundColor3 = COLORS.Accent
-		playersTabBtn.TextColor3 = COLORS.Text
-		currentTab = playersTab
-	end
-
-	for _, tabBtn in ipairs(tabContainer:GetChildren()) do
-		if tabBtn:IsA("TextButton") and tabBtn.Visible then
-			tabBtn.Size = UDim2.new(0.49, 0, 1, 0)
-		end
-	end
-
-else
-	if notifTab and notifTabBtn then
-		notifTab.Visible = true
-		notifTabBtn.BackgroundColor3 = COLORS.Accent
-		notifTabBtn.TextColor3 = COLORS.Text
-		currentTab = notifTab
-	end
-
+if eventsTabBtn then
+	eventsTabBtn.Visible = hasPrimaryAccess
+	eventsTabBtn.Active = hasPrimaryAccess
 end
+if eventsTab then
+	eventsTab.Visible = false
+end
+
+if notifTabBtn then
+	notifTabBtn.Visible = canSendNotifications
+	notifTabBtn.Active = canSendNotifications
+end
+if notifTab then
+	notifTab.Visible = false
+end
+
+local visibleTabCount = 0
+for _, tabBtn in ipairs(tabContainer:GetChildren()) do
+	if tabBtn:IsA("TextButton") and tabBtn.Visible then
+		visibleTabCount = visibleTabCount + 1
+	end
+end
+
+local tabWidth = visibleTabCount > 0 and (1 / visibleTabCount - 0.01) or 0.24
+for _, tabBtn in ipairs(tabContainer:GetChildren()) do
+	if tabBtn:IsA("TextButton") and tabBtn.Visible then
+		tabBtn.Size = UDim2.new(tabWidth, 0, 1, 0)
+	end
+end
+
+if canSendNotifications and notifTab and notifTabBtn then
+	notifTab.Visible = true
+	notifTabBtn.BackgroundColor3 = COLORS.Accent
+	notifTabBtn.TextColor3 = COLORS.Text
+	currentTab = notifTab
+elseif playersTab and playersTabBtn then
+	playersTab.Visible = true
+	playersTabBtn.BackgroundColor3 = COLORS.Accent
+	playersTabBtn.TextColor3 = COLORS.Text
+	currentTab = playersTab
+end
+
 
 local isOpen = false
 

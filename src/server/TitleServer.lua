@@ -705,6 +705,10 @@ function TitleServer:DetermineTitle(player)
 		return data.EquippedTitle
 	end
 
+	if TitleConfig.IsOwner(userId) then
+		return "Owner"
+	end
+
 	if TitleConfig.AdminIds and table.find(TitleConfig.AdminIds, userId) then
 		return "Admin"
 	end
@@ -887,7 +891,15 @@ function TitleServer:InitializePlayer(player)
 
 	self:UnlockSummitTitles(player, data.TotalSummits or 0)
 
-	if table.find(TitleConfig.AdminIds, player.UserId) then
+	if TitleConfig.IsOwner(player.UserId) then
+		self:UnlockTitle(player, "Owner")
+
+		if data.EquippedTitle ~= "Owner" then
+			DataHandler:Set(player, "EquippedTitle", "Owner")
+		end
+
+		self:GiveAdminWing(player)
+	elseif table.find(TitleConfig.AdminIds, player.UserId) then
 		self:UnlockTitle(player, "Admin")
 
 		if data.EquippedTitle ~= "Admin" then
@@ -931,7 +943,18 @@ function TitleServer:InitializePlayerPostMigration(player)
 		self:UnlockSummitTitles(player, data.TotalSummits)
 	end
 
-	if table.find(TitleConfig.AdminIds, player.UserId) then
+	if TitleConfig.IsOwner(player.UserId) then
+		if not table.find(data.UnlockedTitles or {}, "Owner") then
+			self:UnlockTitle(player, "Owner")
+		end
+
+		if data.EquippedTitle ~= "Owner" then
+			DataHandler:Set(player, "EquippedTitle", "Owner")
+			DataHandler:SavePlayer(player)
+		end
+
+		self:GiveAdminWing(player)
+	elseif table.find(TitleConfig.AdminIds, player.UserId) then
 		if not table.find(data.UnlockedTitles or {}, "Admin") then
 			self:UnlockTitle(player, "Admin")
 		end
@@ -939,7 +962,6 @@ function TitleServer:InitializePlayerPostMigration(player)
 		if data.EquippedTitle ~= "Admin" then
 			DataHandler:Set(player, "EquippedTitle", "Admin")
 			DataHandler:SavePlayer(player)
-
 		end
 
 		self:GiveAdminWing(player)

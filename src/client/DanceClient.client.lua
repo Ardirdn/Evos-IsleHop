@@ -38,6 +38,7 @@ local searchQuery = ""
 local currentAnimation = nil
 local animationSpeed = 1
 local isCoordinateDancing = false
+local currentTab = "All"
 
 local Tracks = {}
 local Animators = {}
@@ -133,31 +134,67 @@ tabFrame.BackgroundTransparency = 1
 tabFrame.Parent = mainPanel
 
 local allTab = Instance.new("TextButton")
-allTab.Size = UDim2.new(0.48, 0, 1, 0)
+allTab.Size = UDim2.new(0.24, 0, 1, 0)
+allTab.Position = UDim2.new(0, 0, 0, 0)
 allTab.BackgroundColor3 = COLORS.Accent
 allTab.BorderSizePixel = 0
-allTab.Text = "All"
+allTab.Text = "📋 All"
 allTab.Font = Enum.Font.GothamBold
 allTab.TextColor3 = COLORS.Text
 allTab.AutoButtonColor = false
 allTab.Parent = tabFrame
 
 createCorner(6).Parent = allTab
-makeTextAdaptive(allTab, 13)
+makeTextAdaptive(allTab, 12)
+
+local danceTab = Instance.new("TextButton")
+danceTab.Size = UDim2.new(0.24, 0, 1, 0)
+danceTab.Position = UDim2.new(0.255, 0, 0, 0)
+danceTab.BackgroundColor3 = COLORS.Button
+danceTab.BorderSizePixel = 0
+danceTab.Text = "💃 Dance"
+danceTab.Font = Enum.Font.GothamBold
+danceTab.TextColor3 = COLORS.Text
+danceTab.AutoButtonColor = false
+danceTab.Parent = tabFrame
+
+createCorner(6).Parent = danceTab
+makeTextAdaptive(danceTab, 12)
+
+local poseTab = Instance.new("TextButton")
+poseTab.Size = UDim2.new(0.24, 0, 1, 0)
+poseTab.Position = UDim2.new(0.505, 0, 0, 0)
+poseTab.BackgroundColor3 = COLORS.Button
+poseTab.BorderSizePixel = 0
+poseTab.Text = "🧍 Pose"
+poseTab.Font = Enum.Font.GothamBold
+poseTab.TextColor3 = COLORS.Text
+poseTab.AutoButtonColor = false
+poseTab.Parent = tabFrame
+
+createCorner(6).Parent = poseTab
+makeTextAdaptive(poseTab, 12)
 
 local favTab = Instance.new("TextButton")
-favTab.Size = UDim2.new(0.48, 0, 1, 0)
-favTab.Position = UDim2.new(0.52, 0, 0, 0)
+favTab.Size = UDim2.new(0.24, 0, 1, 0)
+favTab.Position = UDim2.new(0.755, 0, 0, 0)
 favTab.BackgroundColor3 = COLORS.Button
 favTab.BorderSizePixel = 0
-favTab.Text = "Favorites"
+favTab.Text = "♥ Fav"
 favTab.Font = Enum.Font.GothamBold
 favTab.TextColor3 = COLORS.Text
 favTab.AutoButtonColor = false
 favTab.Parent = tabFrame
 
 createCorner(6).Parent = favTab
-makeTextAdaptive(favTab, 13)
+makeTextAdaptive(favTab, 12)
+
+local function updateTabColors()
+	allTab.BackgroundColor3 = currentTab == "All" and COLORS.Accent or COLORS.Button
+	favTab.BackgroundColor3 = currentTab == "Favorites" and COLORS.Accent or COLORS.Button
+	danceTab.BackgroundColor3 = currentTab == "Dance" and COLORS.Accent or COLORS.Button
+	poseTab.BackgroundColor3 = currentTab == "Pose" and COLORS.Accent or COLORS.Button
+end
 
 local searchFrame = Instance.new("Frame")
 searchFrame.Size = UDim2.new(0.94, 0, 0.07, 0)
@@ -444,11 +481,25 @@ function updateAnimList()
 
 	local animsToShow = {}
 
-	if allTab.BackgroundColor3 == COLORS.Accent then
-		animsToShow = DanceConfig.Animations
-	else
+	if currentTab == "All" then
+		for _, anim in ipairs(DanceConfig.Animations) do
+			table.insert(animsToShow, anim)
+		end
+	elseif currentTab == "Favorites" then
 		for _, anim in ipairs(DanceConfig.Animations) do
 			if isFavorite(anim.Title) then
+				table.insert(animsToShow, anim)
+			end
+		end
+	elseif currentTab == "Dance" then
+		for _, anim in ipairs(DanceConfig.Animations) do
+			if anim.Category == "Dance" then
+				table.insert(animsToShow, anim)
+			end
+		end
+	elseif currentTab == "Pose" then
+		for _, anim in ipairs(DanceConfig.Animations) do
+			if anim.Category == "Pose" then
 				table.insert(animsToShow, anim)
 			end
 		end
@@ -467,7 +518,13 @@ function updateAnimList()
 
 	if #animsToShow == 0 then
 		emptyLabel.Visible = true
-		emptyLabel.Text = searchQuery ~= "" and "Animasi tidak ditemukan" or "No animations found"
+		if currentTab == "Favorites" then
+			emptyLabel.Text = "Belum ada favorit"
+		elseif searchQuery ~= "" then
+			emptyLabel.Text = "Animasi tidak ditemukan"
+		else
+			emptyLabel.Text = "Tidak ada animasi"
+		end
 	else
 		emptyLabel.Visible = false
 		for _, anim in ipairs(animsToShow) do
@@ -507,14 +564,26 @@ closeBtn.MouseButton1Click:Connect(function()
 end)
 
 allTab.MouseButton1Click:Connect(function()
-	allTab.BackgroundColor3 = COLORS.Accent
-	favTab.BackgroundColor3 = COLORS.Button
+	currentTab = "All"
+	updateTabColors()
 	updateAnimList()
 end)
 
 favTab.MouseButton1Click:Connect(function()
-	favTab.BackgroundColor3 = COLORS.Accent
-	allTab.BackgroundColor3 = COLORS.Button
+	currentTab = "Favorites"
+	updateTabColors()
+	updateAnimList()
+end)
+
+danceTab.MouseButton1Click:Connect(function()
+	currentTab = "Dance"
+	updateTabColors()
+	updateAnimList()
+end)
+
+poseTab.MouseButton1Click:Connect(function()
+	currentTab = "Pose"
+	updateTabColors()
 	updateAnimList()
 end)
 

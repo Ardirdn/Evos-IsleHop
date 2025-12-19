@@ -56,6 +56,13 @@ if not getAllCodesFunc then
 	getAllCodesFunc.Parent = remoteFolder
 end
 
+local deleteCodeEvent = remoteFolder:FindFirstChild("DeleteCode")
+if not deleteCodeEvent then
+	deleteCodeEvent = Instance.new("RemoteEvent")
+	deleteCodeEvent.Name = "DeleteCode"
+	deleteCodeEvent.Parent = remoteFolder
+end
+
 local function isAdmin(player)
 	local data = DataHandler:GetData(player)
 	if data and data.EquippedTitle == "Admin" then
@@ -479,3 +486,71 @@ getAllCodesFunc.OnServerInvoke = function(player)
 
 	return allCodes
 end
+
+deleteCodeEvent.OnServerEvent:Connect(function(player, codeString)
+	if not player or not player.Parent then return end
+
+	if not isAdmin(player) then
+		NotificationService:Send(player, {
+			Message = "You don't have permission to delete codes!",
+			Type = "error",
+			Duration = 3
+		})
+		return
+	end
+
+	if not codeString or codeString == "" then
+		NotificationService:Send(player, {
+			Message = "Invalid code!",
+			Type = "error",
+			Duration = 3
+		})
+		return
+	end
+
+	local codeData = getCodeData(codeString)
+	if not codeData then
+		NotificationService:Send(player, {
+			Message = "Code not found!",
+			Type = "error",
+			Duration = 3
+		})
+		return
+	end
+
+	local success = pcall(function()
+		RedeemCodesStore:RemoveAsync(codeString)
+	end)
+
+	if success then
+		local trackingKey = "RedeemCodes_Tracking"
+		local success2, existingList = pcall(function()
+			return RedeemCodesStore:GetAsync(trackingKey) or {}
+		end)
+
+		if success2 then
+			local newList = {}
+			for _, code in ipairs(existingList) do
+				if code ~= codeString then
+					table.insert(newList, code)
+				end
+			end
+			pcall(function()
+				RedeemCodesStore:SetAsync(trackingKey, newList)
+			end)
+		end
+
+		NotificationService:Send(player, {
+			Message = string.format("Code '%s' deleted!", codeString),
+			Type = "success",
+			Duration = 3,
+			Icon = "🗑️"
+		})
+	else
+		NotificationService:Send(player, {
+			Message = "Failed to delete code!",
+			Type = "error",
+			Duration = 3
+		})
+	end
+end)

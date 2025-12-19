@@ -1,6 +1,7 @@
 local DonateConfig = {}
 
 DonateConfig.DonationThreshold = 1000
+DonateConfig.GlobalNotificationThreshold = 500
 
 DonateConfig.Packages = {
 	{

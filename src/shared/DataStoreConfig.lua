@@ -1,6 +1,6 @@
 local DataStoreConfig = {}
 
-DataStoreConfig.VERSION = "v1001"
+DataStoreConfig.VERSION = "v1002"
 
 DataStoreConfig.PlayerData = "PlayersData_" .. DataStoreConfig.VERSION
 

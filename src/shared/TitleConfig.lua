@@ -183,7 +183,7 @@ TitleConfig.SpecialTitles = {
 	},
 	Owner = {
 		DisplayName = "OWNER",
-		Color = Color3.fromRGB(220, 3, 22),
+		Color = Color3.fromRGB(255, 128, 0),
 		Icon = "👑",
 		Priority = 1000,
 		Givable = false
@@ -259,7 +259,7 @@ for _, id in ipairs(TitleConfig.SecondaryAdminIds) do
 end
 
 TitleConfig.ThirdpartyAdminIds = {
-
+	
 	9209793056,
 	 8910155229,
 	 3573849857,
@@ -290,7 +290,7 @@ TitleConfig.ThirdpartyPermissions = {
 	CanSetTitle = false,
 	CanGiveTitle = false,
 	CanSetSummit = false,
-	CanSendNotifications = false,
+	CanSendNotifications = true,
 	CanKill = false,
 	CanSetSpeed = false,
 	CanSetGravity = false,

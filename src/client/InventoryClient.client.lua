@@ -181,6 +181,37 @@ closeBtn.MouseButton1Click:Connect(function()
 	end)
 end)
 
+local dragging = false
+local dragStart = nil
+local startPos = nil
+
+header.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		dragging = true
+		dragStart = input.Position
+		startPos = mainPanel.Position
+		
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
+			end
+		end)
+	end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+		local delta = input.Position - dragStart
+		local viewportSize = workspace.CurrentCamera.ViewportSize
+		mainPanel.Position = UDim2.new(
+			startPos.X.Scale + (delta.X / viewportSize.X),
+			startPos.X.Offset,
+			startPos.Y.Scale + (delta.Y / viewportSize.Y),
+			startPos.Y.Offset
+		)
+	end
+end)
+
 local categoryFrame = Instance.new("Frame")
 categoryFrame.Size = UDim2.new(0.94, 0, 0.08, 0)
 categoryFrame.Position = UDim2.new(0.03, 0, 0.12, 0)

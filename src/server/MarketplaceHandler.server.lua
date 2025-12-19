@@ -75,6 +75,15 @@ MarketplaceService.ProcessReceipt = function(receiptInfo)
 			local totalDonations = DataHandler:Get(player, "TotalDonations")
 			DataHandler:SavePlayer(player)
 
+			if amount >= DonateConfig.GlobalNotificationThreshold then
+				NotificationService:SendGlobal({
+					Message = string.format("💖 %s baru saja donate sebesar R$%d!", player.DisplayName, amount),
+					Type = "info",
+					Duration = 7,
+					Icon = "🎁"
+				})
+			end
+
 			if totalDonations >= DonateConfig.DonationThreshold then
 				TitleServer:GrantSpecialTitle(player, "Donatur")
 				NotificationService:Send(player, {
