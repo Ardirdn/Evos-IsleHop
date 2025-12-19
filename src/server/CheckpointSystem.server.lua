@@ -476,7 +476,13 @@ local function getGamepassMultiplier(player)
 end
 
 Players.PlayerAdded:Connect(function(player)
+	print(string.format("[SPAWN DEBUG] ########## PlayerAdded: %s (UserId: %d) ##########", player.Name, player.UserId))
+
+	local startTime = tick()
 	local data = loadPlayerData(player)
+	local loadTime = tick() - startTime
+
+	print(string.format("[SPAWN DEBUG] Data loaded for %s in %.2fs, data=%s", player.Name, loadTime, tostring(data ~= nil)))
 
 	if not data then
 		warn(string.format("[PLAYER] Using default data for %s (DataHandler not ready)", player.Name))
@@ -489,6 +495,9 @@ Players.PlayerAdded:Connect(function(player)
 		}
 		playerData[userId] = data
 		playerCurrentCheckpoint[userId] = 0
+	else
+		print(string.format("[SPAWN DEBUG] %s data: LastCheckpoint=%d, TotalSummits=%d", 
+			player.Name, data.LastCheckpoint or 0, data.TotalSummits or 0))
 	end
 
 	local leaderstats = Instance.new("Folder")
@@ -560,39 +569,102 @@ Players.PlayerAdded:Connect(function(player)
 		return Vector3.new(0, 50, 0)
 	end
 
-	local function teleportToSpawn(character, checkpointNumber)
+	local function teleportToSpawn(character, checkpointNumber, debugSource)
 		local spawnPos = getSpawnPosition(checkpointNumber)
-		character:MoveTo(spawnPos)
+
+		local hrp = character:FindFirstChild("HumanoidRootPart")
+		if hrp then
+			local beforePos = hrp.Position
+			hrp.CFrame = CFrame.new(spawnPos)
+			print(string.format("[SPAWN DEBUG] %s teleported from %s to %s (CP=%d, source=%s)", 
+				player.Name, 
+				tostring(beforePos), 
+				tostring(spawnPos), 
+				checkpointNumber or 0,
+				debugSource or "unknown"))
+		else
+			character:MoveTo(spawnPos)
+			print(string.format("[SPAWN DEBUG] %s MoveTo %s (no HRP, CP=%d)", player.Name, tostring(spawnPos), checkpointNumber or 0))
+		end
 
 		if checkpointNumber and checkpointNumber > 0 then
 			for i = 1, checkpointNumber do
 				setCheckpointColor(i, Color3.fromRGB(0, 255, 0))
 			end
 		end
+
+		return spawnPos
 	end
 
 	local isFirstSpawn = true
 
-	player.CharacterAdded:Connect(function(character)
-		local humanoid = character:WaitForChild("Humanoid")
+	local function handleCharacterSpawn(character)
+		local humanoid = character:WaitForChild("Humanoid", 10)
+		if not humanoid then
+			warn(string.format("[SPAWN DEBUG] ❌ %s: Humanoid not found!", player.Name))
+			return
+		end
+
+		print(string.format("[SPAWN DEBUG] ========== HandleCharacterSpawn: %s ==========", player.Name))
+		print(string.format("[SPAWN DEBUG] isFirstSpawn: %s", tostring(isFirstSpawn)))
 
 		applyNoCollisionToCharacter(character, player)
 
 		local currentData = playerData[player.UserId]
 		local lastCP = currentData and currentData.LastCheckpoint or 0
 
+		print(string.format("[SPAWN DEBUG] playerData exists: %s, lastCP: %d", tostring(currentData ~= nil), lastCP))
+
+		task.wait(0.2)
+
+		local hrp = character:WaitForChild("HumanoidRootPart", 5)
+		if not hrp then
+			warn(string.format("[SPAWN DEBUG] ❌ %s: HumanoidRootPart not found!", player.Name))
+			return
+		end
+
+		local spawnPos = getSpawnPosition(lastCP)
+		local beforePos = hrp.Position
+
+		hrp.CFrame = CFrame.new(spawnPos)
+
 		if isFirstSpawn then
 			isFirstSpawn = false
-
-			task.wait(0.1)
-
-			teleportToSpawn(character, lastCP)
-			print(string.format("[SPAWN] ✅ Initial spawn %s at CP %d", player.Name, lastCP))
+			print(string.format("[SPAWN DEBUG] %s INITIAL teleported from %s to %s (CP=%d)", 
+				player.Name, tostring(beforePos), tostring(spawnPos), lastCP))
 		else
-			task.wait(0.1)
-
-			teleportToSpawn(character, lastCP)
+			print(string.format("[SPAWN DEBUG] %s RESPAWN teleported from %s to %s (CP=%d)", 
+				player.Name, tostring(beforePos), tostring(spawnPos), lastCP))
 		end
+
+		if lastCP > 0 then
+			for i = 1, lastCP do
+				setCheckpointColor(i, Color3.fromRGB(0, 255, 0))
+			end
+		end
+
+		task.delay(3, function()
+			if not player or not player.Parent then return end
+			if not character or not character.Parent then return end
+
+			local hrpCheck = character:FindFirstChild("HumanoidRootPart")
+			if not hrpCheck then return end
+
+			local currentPos = hrpCheck.Position
+			local correctPos = getSpawnPosition(lastCP)
+			local distance = (currentPos - correctPos).Magnitude
+
+			print(string.format("[SPAWN DEBUG] 3s check for %s: currentPos=%s, correctPos=%s, distance=%.1f", 
+				player.Name, tostring(currentPos), tostring(correctPos), distance))
+
+			if distance > 50 then
+				print(string.format("[SPAWN DEBUG] ⚠️ %s is %.1f studs away! Re-teleporting...", player.Name, distance))
+				hrpCheck.CFrame = CFrame.new(correctPos)
+				print(string.format("[SPAWN DEBUG] ✅ Force re-teleported %s to CP %d", player.Name, lastCP))
+			else
+				print(string.format("[SPAWN DEBUG] ✅ %s is at correct position (within 50 studs)", player.Name))
+			end
+		end)
 
 		hideSummitButton:FireClient(player)
 
@@ -610,7 +682,21 @@ Players.PlayerAdded:Connect(function(player)
 				cpValue.Value = lastCP
 			end
 		end
+
+		print(string.format("[SPAWN DEBUG] ========== HandleCharacterSpawn complete: %s ==========", player.Name))
+	end
+
+	player.CharacterAdded:Connect(function(character)
+		print(string.format("[SPAWN DEBUG] >>> CharacterAdded event fired for %s", player.Name))
+		handleCharacterSpawn(character)
 	end)
+
+	if player.Character then
+		print(string.format("[SPAWN DEBUG] >>> Character already exists for %s, handling immediately", player.Name))
+		task.spawn(function()
+			handleCharacterSpawn(player.Character)
+		end)
+	end
 end)
 
 for checkpointNum, checkpoint in pairs(checkpoints) do

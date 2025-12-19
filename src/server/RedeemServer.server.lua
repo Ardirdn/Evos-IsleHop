@@ -278,12 +278,29 @@ redeemCodeEvent.OnServerEvent:Connect(function(player, codeString)
 			return
 		end
 
+		local TitleServer = require(script.Parent.TitleServer)
+
+		if not DataHandler:ArrayContains(player, "UnlockedTitles", rewardValue) then
+			DataHandler:AddToArray(player, "UnlockedTitles", rewardValue)
+		end
+
 		if not DataHandler:ArrayContains(player, "OwnedTitles", rewardValue) then
 			DataHandler:AddToArray(player, "OwnedTitles", rewardValue)
 		end
 
 		DataHandler:Set(player, "EquippedTitle", rewardValue)
-		rewardMessage = string.format("Title: %s", rewardValue)
+
+		TitleServer:ApplyPrivileges(player, rewardValue)
+
+		TitleServer:BroadcastTitle(player, rewardValue)
+
+		if TitleServer.RefreshZoneAccess then
+			TitleServer.RefreshZoneAccess(player)
+		end
+
+		DataHandler:SavePlayer(player)
+
+		rewardMessage = string.format("Title: %s (dengan semua hadiah!)", rewardValue)
 
 	elseif rewardType == "Aura" then
 		if not DataHandler:ArrayContains(player, "OwnedAuras", rewardValue) then

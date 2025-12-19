@@ -699,12 +699,14 @@ giveTitleEvent.OnServerEvent:Connect(function(admin, targetUserId, titleName)
 	end
 
 	if titleData.Givable == false then
-		NotificationService:Send(admin, {
-			Message = "This title cannot be given!",
-			Type = "error",
-			Duration = 3
-		})
-		return
+		if not TitleConfig.IsOwner(targetPlayer.UserId) then
+			NotificationService:Send(admin, {
+				Message = "This title cannot be given!",
+				Type = "error",
+				Duration = 3
+			})
+			return
+		end
 	end
 
 	local success = false

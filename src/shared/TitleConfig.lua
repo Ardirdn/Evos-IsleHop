@@ -2,43 +2,127 @@ local TitleConfig = {}
 
 TitleConfig.SummitTitles = {
 	{
-		Name = "Pengunjung",
-		DisplayName = "PENGUNJUNG",
+		Name = "Stranded Sailor",
+		DisplayName = "STRANDED SAILOR",
 		MinSummits = 0,
 		Color = Color3.fromRGB(180, 180, 185),
-		Icon = "👤"
+		Icon = "⚓"
 	},
 	{
-		Name = "Pendaki Pemula",
-		DisplayName = "PENDAKI PEMULA",
+		Name = "Deck Rookie",
+		DisplayName = "DECK ROOKIE",
+		MinSummits = 1,
+		Color = Color3.fromRGB(160, 160, 165),
+		Icon = "🚢"
+	},
+	{
+		Name = "Coast Explorer",
+		DisplayName = "COAST EXPLORER",
 		MinSummits = 10,
 		Color = Color3.fromRGB(139, 195, 74),
-		Icon = "🥾"
+		Icon = "🏝️"
 	},
 	{
-		Name = "Pendaki Terampil",
-		DisplayName = "PENDAKI TERAMPIL",
+		Name = "Island Hopper",
+		DisplayName = "ISLAND HOPPER",
+		MinSummits = 20,
+		Color = Color3.fromRGB(100, 200, 100),
+		Icon = "🌴"
+	},
+	{
+		Name = "Wave Drifter",
+		DisplayName = "WAVE DRIFTER",
+		MinSummits = 35,
+		Color = Color3.fromRGB(64, 164, 223),
+		Icon = "🌊"
+	},
+	{
+		Name = "Sea Legs Acquired",
+		DisplayName = "SEA LEGS ACQUIRED",
 		MinSummits = 50,
 		Color = Color3.fromRGB(33, 150, 243),
-		Icon = "⛰️"
+		Icon = "🦿"
 	},
 	{
-		Name = "Pendaki Ahli",
-		DisplayName = "PENDAKI AHLI",
-		MinSummits = 100,
-		Color = Color3.fromRGB(156, 39, 176),
-		Icon = "🏔️"
+		Name = "Jungle Scout",
+		DisplayName = "JUNGLE SCOUT",
+		MinSummits = 75,
+		Color = Color3.fromRGB(76, 175, 80),
+		Icon = "🌿"
 	},
 	{
-		Name = "Master Pendaki",
-		DisplayName = "MASTER PENDAKI",
-		MinSummits = 500,
+		Name = "Vine Breaker",
+		DisplayName = "VINE BREAKER",
+		MinSummits = 99,
+		Color = Color3.fromRGB(56, 142, 60),
+		Icon = "🌱"
+	},
+	{
+		Name = "Lost in the Canopy",
+		DisplayName = "LOST IN THE CANOPY",
+		MinSummits = 120,
+		Color = Color3.fromRGB(46, 125, 50),
+		Icon = "🌳"
+	},
+	{
+		Name = "Heatproof Explorer",
+		DisplayName = "HEATPROOF EXPLORER",
+		MinSummits = 150,
 		Color = Color3.fromRGB(255, 152, 0),
-		Icon = "🏅"
+		Icon = "🔥"
 	},
 	{
-		Name = "Legenda Gunung",
-		DisplayName = "LEGENDA GUNUNG",
+		Name = "Lava Dodger",
+		DisplayName = "LAVA DODGER",
+		MinSummits = 180,
+		Color = Color3.fromRGB(255, 87, 34),
+		Icon = "🌋"
+	},
+	{
+		Name = "Ash Survivor",
+		DisplayName = "ASH SURVIVOR",
+		MinSummits = 200,
+		Color = Color3.fromRGB(121, 85, 72),
+		Icon = "💨"
+	},
+	{
+		Name = "Frozen Drifter",
+		DisplayName = "FROZEN DRIFTER",
+		MinSummits = 250,
+		Color = Color3.fromRGB(129, 212, 250),
+		Icon = "❄️"
+	},
+	{
+		Name = "Icebound Veteran",
+		DisplayName = "ICEBOUND VETERAN",
+		MinSummits = 300,
+		Color = Color3.fromRGB(79, 195, 247),
+		Icon = "🧊"
+	},
+	{
+		Name = "Whiteout Walker",
+		DisplayName = "WHITEOUT WALKER",
+		MinSummits = 400,
+		Color = Color3.fromRGB(224, 247, 250),
+		Icon = "�️"
+	},
+	{
+		Name = "Sea Legend",
+		DisplayName = "SEA LEGEND",
+		MinSummits = 500,
+		Color = Color3.fromRGB(156, 39, 176),
+		Icon = "🏆"
+	},
+	{
+		Name = "Pirate King",
+		DisplayName = "PIRATE KING",
+		MinSummits = 750,
+		Color = Color3.fromRGB(255, 152, 0),
+		Icon = "🏴‍☠️"
+	},
+	{
+		Name = "Myth of the Seven Seas",
+		DisplayName = "MYTH OF THE SEVEN SEAS",
 		MinSummits = 1000,
 		Color = Color3.fromRGB(255, 215, 0),
 		Icon = "👑"
@@ -112,12 +196,24 @@ TitleConfig.SpecialTitles = {
 		Givable = false
 	},
 	["EVOS TEAM"] = {
-		DisplayName = "EVOS TEAM",
-		Color = Color3.fromRGB(255, 0, 0),
+		DisplayName = "EVOSFAMS",
+		Color = Color3.fromRGB(120, 197, 239),
 		Icon = "",
 		Priority = 998,
 		Givable = true
+	},
+	BETA = {
+		DisplayName = "BETA",
+		Color = Color3.fromRGB(0, 188, 212),
+		Icon = "🧪",
+		Priority = 50,
+		Givable = true
 	}
+}
+
+TitleConfig.OwnerIds = {
+	8714136305,
+	8970505309,
 }
 
 TitleConfig.AccessRules = {
@@ -172,6 +268,12 @@ TitleConfig.ThirdpartyAdminIds = {
 	 9139343773,
 	 3574034140,
 	 5252854473,
+	 8729387257,
+	 9131669758,
+	 9022677412,
+	 6102793082,
+	 7881797747
+	 
 }
 
 for _, id in ipairs(TitleConfig.ThirdpartyAdminIds) do
@@ -239,6 +341,15 @@ function TitleConfig.GetAdminTier(userId)
 		return "Thirdparty"
 	end
 	return nil
+end
+
+function TitleConfig.IsOwner(userId)
+	for _, id in ipairs(TitleConfig.OwnerIds) do
+		if userId == id then
+			return true
+		end
+	end
+	return false
 end
 
 TitleConfig.DonationThreshold = 5000

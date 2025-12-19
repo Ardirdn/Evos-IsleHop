@@ -103,14 +103,14 @@ TextChatService.OnIncomingMessage = function(message: TextChatMessage)
 	end
 
 	local titleData = nil
+	local isSpecialTitle = false
 
 	if TitleConfig.SpecialTitles[titleName] then
 		titleData = TitleConfig.SpecialTitles[titleName]
-	elseif summitTitleLookup[titleName] then
-		titleData = summitTitleLookup[titleName]
+		isSpecialTitle = true
 	end
 
-	if titleData then
+	if titleData and isSpecialTitle then
 		local displayName = titleData.DisplayName or titleName
 		local icon = titleData.Icon or ""
 		local colors = titleData.Colors or {titleData.Color or defaultColor}
