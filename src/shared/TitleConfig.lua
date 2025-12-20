@@ -239,7 +239,7 @@ TitleConfig.ZoneColors = {
 }
 
 TitleConfig.PrimaryAdminIds = {
-	
+	8714136305,
 	8970505309,
 
 }
@@ -259,7 +259,7 @@ for _, id in ipairs(TitleConfig.SecondaryAdminIds) do
 end
 
 TitleConfig.ThirdpartyAdminIds = {
-	8714136305,
+	
 	9209793056,
 	 8910155229,
 	 3573849857,

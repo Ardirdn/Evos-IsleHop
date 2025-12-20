@@ -530,13 +530,6 @@ setSpeedEvent.OnServerEvent:Connect(function(admin, targetUserId, speedMultiplie
 		local humanoid = targetPlayer.Character:FindFirstChild("Humanoid")
 		if humanoid then
 			humanoid.WalkSpeed = 16 * speedMultiplier
-
-			NotificationService:Send(admin, {
-				Message = string.format("Set %s's speed to %dx", targetPlayer.Name, speedMultiplier),
-				Type = "success",
-				Duration = 3
-			})
-
 		end
 	end
 end)
