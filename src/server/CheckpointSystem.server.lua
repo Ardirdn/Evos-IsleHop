@@ -152,6 +152,7 @@ if not EventManager then
 	warn("[CHECKPOINT] EventManager not found - multipliers disabled")
 end
 
+
 local SpeedrunLeaderboard = DataStoreService:GetOrderedDataStore(DataStoreConfig.Leaderboards.Speedrun)
 local PlaytimeLeaderboard = DataStoreService:GetOrderedDataStore(DataStoreConfig.Leaderboards.Playtime)
 
@@ -161,6 +162,7 @@ if not checkpointsFolder then
 	warn("[ERROR] Checkpoints folder tidak ditemukan di Workspace!")
 	return
 end
+
 
 local mainSpawnLocation = checkpointsFolder:FindFirstChild("MainSpawnLocation")
 if not mainSpawnLocation then
@@ -194,6 +196,7 @@ if checkpointCount == 0 then
 	return
 end
 
+
 playerData = {}
 local speedrunTimers = {}
 local playerCooldowns = {}
@@ -203,6 +206,7 @@ local playerReachedCheckpoints = {}
 local playerConnections = {}
 
 setupSyncListener()
+
 
 local gamepassCache = {}
 local GAMEPASS_CACHE_DURATION = 300
@@ -246,6 +250,7 @@ getSwimmingStatus.Parent = remoteFolder
 local swimmingModeChanged = Instance.new("RemoteEvent")
 swimmingModeChanged.Name = "SwimmingModeChanged"
 swimmingModeChanged.Parent = remoteFolder
+
 
 
 local function formatPlaytime(seconds)
@@ -475,14 +480,9 @@ local function getGamepassMultiplier(player)
 	return multiplier
 end
 
+
 Players.PlayerAdded:Connect(function(player)
-	print(string.format("[SPAWN DEBUG] ########## PlayerAdded: %s (UserId: %d) ##########", player.Name, player.UserId))
-
-	local startTime = tick()
 	local data = loadPlayerData(player)
-	local loadTime = tick() - startTime
-
-	print(string.format("[SPAWN DEBUG] Data loaded for %s in %.2fs, data=%s", player.Name, loadTime, tostring(data ~= nil)))
 
 	if not data then
 		warn(string.format("[PLAYER] Using default data for %s (DataHandler not ready)", player.Name))
@@ -496,8 +496,6 @@ Players.PlayerAdded:Connect(function(player)
 		playerData[userId] = data
 		playerCurrentCheckpoint[userId] = 0
 	else
-		print(string.format("[SPAWN DEBUG] %s data: LastCheckpoint=%d, TotalSummits=%d", 
-			player.Name, data.LastCheckpoint or 0, data.TotalSummits or 0))
 	end
 
 	local leaderstats = Instance.new("Folder")
@@ -574,17 +572,9 @@ Players.PlayerAdded:Connect(function(player)
 
 		local hrp = character:FindFirstChild("HumanoidRootPart")
 		if hrp then
-			local beforePos = hrp.Position
 			hrp.CFrame = CFrame.new(spawnPos)
-			print(string.format("[SPAWN DEBUG] %s teleported from %s to %s (CP=%d, source=%s)", 
-				player.Name, 
-				tostring(beforePos), 
-				tostring(spawnPos), 
-				checkpointNumber or 0,
-				debugSource or "unknown"))
 		else
 			character:MoveTo(spawnPos)
-			print(string.format("[SPAWN DEBUG] %s MoveTo %s (no HRP, CP=%d)", player.Name, tostring(spawnPos), checkpointNumber or 0))
 		end
 
 		if checkpointNumber and checkpointNumber > 0 then
@@ -599,42 +589,44 @@ Players.PlayerAdded:Connect(function(player)
 	local isFirstSpawn = true
 
 	local function handleCharacterSpawn(character)
+		print(string.format("[RESPAWN DEBUG] handleCharacterSpawn called for %s", player.Name))
+		
 		local humanoid = character:WaitForChild("Humanoid", 10)
 		if not humanoid then
-			warn(string.format("[SPAWN DEBUG] ❌ %s: Humanoid not found!", player.Name))
+			warn("[RESPAWN DEBUG] Humanoid not found!")
 			return
 		end
-
-		print(string.format("[SPAWN DEBUG] ========== HandleCharacterSpawn: %s ==========", player.Name))
-		print(string.format("[SPAWN DEBUG] isFirstSpawn: %s", tostring(isFirstSpawn)))
 
 		applyNoCollisionToCharacter(character, player)
 
 		local currentData = playerData[player.UserId]
 		local lastCP = currentData and currentData.LastCheckpoint or 0
-
-		print(string.format("[SPAWN DEBUG] playerData exists: %s, lastCP: %d", tostring(currentData ~= nil), lastCP))
+		
+		print(string.format("[RESPAWN DEBUG] playerData exists: %s, lastCP from playerData: %d", tostring(currentData ~= nil), lastCP))
+		
+		-- Double check dari DataHandler juga
+		local dataHandlerCP = DataHandler:Get(player, "LastCheckpoint")
+		print(string.format("[RESPAWN DEBUG] lastCP from DataHandler: %s", tostring(dataHandlerCP)))
 
 		task.wait(0.2)
 
 		local hrp = character:WaitForChild("HumanoidRootPart", 5)
 		if not hrp then
-			warn(string.format("[SPAWN DEBUG] ❌ %s: HumanoidRootPart not found!", player.Name))
+			warn("[RESPAWN DEBUG] HRP not found!")
 			return
 		end
 
 		local spawnPos = getSpawnPosition(lastCP)
 		local beforePos = hrp.Position
-
 		hrp.CFrame = CFrame.new(spawnPos)
+		
+		print(string.format("[RESPAWN DEBUG] Teleported from %s to %s (CP=%d)", tostring(beforePos), tostring(spawnPos), lastCP))
 
 		if isFirstSpawn then
 			isFirstSpawn = false
-			print(string.format("[SPAWN DEBUG] %s INITIAL teleported from %s to %s (CP=%d)", 
-				player.Name, tostring(beforePos), tostring(spawnPos), lastCP))
+			print("[RESPAWN DEBUG] This was FIRST spawn")
 		else
-			print(string.format("[SPAWN DEBUG] %s RESPAWN teleported from %s to %s (CP=%d)", 
-				player.Name, tostring(beforePos), tostring(spawnPos), lastCP))
+			print("[RESPAWN DEBUG] This was RESPAWN (not first)")
 		end
 
 		if lastCP > 0 then
@@ -653,16 +645,12 @@ Players.PlayerAdded:Connect(function(player)
 			local currentPos = hrpCheck.Position
 			local correctPos = getSpawnPosition(lastCP)
 			local distance = (currentPos - correctPos).Magnitude
-
-			print(string.format("[SPAWN DEBUG] 3s check for %s: currentPos=%s, correctPos=%s, distance=%.1f", 
-				player.Name, tostring(currentPos), tostring(correctPos), distance))
+			
+			print(string.format("[RESPAWN DEBUG] 3s check: distance=%.1f, correctPos=%s", distance, tostring(correctPos)))
 
 			if distance > 50 then
-				print(string.format("[SPAWN DEBUG] ⚠️ %s is %.1f studs away! Re-teleporting...", player.Name, distance))
+				print("[RESPAWN DEBUG] Re-teleporting due to distance > 50")
 				hrpCheck.CFrame = CFrame.new(correctPos)
-				print(string.format("[SPAWN DEBUG] ✅ Force re-teleported %s to CP %d", player.Name, lastCP))
-			else
-				print(string.format("[SPAWN DEBUG] ✅ %s is at correct position (within 50 studs)", player.Name))
 			end
 		end)
 
@@ -682,22 +670,170 @@ Players.PlayerAdded:Connect(function(player)
 				cpValue.Value = lastCP
 			end
 		end
-
-		print(string.format("[SPAWN DEBUG] ========== HandleCharacterSpawn complete: %s ==========", player.Name))
 	end
 
 	player.CharacterAdded:Connect(function(character)
-		print(string.format("[SPAWN DEBUG] >>> CharacterAdded event fired for %s", player.Name))
 		handleCharacterSpawn(character)
 	end)
 
 	if player.Character then
-		print(string.format("[SPAWN DEBUG] >>> Character already exists for %s, handling immediately", player.Name))
 		task.spawn(function()
 			handleCharacterSpawn(player.Character)
 		end)
 	end
 end)
+
+-- Handle players yang sudah join sebelum script ready (Race Condition Fix)
+for _, existingPlayer in ipairs(Players:GetPlayers()) do
+	task.spawn(function()
+		local player = existingPlayer
+		local data = loadPlayerData(player)
+
+		if not data then
+			local userId = player.UserId
+			data = {
+				LastCheckpoint = 0,
+				TotalSummits = 0,
+				BestSpeedrun = nil,
+				TotalPlaytime = 0,
+			}
+			playerData[userId] = data
+			playerCurrentCheckpoint[userId] = 0
+		end
+
+		-- Create leaderstats if not exists
+		if not player:FindFirstChild("leaderstats") then
+			local leaderstats = Instance.new("Folder")
+			leaderstats.Name = "leaderstats"
+			leaderstats.Parent = player
+
+			local summitStat = Instance.new("IntValue")
+			summitStat.Name = "Summit"
+			summitStat.Value = data.TotalSummits or 0
+			summitStat.Parent = leaderstats
+
+			local cpStat = Instance.new("IntValue")
+			cpStat.Name = "CP"
+			cpStat.Value = data.LastCheckpoint or 0
+			cpStat.Parent = leaderstats
+		end
+
+		-- Create PlayerStats if not exists
+		if not player:FindFirstChild("PlayerStats") then
+			local playerStats = Instance.new("Folder")
+			playerStats.Name = "PlayerStats"
+			playerStats.Parent = player
+
+			local summitsValue = Instance.new("IntValue")
+			summitsValue.Name = "Summit"
+			summitsValue.Value = data.TotalSummits or 0
+			summitsValue.Parent = playerStats
+
+			local bestTimeValue = Instance.new("StringValue")
+			bestTimeValue.Name = "Best Time"
+			bestTimeValue.Value = data.BestSpeedrun and formatTime(data.BestSpeedrun / 1000) or "N/A"
+			bestTimeValue.Parent = playerStats
+
+			local playtimeValue = Instance.new("StringValue")
+			playtimeValue.Name = "Playtime"
+			playtimeValue.Value = formatPlaytime(data.TotalPlaytime or 0)
+			playtimeValue.Parent = playerStats
+		end
+
+		playerCooldowns[player.UserId] = {}
+		
+		-- Function to get spawn position for this player
+		local function getSpawnPositionForPlayer(checkpointNumber)
+			if checkpointNumber == 0 or not checkpointNumber then
+				if mainSpawnLocation then
+					local spawnPart = mainSpawnLocation:FindFirstChild("SpawnLocation") or mainSpawnLocation
+					if spawnPart:IsA("BasePart") then
+						return spawnPart.Position + Vector3.new(0, 3, 0)
+					end
+				elseif checkpoints[0] then
+					local spawnLoc = checkpoints[0]:FindFirstChild("SpawnLocation")
+					if spawnLoc then
+						return spawnLoc.Position + Vector3.new(0, 3, 0)
+					end
+				end
+			else
+				local spawnCheckpoint = checkpoints[checkpointNumber]
+				if spawnCheckpoint then
+					local spawnLocation = spawnCheckpoint:FindFirstChild("SpawnLocation")
+					if spawnLocation then
+						return spawnLocation.Position + Vector3.new(0, 3, 0)
+					end
+				end
+			end
+			return Vector3.new(0, 50, 0)
+		end
+		
+		-- Handle character spawns (both initial and respawn)
+		local function handleExistingPlayerCharacter(character)
+			print(string.format("[RACE FIX] handleExistingPlayerCharacter for %s", player.Name))
+			
+			local humanoid = character:WaitForChild("Humanoid", 10)
+			if not humanoid then return end
+			
+			applyNoCollisionToCharacter(character, player)
+			
+			local currentData = playerData[player.UserId]
+			local lastCP = currentData and currentData.LastCheckpoint or 0
+			
+			print(string.format("[RACE FIX] lastCP = %d", lastCP))
+			
+			task.wait(0.2)
+			
+			local hrp = character:WaitForChild("HumanoidRootPart", 5)
+			if not hrp then return end
+			
+			local spawnPos = getSpawnPositionForPlayer(lastCP)
+			hrp.CFrame = CFrame.new(spawnPos)
+			
+			print(string.format("[RACE FIX] Teleported to CP %d at %s", lastCP, tostring(spawnPos)))
+			
+			-- Re-teleport 3 seconds later if needed
+			task.delay(3, function()
+				if not player or not player.Parent then return end
+				if not character or not character.Parent then return end
+				
+				local hrpCheck = character:FindFirstChild("HumanoidRootPart")
+				if not hrpCheck then return end
+				
+				local currentPos = hrpCheck.Position
+				local correctPos = getSpawnPositionForPlayer(lastCP)
+				local distance = (currentPos - correctPos).Magnitude
+				
+				if distance > 50 then
+					hrpCheck.CFrame = CFrame.new(correctPos)
+				end
+			end)
+			
+			playerCooldowns[player.UserId] = {}
+			playerCurrentCheckpoint[player.UserId] = lastCP
+			
+			local ls = player:FindFirstChild("leaderstats")
+			if ls then
+				local cpValue = ls:FindFirstChild("CP")
+				if cpValue then
+					cpValue.Value = lastCP
+				end
+			end
+		end
+		
+		-- Setup CharacterAdded for respawns
+		player.CharacterAdded:Connect(function(character)
+			print(string.format("[RACE FIX] CharacterAdded for existing player %s", player.Name))
+			handleExistingPlayerCharacter(character)
+		end)
+		
+		-- Handle current character if exists
+		if player.Character then
+			handleExistingPlayerCharacter(player.Character)
+		end
+	end)
+end
+
 
 for checkpointNum, checkpoint in pairs(checkpoints) do
 

@@ -19,18 +19,19 @@ if not inventoryRemotes then
 	return
 end
 
-local getInventoryFunc = inventoryRemotes:WaitForChild("GetInventory", 5)
+local getInventoryFunc = inventoryRemotes:WaitForChild("GetInventory", 10)
 
-local equipAuraEvent = inventoryRemotes:FindFirstChild("EquipAura")
-local unequipAuraEvent = inventoryRemotes:FindFirstChild("UnequipAura")
-local equipToolEvent = inventoryRemotes:FindFirstChild("EquipTool")
-local unequipToolEvent = inventoryRemotes:FindFirstChild("UnequipTool")
+-- Tunggu remote events dengan timeout
+local equipAuraEvent = inventoryRemotes:WaitForChild("EquipAura", 10)
+local unequipAuraEvent = inventoryRemotes:WaitForChild("UnequipAura", 10)
+local equipToolEvent = inventoryRemotes:WaitForChild("EquipTool", 10)
+local unequipToolEvent = inventoryRemotes:WaitForChild("UnequipTool", 10)
 
 if not equipAuraEvent then
-	warn("[INVENTORY CLIENT v3] EquipAura not found - Aura equip disabled")
+	warn("[INVENTORY CLIENT v3] EquipAura not found after waiting - Aura equip disabled")
 end
 if not equipToolEvent then
-	warn("[INVENTORY CLIENT v3] EquipTool not found - Tool equip disabled")
+	warn("[INVENTORY CLIENT v3] EquipTool not found after waiting - Tool equip disabled")
 end
 
 local titleRemotes = ReplicatedStorage:WaitForChild("TitleRemotes", 10)

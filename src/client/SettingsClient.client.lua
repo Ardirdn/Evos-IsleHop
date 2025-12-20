@@ -486,8 +486,9 @@ end)
 
 local settingsBtn = Instance.new("TextButton")
 settingsBtn.Name = "SettingsHUDButton"
+settingsBtn.AnchorPoint = Vector2.new(1, 0.5)
 settingsBtn.Size = UDim2.new(0.035, 0, 0.06, 0)
-settingsBtn.Position = UDim2.new(0.96, 0, 0.02, 0)
+settingsBtn.Position = UDim2.new(0.96, 0, 0.05, 0)
 settingsBtn.BackgroundColor3 = COLORS.Panel
 settingsBtn.BorderSizePixel = 0
 settingsBtn.Font = Enum.Font.GothamBold
