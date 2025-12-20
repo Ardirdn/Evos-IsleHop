@@ -253,10 +253,20 @@ rewardTabLayout.Parent = rewardTabFrame
 
 local rewardTabs = {}
 
+-- Check if third party admin (cannot create money codes)
+local isThirdpartyAdmin = TitleConfig.IsThirdpartyAdmin and TitleConfig.IsThirdpartyAdmin(player.UserId)
+
+local tabIndex = 0
 for i, rewardType in ipairs(RedeemConfig.AdminTabs) do
+	-- Skip Money tab for third party admins
+	if rewardType == "Money" and isThirdpartyAdmin then
+		continue
+	end
+	
+	tabIndex = tabIndex + 1
 	local tab = Instance.new("TextButton")
 	tab.Size = UDim2.new(0.188, 0, 1, 0)
-	tab.BackgroundColor3 = (i == 1) and COLORS.Accent or COLORS.Button
+	tab.BackgroundColor3 = (tabIndex == 1) and COLORS.Accent or COLORS.Button
 	tab.BorderSizePixel = 0
 	tab.Text = rewardType
 	tab.Font = Enum.Font.GothamBold

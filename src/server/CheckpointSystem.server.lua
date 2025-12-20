@@ -770,7 +770,7 @@ for _, existingPlayer in ipairs(Players:GetPlayers()) do
 		
 		-- Handle character spawns (both initial and respawn)
 		local function handleExistingPlayerCharacter(character)
-			print(string.format("[RACE FIX] handleExistingPlayerCharacter for %s", player.Name))
+
 			
 			local humanoid = character:WaitForChild("Humanoid", 10)
 			if not humanoid then return end
@@ -780,7 +780,7 @@ for _, existingPlayer in ipairs(Players:GetPlayers()) do
 			local currentData = playerData[player.UserId]
 			local lastCP = currentData and currentData.LastCheckpoint or 0
 			
-			print(string.format("[RACE FIX] lastCP = %d", lastCP))
+
 			
 			task.wait(0.2)
 			
@@ -790,7 +790,7 @@ for _, existingPlayer in ipairs(Players:GetPlayers()) do
 			local spawnPos = getSpawnPositionForPlayer(lastCP)
 			hrp.CFrame = CFrame.new(spawnPos)
 			
-			print(string.format("[RACE FIX] Teleported to CP %d at %s", lastCP, tostring(spawnPos)))
+
 			
 			-- Re-teleport 3 seconds later if needed
 			task.delay(3, function()
@@ -823,7 +823,7 @@ for _, existingPlayer in ipairs(Players:GetPlayers()) do
 		
 		-- Setup CharacterAdded for respawns
 		player.CharacterAdded:Connect(function(character)
-			print(string.format("[RACE FIX] CharacterAdded for existing player %s", player.Name))
+
 			handleExistingPlayerCharacter(character)
 		end)
 		

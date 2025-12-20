@@ -11,6 +11,7 @@ local playerGui = player:WaitForChild("PlayerGui")
 local TitleConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("TitleConfig"))
 local ShopConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("ShopConfig"))
 local PanelManager = require(script.Parent:WaitForChild("PanelManager"))
+local RemoveInventoryPopup = require(script.Parent:WaitForChild("RemoveInventoryPopup"))
 
 local function isAdmin()
 	return TitleConfig.IsAdmin(player.UserId)
@@ -2052,6 +2053,20 @@ local function createPlayerCard(targetPlayer)
 			local giveItemsBtn = createButton("Give Items", COLORS.Success, COLORS.Success)
 			giveItemsBtn.LayoutOrder = 8
 			giveItemsBtn.Parent = actionsFrame
+
+			-- Remove Inventory Button
+			local removeInventoryBtn = createButton("Remove Inventory", COLORS.Danger, COLORS.DangerHover)
+			removeInventoryBtn.LayoutOrder = 9
+			removeInventoryBtn.Parent = actionsFrame
+
+			removeInventoryBtn.MouseButton1Click:Connect(function()
+				if not targetPlayer then return end
+				mainContainer.Visible = false
+				playerDetailPanel.Visible = false
+				RemoveInventoryPopup.Show(screenGui, targetPlayer, function()
+					mainContainer.Visible = true
+				end)
+			end)
 
 			giveItemsBtn.MouseButton1Click:Connect(function()
 				if not targetPlayer then return end

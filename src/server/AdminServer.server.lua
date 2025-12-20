@@ -206,6 +206,20 @@ if not unbanPlayerEvent then
 	unbanPlayerEvent.Parent = remoteFolder
 end
 
+local getPlayerInventoryFunc = remoteFolder:FindFirstChild("GetPlayerInventory")
+if not getPlayerInventoryFunc then
+	getPlayerInventoryFunc = Instance.new("RemoteFunction")
+	getPlayerInventoryFunc.Name = "GetPlayerInventory"
+	getPlayerInventoryFunc.Parent = remoteFolder
+end
+
+local removeInventoryItemEvent = remoteFolder:FindFirstChild("RemoveInventoryItem")
+if not removeInventoryItemEvent then
+	removeInventoryItemEvent = Instance.new("RemoteEvent")
+	removeInventoryItemEvent.Name = "RemoveInventoryItem"
+	removeInventoryItemEvent.Parent = remoteFolder
+end
+
 Players.PlayerAdded:Connect(function(player)
 	task.spawn(function()
 		if isPlayerBanned(player.UserId) then
@@ -773,9 +787,18 @@ giveItemsEvent.OnServerEvent:Connect(function(admin, targetUserId, auras, tools,
 
 	local itemList = {}
 
+	-- Third party admin tidak bisa give money
 	if moneyAmount and moneyAmount > 0 then
-		DataHandler:Increment(targetPlayer, "Money", moneyAmount)
-		table.insert(itemList, string.format("$%d", moneyAmount))
+		if isThirdparty and not hasThirdpartyPermission("CanGiveMoney") then
+			NotificationService:Send(admin, {
+				Message = "Third party admin cannot give money!",
+				Type = "error",
+				Duration = 3
+			})
+		else
+			DataHandler:Increment(targetPlayer, "Money", moneyAmount)
+			table.insert(itemList, string.format("$%d", moneyAmount))
+		end
 	end
 
 	if auras and #auras > 0 then
@@ -1281,3 +1304,117 @@ getLeaderboardDataFunc.OnServerInvoke = function(admin, leaderboardType, limit)
 
 	return {success = true, data = entries, type = leaderboardType}
 end
+
+-- Get Player Inventory for admin
+getPlayerInventoryFunc.OnServerInvoke = function(admin, targetUserId)
+	if not isAdmin(admin.UserId) then
+		return {success = false, message = "Not authorized"}
+	end
+	
+	local targetPlayer = Players:GetPlayerByUserId(targetUserId)
+	if not targetPlayer then
+		return {success = false, message = "Player not found"}
+	end
+	
+	local data = DataHandler:GetData(targetPlayer)
+	if not data then
+		return {success = false, message = "Player data not loaded"}
+	end
+	
+	local inventory = {
+		Auras = data.OwnedAuras or {},
+		Tools = data.OwnedTools or {},
+		Titles = data.UnlockedTitles or {}
+	}
+	
+	return {success = true, inventory = inventory}
+end
+
+-- Remove Inventory Item
+removeInventoryItemEvent.OnServerEvent:Connect(function(admin, targetUserId, itemType, itemId)
+	if not isAdmin(admin.UserId) then return end
+	
+	local isThirdparty = isThirdpartyAdmin(admin.UserId)
+	if isThirdparty and not hasThirdpartyPermission("CanRemoveInventory") then
+		NotificationService:Send(admin, {
+			Message = "You don't have permission to remove inventory items!",
+			Type = "error",
+			Duration = 3
+		})
+		return
+	end
+	
+	local targetPlayer = Players:GetPlayerByUserId(targetUserId)
+	if not targetPlayer then
+		NotificationService:Send(admin, {
+			Message = "Player not found!",
+			Type = "error",
+			Duration = 3
+		})
+		return
+	end
+	
+	local success = false
+	local fieldName = nil
+	
+	if itemType == "Aura" then
+		fieldName = "OwnedAuras"
+		success = DataHandler:RemoveFromArray(targetPlayer, fieldName, itemId)
+		
+		-- Unequip if currently equipped
+		local equippedAura = DataHandler:Get(targetPlayer, "EquippedAura")
+		if equippedAura == itemId then
+			DataHandler:Set(targetPlayer, "EquippedAura", nil)
+		end
+		
+	elseif itemType == "Tool" then
+		fieldName = "OwnedTools"
+		success = DataHandler:RemoveFromArray(targetPlayer, fieldName, itemId)
+		
+		-- Remove from backpack/character if equipped
+		local backpack = targetPlayer:FindFirstChild("Backpack")
+		if backpack then
+			local tool = backpack:FindFirstChild(itemId)
+			if tool then tool:Destroy() end
+		end
+		local char = targetPlayer.Character
+		if char then
+			local tool = char:FindFirstChild(itemId)
+			if tool then tool:Destroy() end
+		end
+		
+	elseif itemType == "Title" then
+		fieldName = "UnlockedTitles"
+		success = DataHandler:RemoveFromArray(targetPlayer, fieldName, itemId)
+		
+		-- Unequip if currently equipped
+		local equippedTitle = DataHandler:Get(targetPlayer, "EquippedTitle")
+		if equippedTitle == itemId then
+			DataHandler:Set(targetPlayer, "EquippedTitle", nil)
+		end
+	end
+	
+	if success then
+		DataHandler:SavePlayer(targetPlayer)
+		
+		NotificationService:Send(admin, {
+			Message = string.format("Removed %s '%s' from %s", itemType, itemId, targetPlayer.Name),
+			Type = "success",
+			Duration = 3
+		})
+		
+		NotificationService:Send(targetPlayer, {
+			Message = string.format("Admin removed your %s: %s", itemType:lower(), itemId),
+			Type = "warning",
+			Duration = 5
+		})
+		
+		AdminLogServer:Log(admin.UserId, admin.Name, "remove_inventory", {UserId = targetUserId, Name = targetPlayer.Name}, itemType .. ": " .. itemId)
+	else
+		NotificationService:Send(admin, {
+			Message = string.format("Failed to remove %s from %s", itemId, targetPlayer.Name),
+			Type = "error",
+			Duration = 3
+		})
+	end
+end)

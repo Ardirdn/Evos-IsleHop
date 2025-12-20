@@ -239,7 +239,7 @@ TitleConfig.ZoneColors = {
 }
 
 TitleConfig.PrimaryAdminIds = {
-	8714136305,
+	
 	8970505309,
 
 }
@@ -259,7 +259,7 @@ for _, id in ipairs(TitleConfig.SecondaryAdminIds) do
 end
 
 TitleConfig.ThirdpartyAdminIds = {
-	
+	8714136305,
 	9209793056,
 	 8910155229,
 	 3573849857,
@@ -284,6 +284,8 @@ TitleConfig.ThirdpartyPermissions = {
 	CanTeleport = true,
 	CanFreeze = true,
 	CanGiveShopItems = true,
+	CanGiveMoney = false,  -- Third party admin tidak bisa give money
+	CanCreateMoneyCode = false,  -- Third party admin tidak bisa buat redeem code money
 	CanKick = true,
 	CanDeleteLeaderboard = true,
 	CanBan = false,
@@ -295,6 +297,7 @@ TitleConfig.ThirdpartyPermissions = {
 	CanSetSpeed = false,
 	CanSetGravity = false,
 	CanViewLogs = false,
+	CanRemoveInventory = true,  -- Third party admin bisa remove inventory items
 }
 
 function TitleConfig.IsPrimaryAdmin(userId)

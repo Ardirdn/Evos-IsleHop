@@ -126,36 +126,6 @@ function DataHandler:LoadPlayer(player)
 	data = validateData(data, userId)
 	PlayerDataCache[player] = data
 	SessionLocks[userId] = true
-	
-	-- DEBUG: Print semua data player
-	print("========== PLAYER DATA DEBUG ==========")
-	print("Player:", player.Name)
-	print("UserId:", userId)
-	print("Money:", data.Money)
-	print("TotalSummits:", data.TotalSummits)
-	print("LastCheckpoint:", data.LastCheckpoint)
-	print("Title:", data.Title)
-	print("SpecialTitle:", tostring(data.SpecialTitle))
-	print("EquippedTitle:", tostring(data.EquippedTitle))
-	print("EquippedAura:", tostring(data.EquippedAura))
-	
-	-- Owned Auras
-	local auraList = data.OwnedAuras or {}
-	print("OwnedAuras (" .. #auraList .. "):", table.concat(auraList, ", "))
-	
-	-- Owned Tools
-	local toolList = data.OwnedTools or {}
-	print("OwnedTools (" .. #toolList .. "):", table.concat(toolList, ", "))
-	
-	-- Unlocked Titles
-	local titleList = data.UnlockedTitles or {}
-	print("UnlockedTitles (" .. #titleList .. "):", table.concat(titleList, ", "))
-	
-	-- Owned Gamepasses
-	local gpList = data.OwnedGamepasses or {}
-	print("OwnedGamepasses (" .. #gpList .. "):", table.concat(gpList, ", "))
-	
-	print("========================================")
 
 	local moneyValue = Instance.new("IntValue")
 	moneyValue.Name = "Money"

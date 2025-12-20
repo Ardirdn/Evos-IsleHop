@@ -152,6 +152,23 @@ createCodeEvent.OnServerEvent:Connect(function(player, codeString, rewardType, r
 		})
 		return
 	end
+	
+	-- Third party admin tidak bisa create money codes
+	if string.lower(rewardType) == "money" then
+		local isThirdparty = TitleConfig.IsThirdpartyAdmin and TitleConfig.IsThirdpartyAdmin(player.UserId)
+		
+		if isThirdparty then
+			local canCreateMoneyCode = TitleConfig.ThirdpartyPermissions and TitleConfig.ThirdpartyPermissions.CanCreateMoneyCode
+			if not canCreateMoneyCode then
+				NotificationService:Send(player, {
+					Message = "Third party admin cannot create money codes!",
+					Type = "error",
+					Duration = 3
+				})
+				return
+			end
+		end
+	end
 
 	maxUses = maxUses or 1
 

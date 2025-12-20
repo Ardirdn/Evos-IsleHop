@@ -1,6 +1,7 @@
 local Players = game:GetService("Players")
 local MarketplaceService = game:GetService("MarketplaceService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local DataStoreService = game:GetService("DataStoreService")
 
 local DataHandler = require(script.Parent.DataHandler)
 local NotificationService = require(script.Parent.NotificationServer)
@@ -8,6 +9,10 @@ local TitleServer = require(script.Parent.TitleServer)
 
 local ShopConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("ShopConfig"))
 local DonateConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("DonateConfig"))
+local DataStoreConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("DataStoreConfig"))
+
+-- Donation Leaderboard OrderedDataStore
+local DonationLeaderboard = DataStoreService:GetOrderedDataStore(DataStoreConfig.Leaderboards.Donation)
 
 local purchaseHistory = {}
 
@@ -70,10 +75,15 @@ MarketplaceService.ProcessReceipt = function(receiptInfo)
 	for _, package in ipairs(DonateConfig.Packages) do
 		if package.ProductId == productId then
 
-			local amount = package.Amount
+		local amount = package.Amount
 			DataHandler:Increment(player, "TotalDonations", amount)
 			local totalDonations = DataHandler:Get(player, "TotalDonations")
 			DataHandler:SavePlayer(player)
+			
+			-- Save to donation leaderboard
+			pcall(function()
+				DonationLeaderboard:SetAsync(tostring(userId), totalDonations)
+			end)
 
 			if amount >= DonateConfig.GlobalNotificationThreshold then
 				NotificationService:SendGlobal({
