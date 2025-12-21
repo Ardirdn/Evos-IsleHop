@@ -155,6 +155,7 @@ end
 
 local SpeedrunLeaderboard = DataStoreService:GetOrderedDataStore(DataStoreConfig.Leaderboards.Speedrun)
 local PlaytimeLeaderboard = DataStoreService:GetOrderedDataStore(DataStoreConfig.Leaderboards.Playtime)
+local DonationLeaderboard = DataStoreService:GetOrderedDataStore(DataStoreConfig.Leaderboards.Donation)
 
 local checkpointsFolder = workspace:FindFirstChild("Checkpoints")
 
@@ -375,6 +376,13 @@ local function savePlayerData(player)
 		PlaytimeLeaderboard:SetAsync(tostring(userId), playtimeInt)
 	end)
 
+	-- Sync donation leaderboard
+	if data.TotalDonations and data.TotalDonations > 0 then
+		pcall(function()
+			DonationLeaderboard:SetAsync(tostring(userId), data.TotalDonations)
+		end)
+	end
+
 end
 
 local function updatePlaytime(player)
@@ -532,6 +540,27 @@ Players.PlayerAdded:Connect(function(player)
 	playtimeValue.Parent = playerStats
 
 	playerCooldowns[player.UserId] = {}
+
+	-- Sync donation to leaderboard if player has donations
+	task.spawn(function()
+		task.wait(2) -- Wait for DataHandler to fully load
+		local handlerData = DataHandler:GetData(player)
+		print(string.format("[DONATION SYNC] Player %s - handlerData exists: %s", 
+			player.Name, tostring(handlerData ~= nil)))
+		
+		if handlerData then
+			print(string.format("[DONATION SYNC] Player %s - TotalDonations: %s", 
+				player.Name, tostring(handlerData.TotalDonations)))
+		end
+		
+		if handlerData and handlerData.TotalDonations and handlerData.TotalDonations > 0 then
+			local success, err = pcall(function()
+				DonationLeaderboard:SetAsync(tostring(player.UserId), handlerData.TotalDonations)
+			end)
+			print(string.format("[DONATION SYNC] Player %s - SetAsync success: %s, err: %s", 
+				player.Name, tostring(success), tostring(err)))
+		end
+	end)
 
 	local function getSpawnPosition(checkpointNumber)
 		if checkpointNumber == 0 or not checkpointNumber then

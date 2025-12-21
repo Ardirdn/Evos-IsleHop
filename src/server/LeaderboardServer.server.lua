@@ -22,11 +22,14 @@ if not leaderboardsFolder then
 end
 
 local function formatSpeedrunTime(seconds)
-	local hours = math.floor(seconds / 3600)
-	local minutes = math.floor((seconds % 3600) / 60)
+	local totalMinutes = math.floor(seconds / 60)
 	local secs = math.floor(seconds % 60)
-	local ms = math.floor((seconds % 1) * 1000)
-	return string.format("%02d:%02d:%02d.%03d", hours, minutes, secs, ms)
+	
+	if totalMinutes > 0 then
+		return string.format("%dm %ds", totalMinutes, secs)
+	else
+		return string.format("%ds", secs)
+	end
 end
 
 local function formatPlaytime(seconds)
@@ -125,6 +128,12 @@ end
 local function populateLeaderboard(leaderboardData, entries, leaderboardType)
 	local scrollingFrame = leaderboardData.ScrollingFrame
 	local sample = leaderboardData.Sample
+	
+	print(string.format("[POPULATE DEBUG] Type: %s, ScrollingFrame: %s, Sample: %s, Entries: %d",
+		leaderboardType, 
+		scrollingFrame and scrollingFrame:GetFullName() or "nil",
+		sample and sample.Name or "nil",
+		#entries))
 
 	sample.Visible = false
 
@@ -169,10 +178,21 @@ local function populateLeaderboard(leaderboardData, entries, leaderboardType)
 			if valueLabel then
 				valueLabel.Text = "R$" .. tostring(entry.value)
 			end
+			print(string.format("[POPULATE DEBUG] Created donation entry: rank=%d, name=%s, value=%s, parent=%s",
+				rank, entry.displayName, tostring(entry.value), scrollingFrame:GetFullName()))
 		end
 
 		newFrame.Parent = scrollingFrame
 	end
+	
+	-- Debug: count entries after populate
+	local entryCount = 0
+	for _, child in pairs(scrollingFrame:GetChildren()) do
+		if child:IsA("Frame") and child.Name ~= "Sample" and child.Visible then
+			entryCount = entryCount + 1
+		end
+	end
+	print(string.format("[POPULATE DEBUG] After populate: %d visible entries in scrollframe", entryCount))
 end
 
 local function updateSummitLeaderboards()
@@ -228,14 +248,18 @@ local function updateSpeedrunLeaderboards()
 	for rank, entry in ipairs(page) do
 		local userId = tonumber(entry.key)
 		local displayName = getPlayerName(userId)
-		local timeMs = math.abs(entry.value)
-		local timeSeconds = timeMs / 1000
+		local rawValue = math.abs(entry.value)
+		-- Data was stored with double multiplier (ms * 1000), so divide by 1,000,000
+		local timeSeconds = rawValue / 1000000
+		
+		print(string.format("[SPEEDRUN DEBUG] Rank %d: rawValue=%d, timeSeconds=%.2f, formatted=%s",
+			rank, entry.value, timeSeconds, formatSpeedrunTime(timeSeconds)))
 
 		table.insert(entries, {
 			rank = rank,
 			userId = userId,
 			displayName = displayName,
-			value = timeMs,
+			value = rawValue,
 			formattedValue = formatSpeedrunTime(timeSeconds)
 		})
 	end
@@ -284,6 +308,7 @@ end
 
 local function updateDonationLeaderboards()
 	local leaderboards = findAllLeaderboardsOfType("Donation")
+	print("[DONATION DEBUG] Found " .. #leaderboards .. " donation leaderboard(s)")
 	if #leaderboards == 0 then return end
 
 	local success, data = pcall(function()
@@ -291,16 +316,21 @@ local function updateDonationLeaderboards()
 	end)
 
 	if not success then
-		warn("[LEADERBOARD] Failed to fetch Donation data")
+		warn("[LEADERBOARD] Failed to fetch Donation data: " .. tostring(data))
 		return
 	end
 
 	local page = data:GetCurrentPage()
 	local entries = {}
+	
+	print("[DONATION DEBUG] Got " .. #page .. " entries from DataStore")
 
 	for rank, entry in ipairs(page) do
 		local userId = tonumber(entry.key)
 		local displayName = getPlayerName(userId)
+		
+		print(string.format("[DONATION DEBUG] Entry %d: userId=%s, name=%s, value=%s", 
+			rank, tostring(userId), displayName, tostring(entry.value)))
 
 		table.insert(entries, {
 			rank = rank,
@@ -309,6 +339,8 @@ local function updateDonationLeaderboards()
 			value = entry.value
 		})
 	end
+	
+	print("[DONATION DEBUG] Populating " .. #entries .. " entries to " .. #leaderboards .. " leaderboard(s)")
 
 	for _, leaderboardData in ipairs(leaderboards) do
 		populateLeaderboard(leaderboardData, entries, "Donation")

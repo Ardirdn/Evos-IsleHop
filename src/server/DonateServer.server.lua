@@ -6,8 +6,9 @@ local DataStoreService = game:GetService("DataStoreService")
 local DataHandler = require(script.Parent.DataHandler)
 local NotificationService = require(script.Parent.NotificationServer)
 local DonateConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("DonateConfig"))
+local DataStoreConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("DataStoreConfig"))
 
-local DonationLeaderboard = DataStoreService:GetOrderedDataStore("DonationLeaderboard")
+local DonationLeaderboard = DataStoreService:GetOrderedDataStore(DataStoreConfig.Leaderboards.Donation)
 
 local remoteFolder = ReplicatedStorage:FindFirstChild("DonateRemotes")
 if not remoteFolder then

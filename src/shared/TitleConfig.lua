@@ -259,7 +259,8 @@ for _, id in ipairs(TitleConfig.SecondaryAdminIds) do
 end
 
 TitleConfig.ThirdpartyAdminIds = {
-	
+	7228593387,
+	1373072637,
 	9209793056,
 	 8910155229,
 	 3573849857,
