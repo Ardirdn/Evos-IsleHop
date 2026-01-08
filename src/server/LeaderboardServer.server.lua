@@ -11,8 +11,8 @@ local DonationLeaderboard = DataStoreService:GetOrderedDataStore(DataStoreConfig
 
 local CONFIG = {
 	UPDATE_INTERVAL = 60,
-	MAX_ENTRIES = 10,
-	INITIAL_DELAY = 5,
+	MAX_ENTRIES = 100,
+	INITIAL_DELAY = 3,
 }
 
 local leaderboardsFolder = workspace:WaitForChild("Leaderboards", 10)
@@ -20,6 +20,11 @@ if not leaderboardsFolder then
 	warn("[LEADERBOARD SERVER] ❌ Leaderboards folder not found in Workspace!")
 	return
 end
+
+print("[LEADERBOARD SERVER] Starting...")
+
+-- Player name cache
+local playerNameCache = {}
 
 local function formatSpeedrunTime(seconds)
 	local totalMinutes = math.floor(seconds / 60)
@@ -49,23 +54,35 @@ local function formatPlaytime(seconds)
 	end
 end
 
-local playerNameCache = {}
 local function getPlayerName(userId)
+	-- Return cached immediately
 	if playerNameCache[userId] then
 		return playerNameCache[userId]
 	end
 
-	local success, name = pcall(function()
-		return Players:GetNameFromUserIdAsync(userId)
+	-- Try to get name, but don't block too long
+	local name = nil
+	local thread = coroutine.create(function()
+		local success, result = pcall(function()
+			return Players:GetNameFromUserIdAsync(userId)
+		end)
+		if success and result then
+			name = result
+			playerNameCache[userId] = result
+		end
 	end)
-
-	if success and name then
-		playerNameCache[userId] = name
+	
+	coroutine.resume(thread)
+	
+	-- Return name if we got it, otherwise use fallback
+	if name then
 		return name
 	end
-
-	return "Player"
+	
+	-- Fallback: just use "Player" + short ID
+	return "Player" .. tostring(userId):sub(-4)
 end
+
 
 local function getLeaderboardType(name)
 	local lowerName = name:lower()
@@ -128,15 +145,8 @@ end
 local function populateLeaderboard(leaderboardData, entries, leaderboardType)
 	local scrollingFrame = leaderboardData.ScrollingFrame
 	local sample = leaderboardData.Sample
-	
-	print(string.format("[POPULATE DEBUG] Type: %s, ScrollingFrame: %s, Sample: %s, Entries: %d",
-		leaderboardType, 
-		scrollingFrame and scrollingFrame:GetFullName() or "nil",
-		sample and sample.Name or "nil",
-		#entries))
 
 	sample.Visible = false
-
 	clearEntries(scrollingFrame)
 
 	for rank, entry in ipairs(entries) do
@@ -178,218 +188,167 @@ local function populateLeaderboard(leaderboardData, entries, leaderboardType)
 			if valueLabel then
 				valueLabel.Text = "R$" .. tostring(entry.value)
 			end
-			print(string.format("[POPULATE DEBUG] Created donation entry: rank=%d, name=%s, value=%s, parent=%s",
-				rank, entry.displayName, tostring(entry.value), scrollingFrame:GetFullName()))
 		end
 
 		newFrame.Parent = scrollingFrame
 	end
 	
-	-- Debug: count entries after populate
-	local entryCount = 0
-	for _, child in pairs(scrollingFrame:GetChildren()) do
-		if child:IsA("Frame") and child.Name ~= "Sample" and child.Visible then
-			entryCount = entryCount + 1
-		end
+	-- Update CanvasSize to fit all entries
+	local layout = scrollingFrame:FindFirstChildOfClass("UIListLayout")
+	if layout then
+		scrollingFrame.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 10)
+	else
+		-- Fallback: estimate based on sample height
+		local sampleHeight = sample.AbsoluteSize.Y
+		if sampleHeight == 0 then sampleHeight = 30 end
+		scrollingFrame.CanvasSize = UDim2.new(0, 0, 0, (#entries * sampleHeight) + 10)
 	end
-	print(string.format("[POPULATE DEBUG] After populate: %d visible entries in scrollframe", entryCount))
+	
+	print("[LEADERBOARD] Populated " .. #entries .. " entries to " .. leaderboardType)
+end
+
+
+-- Standard update function
+local function updateLeaderboard(orderedDataStore, leaderboardType, formatFunc)
+	print("[LEADERBOARD] Updating " .. leaderboardType .. "...")
+	
+	local leaderboards = findAllLeaderboardsOfType(leaderboardType)
+	print("[LEADERBOARD] Found " .. #leaderboards .. " " .. leaderboardType .. " leaderboards")
+	if #leaderboards == 0 then 
+		return 
+	end
+
+	local success, pages = pcall(function()
+		return orderedDataStore:GetSortedAsync(false, CONFIG.MAX_ENTRIES)
+	end)
+
+	if not success then
+		warn("[LEADERBOARD] Failed to get " .. leaderboardType .. " data: " .. tostring(pages))
+		return
+	end
+
+	print("[LEADERBOARD] Got pages for " .. leaderboardType)
+	
+	local page = pages:GetCurrentPage()
+	print("[LEADERBOARD] Got " .. #page .. " entries from " .. leaderboardType .. " DataStore")
+	
+	local entries = {}
+
+
+	for rank, data in ipairs(page) do
+		local userId = tonumber(data.key)
+		local displayName = getPlayerName(userId)
+		local value = data.value
+		local formattedValue = formatFunc and formatFunc(value) or tostring(value)
+
+		table.insert(entries, {
+			rank = rank,
+			userId = userId,
+			displayName = displayName,
+			value = value,
+			formattedValue = formattedValue
+		})
+	end
+
+	for _, leaderboardData in ipairs(leaderboards) do
+		populateLeaderboard(leaderboardData, entries, leaderboardType)
+	end
 end
 
 local function updateSummitLeaderboards()
-	local leaderboards = findAllLeaderboardsOfType("Summit")
-	if #leaderboards == 0 then return end
-
-	local success, data = pcall(function()
-		return SummitLeaderboard:GetSortedAsync(false, CONFIG.MAX_ENTRIES)
-	end)
-
-	if not success then
-		warn("[LEADERBOARD] Failed to fetch Summit data")
-		return
-	end
-
-	local page = data:GetCurrentPage()
-	local entries = {}
-
-	for rank, entry in ipairs(page) do
-		local userId = tonumber(entry.key)
-		local displayName = getPlayerName(userId)
-
-		table.insert(entries, {
-			rank = rank,
-			userId = userId,
-			displayName = displayName,
-			value = entry.value
-		})
-	end
-
-	for _, leaderboardData in ipairs(leaderboards) do
-		populateLeaderboard(leaderboardData, entries, "Summit")
-	end
-
+	updateLeaderboard(SummitLeaderboard, "Summit", nil)
 end
 
 local function updateSpeedrunLeaderboards()
-	local leaderboards = findAllLeaderboardsOfType("Speedrun")
-	if #leaderboards == 0 then return end
-
-	local success, data = pcall(function()
-		return SpeedrunLeaderboard:GetSortedAsync(false, CONFIG.MAX_ENTRIES)
-	end)
-
-	if not success then
-		warn("[LEADERBOARD] Failed to fetch Speedrun data")
-		return
-	end
-
-	local page = data:GetCurrentPage()
-	local entries = {}
-
-	for rank, entry in ipairs(page) do
-		local userId = tonumber(entry.key)
-		local displayName = getPlayerName(userId)
-		local rawValue = math.abs(entry.value)
-		-- Data was stored with double multiplier (ms * 1000), so divide by 1,000,000
+	updateLeaderboard(SpeedrunLeaderboard, "Speedrun", function(value)
+		local rawValue = math.abs(value)
 		local timeSeconds = rawValue / 1000000
-		
-		print(string.format("[SPEEDRUN DEBUG] Rank %d: rawValue=%d, timeSeconds=%.2f, formatted=%s",
-			rank, entry.value, timeSeconds, formatSpeedrunTime(timeSeconds)))
-
-		table.insert(entries, {
-			rank = rank,
-			userId = userId,
-			displayName = displayName,
-			value = rawValue,
-			formattedValue = formatSpeedrunTime(timeSeconds)
-		})
-	end
-
-	for _, leaderboardData in ipairs(leaderboards) do
-		populateLeaderboard(leaderboardData, entries, "Speedrun")
-	end
-
+		return formatSpeedrunTime(timeSeconds)
+	end)
 end
 
 local function updatePlaytimeLeaderboards()
-	local leaderboards = findAllLeaderboardsOfType("Playtime")
-	if #leaderboards == 0 then return end
-
-	local success, data = pcall(function()
-		return PlaytimeLeaderboard:GetSortedAsync(false, CONFIG.MAX_ENTRIES)
-	end)
-
-	if not success then
-		warn("[LEADERBOARD] Failed to fetch Playtime data")
-		return
-	end
-
-	local page = data:GetCurrentPage()
-	local entries = {}
-
-	for rank, entry in ipairs(page) do
-		local userId = tonumber(entry.key)
-		local displayName = getPlayerName(userId)
-		local playtime = entry.value
-
-		table.insert(entries, {
-			rank = rank,
-			userId = userId,
-			displayName = displayName,
-			value = playtime,
-			formattedValue = formatPlaytime(playtime)
-		})
-	end
-
-	for _, leaderboardData in ipairs(leaderboards) do
-		populateLeaderboard(leaderboardData, entries, "Playtime")
-	end
-
+	updateLeaderboard(PlaytimeLeaderboard, "Playtime", formatPlaytime)
 end
 
 local function updateDonationLeaderboards()
-	local leaderboards = findAllLeaderboardsOfType("Donation")
-	print("[DONATION DEBUG] Found " .. #leaderboards .. " donation leaderboard(s)")
-	if #leaderboards == 0 then return end
-
-	local success, data = pcall(function()
-		return DonationLeaderboard:GetSortedAsync(false, CONFIG.MAX_ENTRIES)
-	end)
-
-	if not success then
-		warn("[LEADERBOARD] Failed to fetch Donation data: " .. tostring(data))
-		return
-	end
-
-	local page = data:GetCurrentPage()
-	local entries = {}
-	
-	print("[DONATION DEBUG] Got " .. #page .. " entries from DataStore")
-
-	for rank, entry in ipairs(page) do
-		local userId = tonumber(entry.key)
-		local displayName = getPlayerName(userId)
-		
-		print(string.format("[DONATION DEBUG] Entry %d: userId=%s, name=%s, value=%s", 
-			rank, tostring(userId), displayName, tostring(entry.value)))
-
-		table.insert(entries, {
-			rank = rank,
-			userId = userId,
-			displayName = displayName,
-			value = entry.value
-		})
-	end
-	
-	print("[DONATION DEBUG] Populating " .. #entries .. " entries to " .. #leaderboards .. " leaderboard(s)")
-
-	for _, leaderboardData in ipairs(leaderboards) do
-		populateLeaderboard(leaderboardData, entries, "Donation")
-	end
-
+	updateLeaderboard(DonationLeaderboard, "Donation", nil)
 end
 
 local function updateAllLeaderboards()
-
 	updateSummitLeaderboards()
 	updateSpeedrunLeaderboards()
 	updatePlaytimeLeaderboards()
 	updateDonationLeaderboards()
-
 end
 
-leaderboardsFolder.DescendantAdded:Connect(function(descendant)
-	if descendant.Name == "Sample" and descendant:IsA("Frame") then
-		task.wait(0.5)
-		updateAllLeaderboards()
+-- Setup countdown labels
+local countdownLabels = {}
+local lastUpdateTime = 0
+
+local function setupCountdownLabels()
+	for _, descendant in pairs(leaderboardsFolder:GetDescendants()) do
+		if descendant:IsA("SurfaceGui") then
+			local existing = descendant:FindFirstChild("CountdownLabel")
+			if not existing then
+				local countdownLabel = Instance.new("TextLabel")
+				countdownLabel.Name = "CountdownLabel"
+				countdownLabel.Size = UDim2.new(1, 0, 0, 28)
+				countdownLabel.Position = UDim2.new(0, 0, 1, -32)
+				countdownLabel.BackgroundTransparency = 0.2
+				countdownLabel.BackgroundColor3 = Color3.fromRGB(30, 100, 180)
+				countdownLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+				countdownLabel.Font = Enum.Font.GothamBold
+				countdownLabel.TextSize = 16
+				countdownLabel.Text = "🔄 Refresh in 60s"
+				countdownLabel.Parent = descendant
+				
+				table.insert(countdownLabels, countdownLabel)
+			else
+				table.insert(countdownLabels, existing)
+			end
+		end
 	end
-end)
+	print("[LEADERBOARD] Setup " .. #countdownLabels .. " countdown labels")
+end
 
+local function updateCountdownLabels()
+	local timeLeft = math.max(0, CONFIG.UPDATE_INTERVAL - (tick() - lastUpdateTime))
+	local text = "🔄 Refresh in " .. math.ceil(timeLeft) .. "s"
+	
+	for _, label in ipairs(countdownLabels) do
+		if label and label.Parent then
+			label.Text = text
+		end
+	end
+end
+
+-- Main loop
 task.spawn(function()
+	print("[LEADERBOARD] Waiting " .. CONFIG.INITIAL_DELAY .. " seconds before first update...")
 	task.wait(CONFIG.INITIAL_DELAY)
-
+	
+	setupCountdownLabels()
+	
+	lastUpdateTime = tick()
+	print("[LEADERBOARD] Running initial update...")
 	updateAllLeaderboards()
+	print("[LEADERBOARD] Initial update complete!")
 
 	while true do
-		task.wait(CONFIG.UPDATE_INTERVAL)
-		updateAllLeaderboards()
-	end
-end)
-
-task.defer(function()
-	task.wait(1)
-
-	local types = {"Summit", "Speedrun", "Playtime", "Donation"}
-
-	for _, leaderboardType in ipairs(types) do
-		local found = findAllLeaderboardsOfType(leaderboardType)
-		if #found > 0 then
-			for i, data in ipairs(found) do
-			end
-		else
+		task.wait(1)
+		updateCountdownLabels()
+		
+		if tick() - lastUpdateTime >= CONFIG.UPDATE_INTERVAL then
+			lastUpdateTime = tick()
+			print("[LEADERBOARD] Running periodic update...")
+			updateAllLeaderboards()
+			print("[LEADERBOARD] Periodic update complete!")
 		end
 	end
 end)
 
+-- Listen for refresh events from other scripts
 local refreshEvent = game.ServerScriptService:FindFirstChild("RefreshLeaderboardsEvent")
 if not refreshEvent then
 	refreshEvent = Instance.new("BindableEvent")
@@ -410,3 +369,5 @@ refreshEvent.Event:Connect(function(leaderboardType)
 		updateAllLeaderboards()
 	end
 end)
+
+print("[LEADERBOARD SERVER] Ready!")

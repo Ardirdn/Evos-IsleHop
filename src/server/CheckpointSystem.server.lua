@@ -1334,26 +1334,36 @@ Players.PlayerRemoving:Connect(function(player)
 		local cachedCheckpoint = DataHandler:Get(player, "LastCheckpoint")
 		local cachedPlaytime = DataHandler:Get(player, "TotalPlaytime")
 
+		-- Gunakan math.max untuk Summit dan Playtime
 		if cachedSummits ~= nil then
-			data.TotalSummits = cachedSummits
+			data.TotalSummits = math.max(data.TotalSummits or 0, cachedSummits)
 		end
 
 		if cachedSpeedrun ~= nil then
-			data.BestSpeedrun = cachedSpeedrun
+			-- Untuk speedrun, ambil yang lebih cepat (nilai lebih kecil)
+			if data.BestSpeedrun then
+				data.BestSpeedrun = math.min(data.BestSpeedrun, cachedSpeedrun)
+			else
+				data.BestSpeedrun = cachedSpeedrun
+			end
 		end
 
 		if cachedCheckpoint ~= nil then
-			data.LastCheckpoint = cachedCheckpoint
+			data.LastCheckpoint = math.max(data.LastCheckpoint or 0, cachedCheckpoint)
 		end
 
 		if cachedPlaytime ~= nil then
-			data.TotalPlaytime = cachedPlaytime
+			data.TotalPlaytime = math.max(data.TotalPlaytime or 0, cachedPlaytime)
 		end
+		
+		print(string.format("[PLAYER LEAVE] Saving %s - Summit:%d, CP:%d, Playtime:%d", 
+			player.Name, data.TotalSummits or 0, data.LastCheckpoint or 0, math.floor(data.TotalPlaytime or 0)))
 
 		savePlayerData(player)
 	else
-		warn("[PLAYER LEAVE] No data found for:", player.Name)
+		warn("[PLAYER LEAVE] No checkpoint data found for:", player.Name)
 	end
+
 
 	playerData[userId] = nil
 	speedrunTimers[userId] = nil
