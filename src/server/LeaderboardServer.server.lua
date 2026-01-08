@@ -11,7 +11,7 @@ local DonationLeaderboard = DataStoreService:GetOrderedDataStore(DataStoreConfig
 
 local CONFIG = {
 	UPDATE_INTERVAL = 60,
-	MAX_ENTRIES = 100,
+	MAX_ENTRIES = 100,  -- Keep low for fast name lookups (like template)
 	INITIAL_DELAY = 3,
 }
 
@@ -59,27 +59,25 @@ local function getPlayerName(userId)
 	if playerNameCache[userId] then
 		return playerNameCache[userId]
 	end
+	
+	-- Check if player is currently in game (instant)
+	local player = Players:GetPlayerByUserId(userId)
+	if player then
+		playerNameCache[userId] = player.Name
+		return player.Name
+	end
 
-	-- Try to get name, but don't block too long
-	local name = nil
-	local thread = coroutine.create(function()
-		local success, result = pcall(function()
-			return Players:GetNameFromUserIdAsync(userId)
-		end)
-		if success and result then
-			name = result
-			playerNameCache[userId] = result
-		end
+	-- Sync lookup like template (only 20 entries so it's fast)
+	local success, name = pcall(function()
+		return Players:GetNameFromUserIdAsync(userId)
 	end)
-	
-	coroutine.resume(thread)
-	
-	-- Return name if we got it, otherwise use fallback
-	if name then
+
+	if success and name then
+		playerNameCache[userId] = name
 		return name
 	end
 	
-	-- Fallback: just use "Player" + short ID
+	-- Fallback for Studio test players or failed lookups
 	return "Player" .. tostring(userId):sub(-4)
 end
 
@@ -237,7 +235,8 @@ local function updateLeaderboard(orderedDataStore, leaderboardType, formatFunc)
 
 	for rank, data in ipairs(page) do
 		local userId = tonumber(data.key)
-		local displayName = getPlayerName(userId)
+		-- Use cached name if available, otherwise use userId (names fetched in background)
+		local displayName = playerNameCache[userId] or tostring(userId)
 		local value = data.value
 		local formattedValue = formatFunc and formatFunc(value) or tostring(value)
 
@@ -250,10 +249,29 @@ local function updateLeaderboard(orderedDataStore, leaderboardType, formatFunc)
 		})
 	end
 
+
+
 	for _, leaderboardData in ipairs(leaderboards) do
 		populateLeaderboard(leaderboardData, entries, leaderboardType)
 	end
+	
+	-- Background task to fetch real names for next refresh
+	task.spawn(function()
+		for _, entry in ipairs(entries) do
+			local userId = entry.userId
+			if not playerNameCache[userId] then
+				local success, name = pcall(function()
+					return Players:GetNameFromUserIdAsync(userId)
+				end)
+				if success and name then
+					playerNameCache[userId] = name
+				end
+				task.wait(0.05)  -- Small delay to avoid throttling
+			end
+		end
+	end)
 end
+
 
 local function updateSummitLeaderboards()
 	updateLeaderboard(SummitLeaderboard, "Summit", nil)
