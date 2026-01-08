@@ -110,12 +110,24 @@ local function setupSyncListener()
 
 		if playerData and playerData[userId] then
 			local oldSummits = playerData[userId].TotalSummits or 0
+			local oldPlaytime = playerData[userId].TotalPlaytime or 0
 
-			playerData[userId].TotalSummits = migratedData.TotalSummits or playerData[userId].TotalSummits
+			-- PROTEKSI: Gunakan nilai yang lebih tinggi untuk Summit (jangan pernah turun)
+			local newSummits = migratedData.TotalSummits or 0
+			if newSummits > 0 or oldSummits > 0 then
+				playerData[userId].TotalSummits = math.max(oldSummits, newSummits)
+			end
+			
+			-- PROTEKSI: Gunakan nilai yang lebih tinggi untuk Playtime
+			local newPlaytime = migratedData.TotalPlaytime or 0
+			if newPlaytime > 0 or oldPlaytime > 0 then
+				playerData[userId].TotalPlaytime = math.max(oldPlaytime, newPlaytime)
+			end
+
+			-- Untuk field lain, gunakan nilai baru jika ada
 			playerData[userId].TotalDonations = migratedData.TotalDonations or playerData[userId].TotalDonations
 			playerData[userId].LastCheckpoint = migratedData.LastCheckpoint or playerData[userId].LastCheckpoint
 			playerData[userId].BestSpeedrun = migratedData.BestSpeedrun or playerData[userId].BestSpeedrun
-			playerData[userId].TotalPlaytime = migratedData.TotalPlaytime or playerData[userId].TotalPlaytime
 
 			if playerCurrentCheckpoint then
 				playerCurrentCheckpoint[userId] = playerData[userId].LastCheckpoint
@@ -128,12 +140,18 @@ local function setupSyncListener()
 					summitsValue.Value = playerData[userId].TotalSummits
 				end
 			end
+			
+			-- Debug log
+			if oldSummits ~= playerData[userId].TotalSummits then
+				print(string.format("[CHECKPOINT SYNC] %s Summit: %d -> %d", player.Name, oldSummits, playerData[userId].TotalSummits))
+			end
 		else
 			warn(string.format("[CHECKPOINT SYNC] playerData[%d] not found for %s", userId, player.Name))
 		end
 	end)
 
 end
+
 
 local DataHandler = require(game.ServerScriptService:WaitForChild("DataHandler"))
 local NotificationServer = require(game.ServerScriptService:WaitForChild("NotificationServer"))
@@ -353,16 +371,40 @@ local function savePlayerData(player)
 		return
 	end
 
+	-- PROTEKSI: Periksa DataHandler untuk nilai yang lebih tinggi sebelum save
+	local handlerSummits = DataHandler:Get(player, "TotalSummits") or 0
+	local handlerPlaytime = DataHandler:Get(player, "TotalPlaytime") or 0
+	
+	-- Gunakan nilai tertinggi antara cache dan DataHandler
+	local finalSummits = math.max(data.TotalSummits or 0, handlerSummits)
+	local finalPlaytime = math.max(data.TotalPlaytime or 0, handlerPlaytime)
+	
+	-- Update data cache dengan nilai tertinggi
+	data.TotalSummits = finalSummits
+	data.TotalPlaytime = finalPlaytime
+	
+	-- Debug log jika ada perbedaan
+	if finalSummits ~= handlerSummits then
+		print(string.format("[DATA SAVE] %s Summit protection: cache=%d, handler=%d, saving=%d", 
+			player.Name, data.TotalSummits or 0, handlerSummits, finalSummits))
+	end
+
 	DataHandler:Set(player, "LastCheckpoint", data.LastCheckpoint)
-	DataHandler:Set(player, "TotalSummits", data.TotalSummits)
+	DataHandler:Set(player, "TotalSummits", finalSummits)
 	DataHandler:Set(player, "BestSpeedrun", data.BestSpeedrun)
-	DataHandler:Set(player, "TotalPlaytime", data.TotalPlaytime)
+	DataHandler:Set(player, "TotalPlaytime", finalPlaytime)
 
 	DataHandler:SavePlayer(player)
 
-	local success, err = pcall(function()
-		SummitLeaderboard:SetAsync(tostring(userId), data.TotalSummits)
-	end)
+	-- Save ke Summit Leaderboard (hanya jika > 0)
+	if finalSummits > 0 then
+		local success, err = pcall(function()
+			SummitLeaderboard:SetAsync(tostring(userId), finalSummits)
+		end)
+		if success then
+			print(string.format("[DATA SAVE] %s Summit leaderboard updated: %d", player.Name, finalSummits))
+		end
+	end
 
 	if data.BestSpeedrun then
 		pcall(function()
@@ -371,10 +413,14 @@ local function savePlayerData(player)
 		end)
 	end
 
-	pcall(function()
-		local playtimeInt = math.floor(data.TotalPlaytime)
-		PlaytimeLeaderboard:SetAsync(tostring(userId), playtimeInt)
-	end)
+	-- Save ke Playtime Leaderboard (hanya jika > 0)
+	if finalPlaytime > 0 then
+		pcall(function()
+			local playtimeInt = math.floor(finalPlaytime)
+			PlaytimeLeaderboard:SetAsync(tostring(userId), playtimeInt)
+		end)
+		print(string.format("[DATA SAVE] %s Playtime leaderboard updated: %d seconds", player.Name, math.floor(finalPlaytime)))
+	end
 
 	-- Sync donation leaderboard
 	if data.TotalDonations and data.TotalDonations > 0 then
@@ -384,6 +430,7 @@ local function savePlayerData(player)
 	end
 
 end
+
 
 local function updatePlaytime(player)
 	local userId = player.UserId
@@ -416,15 +463,35 @@ local function formatTime(seconds)
 end
 
 local function updateSummitLeaderboard()
+	local refreshEvent = game.ServerScriptService:FindFirstChild("RefreshLeaderboardsEvent")
+	if refreshEvent then
+		print("[LEADERBOARD UPDATE] Triggering Summit leaderboard refresh")
+		refreshEvent:Fire("Summit")
+	end
 end
 
 local function updateSpeedrunLeaderboard()
+	local refreshEvent = game.ServerScriptService:FindFirstChild("RefreshLeaderboardsEvent")
+	if refreshEvent then
+		print("[LEADERBOARD UPDATE] Triggering Speedrun leaderboard refresh")
+		refreshEvent:Fire("Speedrun")
+	end
 end
 
 local function updatePlaytimeLeaderboard()
+	local refreshEvent = game.ServerScriptService:FindFirstChild("RefreshLeaderboardsEvent")
+	if refreshEvent then
+		print("[LEADERBOARD UPDATE] Triggering Playtime leaderboard refresh")
+		refreshEvent:Fire("Playtime")
+	end
 end
 
 local function updateLeaderboards()
+	local refreshEvent = game.ServerScriptService:FindFirstChild("RefreshLeaderboardsEvent")
+	if refreshEvent then
+		print("[LEADERBOARD UPDATE] Triggering ALL leaderboards refresh")
+		refreshEvent:Fire("All")
+	end
 end
 
 local function getGamepassMultiplier(player)
@@ -1364,26 +1431,157 @@ local function teleportPlayerToLastCheckpoint(player)
 	local data = playerData[userId]
 	if not data then return end
 	
-	local lastCP = data.LastCheckpoint
+	local lastCP = data.LastCheckpoint or 0
 	
-	local spawnCheckpoint = checkpoints[lastCP]
-	if spawnCheckpoint then
-		local spawnLocation = spawnCheckpoint:FindFirstChild("SpawnLocation")
-		if spawnLocation then
-			character:MoveTo(spawnLocation.Position + Vector3.new(0, 3, 0))
+	-- Helper function to get spawn position for a checkpoint
+	local function getSpawnPositionForCP(cpNum)
+		local spawnCheckpoint = checkpoints[cpNum]
+		if spawnCheckpoint then
+			local spawnLocation = spawnCheckpoint:FindFirstChild("SpawnLocation")
+			if spawnLocation then
+				return spawnLocation.Position + Vector3.new(0, 3, 0)
+			else
+				return spawnCheckpoint.Position + Vector3.new(0, 5, 0)
+			end
 		else
-			character:MoveTo(spawnCheckpoint.Position + Vector3.new(0, 5, 0))
+			local basecamp = checkpoints[0]
+			if basecamp then
+				local spawnLoc = basecamp:FindFirstChild("SpawnLocation")
+				if spawnLoc then
+					return spawnLoc.Position + Vector3.new(0, 3, 0)
+				end
+			end
 		end
-	else
-		local basecamp = checkpoints[0]
-		if basecamp then
-			local spawnLoc = basecamp:FindFirstChild("SpawnLocation")
-			if spawnLoc then
-				character:MoveTo(spawnLoc.Position + Vector3.new(0, 3, 0))
+		return Vector3.new(0, 50, 0)
+	end
+	
+	local spawnPos = getSpawnPositionForCP(lastCP)
+	
+	-- Check for carry system integration
+	local CarryRemote = ReplicatedStorage:FindFirstChild("CarryRemote")
+	local hasCarryWeld = false
+	local isCarrier = false
+	local isBeingCarried = false
+	local carrierPlayer = nil
+	local carriedPlayers = {}
+	
+	-- Check if this player has carry welds (is carrier or being carried)
+	local hrp = character:FindFirstChild("HumanoidRootPart")
+	if hrp then
+		for _, child in ipairs(hrp:GetChildren()) do
+			if child:IsA("WeldConstraint") and child.Name == "CarryWeld" then
+				hasCarryWeld = true
+				-- Check if Part0 is our HRP (we are carrier) or Part1 is our HRP (we are carried)
+				if child.Part0 and child.Part0.Parent then
+					local otherChar = child.Part0.Parent
+					local otherPlayer = Players:GetPlayerFromCharacter(otherChar)
+					if otherPlayer and otherPlayer ~= player then
+						isBeingCarried = true
+						carrierPlayer = otherPlayer
+					end
+				end
+				if child.Part1 and child.Part1.Parent then
+					local otherChar = child.Part1.Parent
+					local otherPlayer = Players:GetPlayerFromCharacter(otherChar)
+					if otherPlayer and otherPlayer ~= player then
+						isCarrier = true
+						table.insert(carriedPlayers, otherPlayer)
+					end
+				end
 			end
 		end
 	end
+	
+	-- Also check if carrier has welds pointing to us
+	for _, otherPlayer in ipairs(Players:GetPlayers()) do
+		if otherPlayer ~= player and otherPlayer.Character then
+			local otherHRP = otherPlayer.Character:FindFirstChild("HumanoidRootPart")
+			if otherHRP then
+				for _, child in ipairs(otherHRP:GetChildren()) do
+					if child:IsA("WeldConstraint") and child.Name == "CarryWeld" then
+						if child.Part1 and child.Part1 == hrp then
+							isBeingCarried = true
+							carrierPlayer = otherPlayer
+						end
+						if child.Part0 and child.Part0 == hrp then
+							isCarrier = true
+							if not table.find(carriedPlayers, otherPlayer) then
+								table.insert(carriedPlayers, otherPlayer)
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+	
+	-- If player is being carried, teleport the whole group via carrier
+	if isBeingCarried and carrierPlayer then
+		-- Find all players being carried by the carrier
+		local allInGroup = {carrierPlayer}
+		local carrierHRP = carrierPlayer.Character and carrierPlayer.Character:FindFirstChild("HumanoidRootPart")
+		if carrierHRP then
+			for _, child in ipairs(carrierHRP:GetChildren()) do
+				if child:IsA("WeldConstraint") and child.Name == "CarryWeld" then
+					if child.Part1 and child.Part1.Parent then
+						local carriedPlayer = Players:GetPlayerFromCharacter(child.Part1.Parent)
+						if carriedPlayer and not table.find(allInGroup, carriedPlayer) then
+							table.insert(allInGroup, carriedPlayer)
+						end
+					end
+				end
+			end
+		end
+		
+		-- Teleport the whole group to the carrier's checkpoint (or triggering player's)
+		local carrierData = playerData[carrierPlayer.UserId]
+		local carrierCP = carrierData and carrierData.LastCheckpoint or lastCP
+		local groupSpawnPos = getSpawnPositionForCP(carrierCP)
+		
+		-- Teleport carrier first
+		if carrierPlayer.Character then
+			local cHRP = carrierPlayer.Character:FindFirstChild("HumanoidRootPart")
+			if cHRP then
+				cHRP.CFrame = CFrame.new(groupSpawnPos)
+			end
+		end
+		
+		return -- The carrier will handle moving carried players via welds
+	end
+	
+	-- If player is carrier, teleport self and all carried players
+	if isCarrier and #carriedPlayers > 0 then
+		-- Teleport carrier
+		if hrp then
+			hrp.CFrame = CFrame.new(spawnPos)
+		end
+		
+		-- Carried players will follow via welds automatically
+		-- But we need to ensure they stay attached
+		task.delay(0.1, function()
+			if hrp and hrp.Parent then
+				-- Re-check welds are intact
+				for _, child in ipairs(hrp:GetChildren()) do
+					if child:IsA("WeldConstraint") and child.Name == "CarryWeld" then
+						if child.Part1 then
+							child.Enabled = true
+						end
+					end
+				end
+			end
+		end)
+		
+		return
+	end
+	
+	-- Normal teleport for players not in carry relationship
+	if hrp then
+		hrp.CFrame = CFrame.new(spawnPos)
+	else
+		character:MoveTo(spawnPos)
+	end
 end
+
 
 if deathTriggerFolder then
 	local function setupDeathTrigger(triggerPart)

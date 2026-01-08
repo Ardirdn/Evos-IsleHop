@@ -522,7 +522,7 @@ createCorner(6).Parent = messageBox
 createPadding(8).Parent = messageBox
 
 local durationFrame = Instance.new("Frame")
-durationFrame.Size = UDim2.new(1, 0, 0.15, 0)
+durationFrame.Size = UDim2.new(1, 0, 0.2, 0)
 durationFrame.BackgroundTransparency = 1
 durationFrame.LayoutOrder = 3
 durationFrame.Parent = notifScroll
@@ -539,12 +539,43 @@ durationLabel.Parent = durationFrame
 
 createTextSizeConstraint(14).Parent = durationLabel
 
+-- Slider container with buttons
+local sliderContainer = Instance.new("Frame")
+sliderContainer.Size = UDim2.new(1, 0, 0.4, 0)
+sliderContainer.Position = UDim2.new(0, 0, 0.4, 0)
+sliderContainer.BackgroundTransparency = 1
+sliderContainer.Parent = durationFrame
+
+-- Minus button
+local minusBtn = Instance.new("TextButton")
+minusBtn.Size = UDim2.new(0.1, 0, 1, 0)
+minusBtn.Position = UDim2.new(0, 0, 0, 0)
+minusBtn.BackgroundColor3 = COLORS.Button
+minusBtn.BorderSizePixel = 0
+minusBtn.Font = Enum.Font.GothamBold
+minusBtn.Text = "-"
+minusBtn.TextColor3 = COLORS.Text
+minusBtn.TextScaled = true
+minusBtn.AutoButtonColor = false
+minusBtn.Parent = sliderContainer
+
+createCorner(6).Parent = minusBtn
+createTextSizeConstraint(20).Parent = minusBtn
+
+minusBtn.MouseEnter:Connect(function()
+	TweenService:Create(minusBtn, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.ButtonHover}):Play()
+end)
+
+minusBtn.MouseLeave:Connect(function()
+	TweenService:Create(minusBtn, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.Button}):Play()
+end)
+
 local sliderBg = Instance.new("Frame")
-sliderBg.Size = UDim2.new(1, 0, 0.15, 0)
-sliderBg.Position = UDim2.new(0, 0, 0.6, 0)
+sliderBg.Size = UDim2.new(0.76, 0, 0.4, 0)
+sliderBg.Position = UDim2.new(0.12, 0, 0.3, 0)
 sliderBg.BackgroundColor3 = COLORS.Panel
 sliderBg.BorderSizePixel = 0
-sliderBg.Parent = durationFrame
+sliderBg.Parent = sliderContainer
 
 createCorner(4).Parent = sliderBg
 
@@ -557,41 +588,91 @@ sliderFill.Parent = sliderBg
 createCorner(4).Parent = sliderFill
 
 local sliderHandle = Instance.new("Frame")
-sliderHandle.Size = UDim2.new(0.04, 0, 2, 0)
-sliderHandle.Position = UDim2.new(0.042, 0, -0.5, 0)
+sliderHandle.Size = UDim2.new(0.04, 0, 2.5, 0)
+sliderHandle.Position = UDim2.new(0.042, 0, -0.75, 0)
 sliderHandle.BackgroundColor3 = COLORS.Text
 sliderHandle.BorderSizePixel = 0
 sliderHandle.Parent = sliderBg
 
 createCorner(8).Parent = sliderHandle
 
+-- Plus button
+local plusBtn = Instance.new("TextButton")
+plusBtn.Size = UDim2.new(0.1, 0, 1, 0)
+plusBtn.Position = UDim2.new(0.9, 0, 0, 0)
+plusBtn.BackgroundColor3 = COLORS.Button
+plusBtn.BorderSizePixel = 0
+plusBtn.Font = Enum.Font.GothamBold
+plusBtn.Text = "+"
+plusBtn.TextColor3 = COLORS.Text
+plusBtn.TextScaled = true
+plusBtn.AutoButtonColor = false
+plusBtn.Parent = sliderContainer
+
+createCorner(6).Parent = plusBtn
+createTextSizeConstraint(20).Parent = plusBtn
+
+plusBtn.MouseEnter:Connect(function()
+	TweenService:Create(plusBtn, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.ButtonHover}):Play()
+end)
+
+plusBtn.MouseLeave:Connect(function()
+	TweenService:Create(plusBtn, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.Button}):Play()
+end)
+
 local selectedDuration = 5
 local draggingSlider = false
 
+local function updateDurationSlider()
+	local relativePos = (selectedDuration - 1) / 120
+	sliderFill.Size = UDim2.new(relativePos, 0, 1, 0)
+	sliderHandle.Position = UDim2.new(relativePos, 0, -0.75, 0)
+	durationLabel.Text = "Duration: " .. selectedDuration .. "s"
+end
+
+minusBtn.MouseButton1Click:Connect(function()
+	selectedDuration = math.max(1, selectedDuration - 5)
+	updateDurationSlider()
+end)
+
+plusBtn.MouseButton1Click:Connect(function()
+	selectedDuration = math.min(121, selectedDuration + 5)
+	updateDurationSlider()
+end)
+
 sliderHandle.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 		draggingSlider = true
 	end
 end)
 
+sliderBg.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		draggingSlider = true
+		local mousePos = input.Position.X
+		local sliderPos = sliderBg.AbsolutePosition.X
+		local sliderSize = sliderBg.AbsoluteSize.X
+		local relativePos = math.clamp((mousePos - sliderPos) / sliderSize, 0, 1)
+		selectedDuration = math.floor(relativePos * 120 + 1)
+		updateDurationSlider()
+	end
+end)
+
 UserInputService.InputEnded:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 		draggingSlider = false
 	end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseMovement and draggingSlider then
-		local mousePos = UserInputService:GetMouseLocation()
+	if (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) and draggingSlider then
+		local mousePos = input.Position.X
 		local sliderPos = sliderBg.AbsolutePosition.X
 		local sliderSize = sliderBg.AbsoluteSize.X
-		local relativePos = math.clamp((mousePos.X - sliderPos) / sliderSize, 0, 1)
+		local relativePos = math.clamp((mousePos - sliderPos) / sliderSize, 0, 1)
 
 		selectedDuration = math.floor(relativePos * 120 + 1)
-		durationLabel.Text = "Duration: " .. selectedDuration .. "s"
-
-		sliderFill.Size = UDim2.new(relativePos, 0, 1, 0)
-		sliderHandle.Position = UDim2.new(relativePos, 0, -0.5, 0)
+		updateDurationSlider()
 	end
 end)
 
@@ -1392,12 +1473,42 @@ local function createModifyPlayerPopup(targetPlayer)
 
 	contentY = contentY + 25
 
+	-- Speed slider container with buttons
+	local speedSliderContainer = Instance.new("Frame")
+	speedSliderContainer.Size = UDim2.new(1, -30, 0, 20)
+	speedSliderContainer.Position = UDim2.new(0, 15, 0, contentY)
+	speedSliderContainer.BackgroundTransparency = 1
+	speedSliderContainer.Parent = popup
+
+	-- Speed minus button
+	local speedMinusBtn = Instance.new("TextButton")
+	speedMinusBtn.Size = UDim2.new(0, 30, 0, 20)
+	speedMinusBtn.Position = UDim2.new(0, 0, 0, 0)
+	speedMinusBtn.BackgroundColor3 = COLORS.Button
+	speedMinusBtn.BorderSizePixel = 0
+	speedMinusBtn.Font = Enum.Font.GothamBold
+	speedMinusBtn.Text = "-"
+	speedMinusBtn.TextColor3 = COLORS.Text
+	speedMinusBtn.TextSize = 16
+	speedMinusBtn.AutoButtonColor = false
+	speedMinusBtn.Parent = speedSliderContainer
+
+	createCorner(4).Parent = speedMinusBtn
+
+	speedMinusBtn.MouseEnter:Connect(function()
+		TweenService:Create(speedMinusBtn, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.ButtonHover}):Play()
+	end)
+
+	speedMinusBtn.MouseLeave:Connect(function()
+		TweenService:Create(speedMinusBtn, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.Button}):Play()
+	end)
+
 	local speedSliderBg = Instance.new("Frame")
-	speedSliderBg.Size = UDim2.new(1, -30, 0, 8)
-	speedSliderBg.Position = UDim2.new(0, 15, 0, contentY)
+	speedSliderBg.Size = UDim2.new(1, -70, 0, 8)
+	speedSliderBg.Position = UDim2.new(0, 35, 0.5, -4)
 	speedSliderBg.BackgroundColor3 = COLORS.Panel
 	speedSliderBg.BorderSizePixel = 0
-	speedSliderBg.Parent = popup
+	speedSliderBg.Parent = speedSliderContainer
 
 	createCorner(4).Parent = speedSliderBg
 
@@ -1418,37 +1529,88 @@ local function createModifyPlayerPopup(targetPlayer)
 
 	createCorner(8).Parent = speedHandle
 
+	-- Speed plus button
+	local speedPlusBtn = Instance.new("TextButton")
+	speedPlusBtn.Size = UDim2.new(0, 30, 0, 20)
+	speedPlusBtn.Position = UDim2.new(1, -30, 0, 0)
+	speedPlusBtn.BackgroundColor3 = COLORS.Button
+	speedPlusBtn.BorderSizePixel = 0
+	speedPlusBtn.Font = Enum.Font.GothamBold
+	speedPlusBtn.Text = "+"
+	speedPlusBtn.TextColor3 = COLORS.Text
+	speedPlusBtn.TextSize = 16
+	speedPlusBtn.AutoButtonColor = false
+	speedPlusBtn.Parent = speedSliderContainer
+
+	createCorner(4).Parent = speedPlusBtn
+
+	speedPlusBtn.MouseEnter:Connect(function()
+		TweenService:Create(speedPlusBtn, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.ButtonHover}):Play()
+	end)
+
+	speedPlusBtn.MouseLeave:Connect(function()
+		TweenService:Create(speedPlusBtn, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.Button}):Play()
+	end)
+
+	local currentSpeedValue = 1.0
 	local draggingSpeed = false
 
+	local function updateSpeedSlider()
+		local relative = (currentSpeedValue - 0.1) / 3.9
+		speedFill.Size = UDim2.new(relative, 0, 1, 0)
+		speedHandle.Position = UDim2.new(relative, -8, 0.5, -8)
+		speedLabel.Text = string.format("Speed Multiplier: %.1fx", currentSpeedValue)
+		setSpeedEvent:FireServer(targetPlayer.UserId, currentSpeedValue)
+	end
+
+	speedMinusBtn.MouseButton1Click:Connect(function()
+		currentSpeedValue = math.max(0.1, currentSpeedValue - 0.5)
+		updateSpeedSlider()
+	end)
+
+	speedPlusBtn.MouseButton1Click:Connect(function()
+		currentSpeedValue = math.min(4.0, currentSpeedValue + 0.5)
+		updateSpeedSlider()
+	end)
+
 	speedSliderBg.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			draggingSpeed = true
+			local mousePos = input.Position.X
+			local sliderPos = speedSliderBg.AbsolutePosition.X
+			local sliderSize = speedSliderBg.AbsoluteSize.X
+			local relative = math.clamp((mousePos - sliderPos) / sliderSize, 0, 1)
+			currentSpeedValue = 0.1 + (relative * 3.9)
+			updateSpeedSlider()
+		end
+	end)
+
+	speedHandle.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 			draggingSpeed = true
 		end
 	end)
 
 	UserInputService.InputChanged:Connect(function(input)
-		if draggingSpeed and input.UserInputType == Enum.UserInputType.MouseMovement then
+		if draggingSpeed and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
 			local mousePos = input.Position.X
 			local sliderPos = speedSliderBg.AbsolutePosition.X
 			local sliderSize = speedSliderBg.AbsoluteSize.X
 			local relative = math.clamp((mousePos - sliderPos) / sliderSize, 0, 1)
 
-			speedFill.Size = UDim2.new(relative, 0, 1, 0)
-			speedHandle.Position = UDim2.new(relative, -8, 0.5, -8)
-
-			local speedValue = 0.1 + (relative * 3.9)
-			speedLabel.Text = string.format("Speed Multiplier: %.1fx", speedValue)
-			setSpeedEvent:FireServer(targetPlayer.UserId, speedValue)
+			currentSpeedValue = 0.1 + (relative * 3.9)
+			updateSpeedSlider()
 		end
 	end)
 
 	UserInputService.InputEnded:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 			draggingSpeed = false
 		end
 	end)
 
 	contentY = contentY + 30
+
 
 	local gravityLabel = Instance.new("TextLabel")
 	gravityLabel.Size = UDim2.new(1, -30, 0, 20)

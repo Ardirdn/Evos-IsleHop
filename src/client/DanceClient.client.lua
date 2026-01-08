@@ -265,8 +265,8 @@ emptyLabel.Parent = scrollFrame
 makeTextAdaptive(emptyLabel, 12)
 
 local speedFrame = Instance.new("Frame")
-speedFrame.Size = UDim2.new(0.94, 0, 0.15, 0)
-speedFrame.Position = UDim2.new(0.03, 0, 0.82, 0)
+speedFrame.Size = UDim2.new(0.94, 0, 0.18, 0)
+speedFrame.Position = UDim2.new(0.03, 0, 0.80, 0)
 speedFrame.BackgroundColor3 = COLORS.Panel
 speedFrame.BorderSizePixel = 0
 speedFrame.Parent = mainPanel
@@ -274,8 +274,8 @@ speedFrame.Parent = mainPanel
 createCorner(8).Parent = speedFrame
 
 local speedLabel = Instance.new("TextLabel")
-speedLabel.Size = UDim2.new(0.9, 0, 0.35, 0)
-speedLabel.Position = UDim2.new(0.05, 0, 0.1, 0)
+speedLabel.Size = UDim2.new(0.9, 0, 0.3, 0)
+speedLabel.Position = UDim2.new(0.05, 0, 0.05, 0)
 speedLabel.BackgroundTransparency = 1
 speedLabel.Font = Enum.Font.GothamBold
 speedLabel.Text = "Speed: 1.0x"
@@ -284,12 +284,42 @@ speedLabel.TextXAlignment = Enum.TextXAlignment.Left
 speedLabel.Parent = speedFrame
 makeTextAdaptive(speedLabel, 12)
 
+-- Speed slider container with buttons
+local speedSliderContainer = Instance.new("Frame")
+speedSliderContainer.Size = UDim2.new(0.9, 0, 0.35, 0)
+speedSliderContainer.Position = UDim2.new(0.05, 0, 0.45, 0)
+speedSliderContainer.BackgroundTransparency = 1
+speedSliderContainer.Parent = speedFrame
+
+-- Speed minus button
+local speedMinusBtn = Instance.new("TextButton")
+speedMinusBtn.Size = UDim2.new(0.1, 0, 1, 0)
+speedMinusBtn.Position = UDim2.new(0, 0, 0, 0)
+speedMinusBtn.BackgroundColor3 = COLORS.Button
+speedMinusBtn.BorderSizePixel = 0
+speedMinusBtn.Font = Enum.Font.GothamBold
+speedMinusBtn.Text = "-"
+speedMinusBtn.TextColor3 = COLORS.Text
+speedMinusBtn.AutoButtonColor = false
+speedMinusBtn.Parent = speedSliderContainer
+
+createCorner(4).Parent = speedMinusBtn
+makeTextAdaptive(speedMinusBtn, 18)
+
+speedMinusBtn.MouseEnter:Connect(function()
+	TweenService:Create(speedMinusBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(50, 50, 53)}):Play()
+end)
+
+speedMinusBtn.MouseLeave:Connect(function()
+	TweenService:Create(speedMinusBtn, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.Button}):Play()
+end)
+
 local speedSliderBg = Instance.new("Frame")
-speedSliderBg.Size = UDim2.new(0.9, 0, 0.15, 0)
-speedSliderBg.Position = UDim2.new(0.05, 0, 0.65, 0)
+speedSliderBg.Size = UDim2.new(0.76, 0, 0.4, 0)
+speedSliderBg.Position = UDim2.new(0.12, 0, 0.3, 0)
 speedSliderBg.BackgroundColor3 = COLORS.Button
 speedSliderBg.BorderSizePixel = 0
-speedSliderBg.Parent = speedFrame
+speedSliderBg.Parent = speedSliderContainer
 
 createCorner(4).Parent = speedSliderBg
 
@@ -309,6 +339,29 @@ speedHandle.BorderSizePixel = 0
 speedHandle.Parent = speedSliderBg
 
 createCorner(6).Parent = speedHandle
+
+-- Speed plus button
+local speedPlusBtn = Instance.new("TextButton")
+speedPlusBtn.Size = UDim2.new(0.1, 0, 1, 0)
+speedPlusBtn.Position = UDim2.new(0.9, 0, 0, 0)
+speedPlusBtn.BackgroundColor3 = COLORS.Button
+speedPlusBtn.BorderSizePixel = 0
+speedPlusBtn.Font = Enum.Font.GothamBold
+speedPlusBtn.Text = "+"
+speedPlusBtn.TextColor3 = COLORS.Text
+speedPlusBtn.AutoButtonColor = false
+speedPlusBtn.Parent = speedSliderContainer
+
+createCorner(4).Parent = speedPlusBtn
+makeTextAdaptive(speedPlusBtn, 18)
+
+speedPlusBtn.MouseEnter:Connect(function()
+	TweenService:Create(speedPlusBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(50, 50, 53)}):Play()
+end)
+
+speedPlusBtn.MouseLeave:Connect(function()
+	TweenService:Create(speedPlusBtn, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.Button}):Play()
+end)
 
 local function playAnim(targetPlayer, animData, synchronizedPlayer)
 	local currentTrack = Tracks[targetPlayer]
@@ -600,49 +653,62 @@ clearSearchBtn.MouseButton1Click:Connect(function()
 	updateAnimList()
 end)
 
+local function updateDanceSpeedSlider()
+	local rel = (animationSpeed - 0.1) / 3.9
+	speedSlider.Size = UDim2.new(rel, 0, 1, 0)
+	speedHandle.Position = UDim2.new(rel, -6, 0.5, -6)
+	speedLabel.Text = string.format("Speed: %.1fx", animationSpeed)
+end
+
+speedMinusBtn.MouseButton1Click:Connect(function()
+	animationSpeed = math.max(0.1, animationSpeed - 0.2)
+	updateDanceSpeedSlider()
+	updateSpeedLabel()
+end)
+
+speedPlusBtn.MouseButton1Click:Connect(function()
+	animationSpeed = math.min(4.0, animationSpeed + 0.2)
+	updateDanceSpeedSlider()
+	updateSpeedLabel()
+end)
+
 local draggingSpeed = false
 
 speedSliderBg.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 		draggingSpeed = true
-		local mouseX = UserInputService:GetMouseLocation().X
+		local mouseX = input.Position.X
 		local posX = speedSliderBg.AbsolutePosition.X
 		local sizeX = speedSliderBg.AbsoluteSize.X
 		local rel = math.clamp((mouseX - posX) / sizeX, 0, 1)
-
-		speedSlider.Size = UDim2.new(rel, 0, 1, 0)
-		speedHandle.Position = UDim2.new(rel, -6, 0.5, -6)
-
 		animationSpeed = 0.1 + (rel * 3.9)
+		updateDanceSpeedSlider()
 	end
 end)
 
 speedHandle.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 		draggingSpeed = true
 	end
 end)
 
 UserInputService.InputEnded:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
 		draggingSpeed = false
 		updateSpeedLabel()
 	end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
-	if input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
+	if (input.UserInputType ~= Enum.UserInputType.MouseMovement and input.UserInputType ~= Enum.UserInputType.Touch) then return end
 
 	if draggingSpeed then
-		local mouseX = UserInputService:GetMouseLocation().X
+		local mouseX = input.Position.X
 		local posX = speedSliderBg.AbsolutePosition.X
 		local sizeX = speedSliderBg.AbsoluteSize.X
 		local rel = math.clamp((mouseX - posX) / sizeX, 0, 1)
-
-		speedSlider.Size = UDim2.new(rel, 0, 1, 0)
-		speedHandle.Position = UDim2.new(rel, -6, 0.5, -6)
-
 		animationSpeed = 0.1 + (rel * 3.9)
+		updateDanceSpeedSlider()
 	end
 
 	if activeDragState and activeDragState.dragging then
