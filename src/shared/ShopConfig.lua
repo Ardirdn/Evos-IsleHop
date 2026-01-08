@@ -3,14 +3,14 @@ local ShopConfig = {}
 ShopConfig.Gamepasses = {
 	{
 		Name = "VIP",
-		Price = 129,
+		Price = 99,
 		Thumbnail = "rbxassetid://93839116673767",
 		GamepassId = 1635503506,
 		Description = "⭐ Title VIP Eksklusif | 🚪 Akses Area VIP | ⛵ Akses Boat | 🔧 Speed Coil & Double Coil"
 	},
 	{
 		Name = "VVIP",
-		Price = 249,
+		Price = 199,
 		Thumbnail = "rbxassetid://113168148931190",
 		GamepassId = 1635215580,
 		Description = "💎 Semua Reward VIP | ⭐ Title VVIP Eksklusif | ⛵ Akses Boat | 🎵 Boombox | ✨ Rainbow & Galaxy Aura | 💰 Money Large Pack"
@@ -19,7 +19,7 @@ ShopConfig.Gamepasses = {
         Name = "x2 Summit",
         DisplayName = "x2 Summit",
         Description = "Dapatkan 2x lipat summit setiap mencapai puncak!",
-        Price = 199,
+        Price = 25,
 		GamepassId = 1635605352,
         Thumbnail = "rbxassetid://130384558824672",
         Icon = "⚡",
@@ -84,8 +84,9 @@ ShopConfig.Tools = {
 	},
 	{
 		Title = "Double Coil",
-		IsPremium = false,
-		Price = 1000,
+		IsPremium = true,
+		Price = 100,
+		ProductId = 3465227827,
 		Thumbnail = "rbxassetid://78073594661667",
 		ToolId = "DoubleCoil"
 	},

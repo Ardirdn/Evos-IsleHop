@@ -1044,12 +1044,14 @@ searchLeaderboardEvent.OnServerInvoke = function(admin, username)
 	pcall(function()
 		local data = SpeedrunLeaderboard:GetAsync(tostring(targetUserId))
 		if data then
-			local timeSeconds = math.abs(data) / 1000
-			leaderboardData.Speedrun = string.format("%02d:%02d:%02d",
-				math.floor(timeSeconds / 3600),
-				math.floor((timeSeconds % 3600) / 60),
-				math.floor(timeSeconds % 60)
-			)
+			local timeSeconds = math.abs(data) / 1000000
+			local totalMinutes = math.floor(timeSeconds / 60)
+			local secs = math.floor(timeSeconds % 60)
+			if totalMinutes > 0 then
+				leaderboardData.Speedrun = string.format("%dm %ds", totalMinutes, secs)
+			else
+				leaderboardData.Speedrun = string.format("%ds", secs)
+			end
 		end
 	end)
 
@@ -1235,14 +1237,16 @@ getLeaderboardDataFunc.OnServerInvoke = function(admin, leaderboardType, limit)
 		formatValue = function(val) return tostring(val) end
 	elseif leaderboardType == "speedrun" then
 		leaderboard = DataStoreService:GetOrderedDataStore(DataStoreConfig.Leaderboards.Speedrun)
-		isAscending = true
+		isAscending = false
 		formatValue = function(val)
-			local timeSeconds = math.abs(val) / 1000
-			return string.format("%02d:%02d:%02d",
-				math.floor(timeSeconds / 3600),
-				math.floor((timeSeconds % 3600) / 60),
-				math.floor(timeSeconds % 60)
-			)
+			local timeSeconds = math.abs(val) / 1000000
+			local totalMinutes = math.floor(timeSeconds / 60)
+			local secs = math.floor(timeSeconds % 60)
+			if totalMinutes > 0 then
+				return string.format("%dm %ds", totalMinutes, secs)
+			else
+				return string.format("%ds", secs)
+			end
 		end
 	elseif leaderboardType == "donate" then
 		leaderboard = DataStoreService:GetOrderedDataStore(DataStoreConfig.Leaderboards.Donation)
