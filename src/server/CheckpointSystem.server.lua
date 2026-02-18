@@ -10,7 +10,7 @@ CONFIG = {
 	DISTRIBUTE_MONEY_TO_CHECKPOINTS = true,
 	GIVE_SUMMIT_BONUS = true,
 	DISABLE_BODY_BLOCK = true,
-	SKIP_PRODUCT_ID = 3466042624,
+	SKIP_PRODUCT_ID = 3524123407, -- Updated to correct 15 Robux product
 }
 
 local PLAYERS_COLLISION_GROUP = "NoPlayerCollision"
@@ -696,13 +696,23 @@ Players.PlayerAdded:Connect(function(player)
 		applyNoCollisionToCharacter(character, player)
 
 		local currentData = playerData[player.UserId]
-		local lastCP = currentData and currentData.LastCheckpoint or 0
+		local playerDataCP = currentData and currentData.LastCheckpoint or 0
 		
-		print(string.format("[RESPAWN DEBUG] playerData exists: %s, lastCP from playerData: %d", tostring(currentData ~= nil), lastCP))
+		-- DataHandler cache is the source of truth after reset
+		local dataHandlerCP = DataHandler:Get(player, "LastCheckpoint") or 0
 		
-		-- Double check dari DataHandler juga
-		local dataHandlerCP = DataHandler:Get(player, "LastCheckpoint")
-		print(string.format("[RESPAWN DEBUG] lastCP from DataHandler: %s", tostring(dataHandlerCP)))
+		-- Gunakan nilai dari DataHandler karena itu yang paling akurat setelah reset
+		local lastCP = dataHandlerCP
+		
+		-- Sync playerData dengan DataHandler untuk konsistensi
+		if currentData and currentData.LastCheckpoint ~= dataHandlerCP then
+			print(string.format("[RESPAWN DEBUG] Syncing playerData.LastCheckpoint: %d -> %d", playerDataCP, dataHandlerCP))
+			currentData.LastCheckpoint = dataHandlerCP
+			playerCurrentCheckpoint[player.UserId] = dataHandlerCP
+		end
+		
+		print(string.format("[RESPAWN DEBUG] playerData.LastCheckpoint=%d, DataHandler=%d, using=%d", 
+			playerDataCP, dataHandlerCP, lastCP))
 
 		task.wait(0.2)
 
@@ -1288,15 +1298,31 @@ teleportToBasecamp.OnServerEvent:Connect(function(player)
 	local userId = player.UserId
 	local data = playerData[userId]
 
+	print(string.format("[RESET DEBUG] ===== RESET TO BASECAMP START for %s =====", player.Name))
+	print(string.format("[RESET DEBUG] BEFORE: playerData.LastCheckpoint = %s", tostring(data and data.LastCheckpoint)))
+	print(string.format("[RESET DEBUG] BEFORE: playerCurrentCheckpoint = %s", tostring(playerCurrentCheckpoint[userId])))
+	print(string.format("[RESET DEBUG] BEFORE: DataHandler cache = %s", tostring(DataHandler:Get(player, "LastCheckpoint"))))
+
 	if data then
 		data.LastCheckpoint = 0
 		playerCurrentCheckpoint[userId] = 0
 
 		DataHandler:Set(player, "LastCheckpoint", 0)
+		
+		print(string.format("[RESET DEBUG] AFTER SET: playerData.LastCheckpoint = %s", tostring(data.LastCheckpoint)))
+		print(string.format("[RESET DEBUG] AFTER SET: playerCurrentCheckpoint = %s", tostring(playerCurrentCheckpoint[userId])))
+		print(string.format("[RESET DEBUG] AFTER SET: DataHandler cache = %s", tostring(DataHandler:Get(player, "LastCheckpoint"))))
+		
 		DataHandler:SavePlayer(player)
+		
+		print(string.format("[RESET DEBUG] AFTER SAVE: DataHandler cache = %s", tostring(DataHandler:Get(player, "LastCheckpoint"))))
 
 		resetAllCheckpointColors(player)
+	else
+		warn("[RESET DEBUG] playerData is nil!")
 	end
+	
+	print("[RESET DEBUG] ===== RESET TO BASECAMP END =====")
 
 	local basecamp = checkpoints[0]
 	if basecamp then
@@ -1348,8 +1374,10 @@ Players.PlayerRemoving:Connect(function(player)
 			end
 		end
 
+		-- Untuk LastCheckpoint: gunakan nilai dari cache langsung (tidak pakai math.max)
+		-- Karena checkpoint harus bisa reset ke 0 (basecamp/setelah summit)
 		if cachedCheckpoint ~= nil then
-			data.LastCheckpoint = math.max(data.LastCheckpoint or 0, cachedCheckpoint)
+			data.LastCheckpoint = cachedCheckpoint
 		end
 
 		if cachedPlaytime ~= nil then
@@ -1409,12 +1437,28 @@ function CheckpointSystem.SyncPlayerData(player)
 	end
 
 	if playerData[userId] then
-		local oldSummits = playerData[userId].TotalSummits
+		local oldSummits = playerData[userId].TotalSummits or 0
+		local oldPlaytime = playerData[userId].TotalPlaytime or 0
 
-		playerData[userId].TotalSummits = freshData.TotalSummits
+		-- PROTEKSI: Gunakan math.max untuk Summit dan Playtime (tidak boleh turun!)
+		playerData[userId].TotalSummits = math.max(oldSummits, freshData.TotalSummits or 0)
+		playerData[userId].TotalPlaytime = math.max(oldPlaytime, freshData.TotalPlaytime or 0)
+		
+		-- LastCheckpoint bisa turun (reset to basecamp/after summit)
 		playerData[userId].LastCheckpoint = freshData.LastCheckpoint
-		playerData[userId].BestSpeedrun = freshData.BestSpeedrun
-		playerData[userId].TotalPlaytime = freshData.TotalPlaytime
+		
+		-- BestSpeedrun: ambil yang lebih cepat (lebih kecil)
+		if playerData[userId].BestSpeedrun and freshData.BestSpeedrun then
+			playerData[userId].BestSpeedrun = math.min(playerData[userId].BestSpeedrun, freshData.BestSpeedrun)
+		else
+			playerData[userId].BestSpeedrun = freshData.BestSpeedrun or playerData[userId].BestSpeedrun
+		end
+		
+		-- Debug log jika ada perubahan summit
+		if oldSummits ~= playerData[userId].TotalSummits then
+			print(string.format("[SYNC] %s Summit: %d -> %d (fresh=%d)", 
+				player.Name, oldSummits, playerData[userId].TotalSummits, freshData.TotalSummits or 0))
+		end
 
 		return true
 	else

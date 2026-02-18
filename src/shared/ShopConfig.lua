@@ -98,13 +98,6 @@ ShopConfig.Tools = {
 		ToolId = "Flashlight"
 	},
 	{
-		Title = "Sign Board",
-		IsPremium = false,
-		Price = 400,
-		Thumbnail = "rbxassetid://92313592030698",
-		ToolId = "SignBoard"
-	},
-	{
 		Title = "Summit Board",
 		IsPremium = false,
 		Price = 600,

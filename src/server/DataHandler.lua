@@ -138,8 +138,13 @@ local function safeMergeData(oldData, newData)
 		merged.BestSpeedrun = oldData.BestSpeedrun or newData.BestSpeedrun
 	end
 	
-	-- Untuk LastCheckpoint: ambil yang lebih tinggi
-	merged.LastCheckpoint = math.max(oldData.LastCheckpoint or 0, newData.LastCheckpoint or 0)
+	-- Untuk LastCheckpoint: gunakan nilai baru (newData) karena player bisa reset ke basecamp atau setelah summit
+	-- CATATAN: Tidak menggunakan math.max karena checkpoint harus bisa turun (reset)
+	local oldCP = oldData.LastCheckpoint
+	local newCP = newData.LastCheckpoint
+	merged.LastCheckpoint = newData.LastCheckpoint or oldData.LastCheckpoint or 0
+	print(string.format("[MERGE DEBUG] LastCheckpoint merge: oldData=%s, newData=%s, merged=%s", 
+		tostring(oldCP), tostring(newCP), tostring(merged.LastCheckpoint)))
 	
 	-- Untuk arrays: merge tanpa duplikat
 	merged.OwnedAuras = mergeArrays(oldData.OwnedAuras, newData.OwnedAuras)
