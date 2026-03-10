@@ -933,7 +933,7 @@ modifySummitDataEvent.OnServerEvent:Connect(function(admin, targetUserId, newSum
 		return
 	end
 
-	DataHandler:Set(targetPlayer, "TotalSummits", newSummitValue)
+	DataHandler:SetForced(targetPlayer, "TotalSummits", newSummitValue)
 	DataHandler:SavePlayer(targetPlayer)
 
 	if DataHandler.UpdateLeaderboards then

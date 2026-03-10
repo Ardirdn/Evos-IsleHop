@@ -126,7 +126,13 @@ local function safeMergeData(oldData, newData)
 	end
 	
 	-- Untuk nilai numerik penting: ambil yang lebih tinggi
-	merged.TotalSummits = math.max(oldData.TotalSummits or 0, newData.TotalSummits or 0)
+	-- TotalSummits: jika ada admin override (_adminOverride_TotalSummits), gunakan nilai baru tanpa math.max
+	if newData["_adminOverride_TotalSummits"] ~= nil then
+		merged.TotalSummits = newData.TotalSummits  -- Admin set: gunakan nilai baru langsung
+		merged["_adminOverride_TotalSummits"] = nil  -- Hapus marker setelah save
+	else
+		merged.TotalSummits = math.max(oldData.TotalSummits or 0, newData.TotalSummits or 0)
+	end
 	merged.TotalPlaytime = math.max(oldData.TotalPlaytime or 0, newData.TotalPlaytime or 0)
 	merged.Money = math.max(oldData.Money or 0, newData.Money or 0)
 	merged.TotalDonations = math.max(oldData.TotalDonations or 0, newData.TotalDonations or 0)
@@ -296,9 +302,9 @@ function DataHandler:Set(player, field, value)
 		return false
 	end
 
-	-- Proteksi untuk field penting: jangan set ke nilai lebih rendah
-	-- Note: TotalPlaytime tidak diproteksi di sini karena selalu di-update dari CheckpointSystem
-	local protectedFields = {TotalSummits = true, Money = true}
+	-- Proteksi untuk Money: jangan set ke nilai lebih rendah dari normal gameplay
+	-- Note: TotalSummits TIDAK diproteksi agar admin bisa menurunkan nilainya
+	local protectedFields = {Money = true}
 	if protectedFields[field] and type(value) == "number" then
 		local currentValue = PlayerDataCache[player][field] or 0
 		if value < currentValue then
@@ -317,6 +323,27 @@ function DataHandler:Set(player, field, value)
 		end
 	end
 
+	return true
+end
+
+-- SetForced: Set nilai tanpa proteksi apapun, khusus untuk admin override
+function DataHandler:SetForced(player, field, value)
+	if not PlayerDataCache[player] then
+		warn(string.format("⚠️ [DATA HANDLER] No cached data for %s", player.Name))
+		return false
+	end
+
+	PlayerDataCache[player][field] = value
+	PlayerDataCache[player]["_adminOverride_" .. field] = value  -- Mark sebagai admin override
+
+	if field == "Money" then
+		local moneyValue = player:FindFirstChild("Money")
+		if moneyValue then
+			moneyValue.Value = value
+		end
+	end
+
+	print(string.format("[DATA HANDLER] Admin force-set %s.%s = %s", player.Name, field, tostring(value)))
 	return true
 end
 

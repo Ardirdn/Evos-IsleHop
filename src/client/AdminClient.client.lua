@@ -1,4 +1,4 @@
-local Players = game:GetService("Players")
+﻿local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
@@ -3493,39 +3493,48 @@ local function createLeaderboardCard(data)
 			createCorner(6).Parent = optionBtn
 
 			optionBtn.MouseButton1Click:Connect(function()
-				confirmTitle.Text = "Confirm Delete"
-				confirmMessage.Text = string.format("Are you sure you want to delete %s data from %s?",
-					option.type == "all" and "ALL" or option.type,
-					data.Username
-				)
-				currentConfirmCallback = function()
-					local deleteLeaderboardEvent = remoteFolder:FindFirstChild("DeleteLeaderboard")
-					if deleteLeaderboardEvent then
-						deleteLeaderboardEvent:FireServer(data.UserId, option.type)
-					end
-
+					-- Tutup deletePopup DULU (ZIndex=200 > confirmDialog ZIndex=150, kalau tidak ditutup akan menutupi confirm)
 					deletePopup:Destroy()
-					card:Destroy()
 
-					local hasResults = false
-					for _, child in pairs(resultsContainer:GetChildren()) do
-						if child:IsA("Frame") then
-							hasResults = true
-							break
+					showConfirmation(
+						"Confirm Delete",
+						string.format("Are you sure you want to delete %s data from %s?",
+							option.type == "all" and "ALL" or option.type,
+							data.Username
+						),
+						function()
+							local deleteLeaderboardEvent = remoteFolder:FindFirstChild("DeleteLeaderboard")
+							if deleteLeaderboardEvent then
+								deleteLeaderboardEvent:FireServer(data.UserId, option.type)
+							end
+
+							if option.type == "all" then
+								card:Destroy()
+
+								local hasResults = false
+								for _, child in pairs(resultsContainer:GetChildren()) do
+									if child:IsA("Frame") then
+										hasResults = true
+										break
+									end
+								end
+
+								if not hasResults then
+									deleteAllFrame.Visible = false
+								end
+							end
+
+							game.StarterGui:SetCore("SendNotification", {
+								Title = "Deleted",
+								Text = string.format("Deleted %s's %s data", data.Username, option.type:upper()),
+								Duration = 3,
+							})
 						end
-					end
+					)
+				end)
 
-					if not hasResults then
-						deleteAllFrame.Visible = false
-					end
-				end
-
-				confirmDialog.Size = UDim2.new(0, 0, 0, 0)
-				confirmDialog.Visible = true
-				tweenSize(confirmDialog, UDim2.new(0, 380, 0, 200), 0.3)
-			end)
-
-			yPos = yPos + 43
+				yPos = yPos + 43
+			end
 		end
 	end)
 
