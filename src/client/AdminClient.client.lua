@@ -483,7 +483,14 @@ local function createTypeButton(text)
 end
 
 createTypeButton("Server")
-createTypeButton("Global")
+
+-- Tombol Global hanya muncul untuk Primary Admin dan Owner
+local globalBtn = createTypeButton("Global")
+if not hasPrimaryAccess then
+	globalBtn.Visible = false
+	globalBtn.Size = UDim2.new(0, 0, 1, 0) -- collapse agar tidak memakan space
+end
+
 
 local messageFrame = Instance.new("Frame")
 messageFrame.Size = UDim2.new(1, 0, 0.4, 0)
@@ -770,6 +777,13 @@ sendButton.MouseButton1Click:Connect(function()
 		messageBox.Text = ""
 	end
 end)
+
+-- Thirdparty Admin tidak bisa akses tab Notifications sama sekali
+if isThirdparty then
+	notifTab.Visible = false
+	notifTabBtn.Visible = false
+	notifTabBtn.Size = UDim2.new(0, 0, 1, 0)
+end
 
 local playersTab, playersTabBtn = createTab("Players", 2)
 
@@ -3535,7 +3549,6 @@ local function createLeaderboardCard(data)
 
 				yPos = yPos + 43
 			end
-		end
 	end)
 
 	return card

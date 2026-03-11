@@ -917,6 +917,11 @@ function TitleServer:InitializePlayer(player)
 		end
 	end
 
+	-- Cleanup: Thirdparty admin yang sudah punya wing dari data lama
+	if TitleConfig.IsThirdpartyAdmin(player.UserId) then
+		self:RevokeAdminWing(player)
+	end
+
 	local title = self:DetermineTitle(player)
 	local currentTitle = DataHandler:Get(player, "Title")
 	if currentTitle ~= title then
@@ -967,6 +972,11 @@ function TitleServer:InitializePlayerPostMigration(player)
 		self:GiveAdminWing(player)
 	end
 
+	-- Cleanup: Thirdparty admin yang sudah punya wing dari data lama
+	if TitleConfig.IsThirdpartyAdmin(player.UserId) then
+		self:RevokeAdminWing(player)
+	end
+
 	local title = self:DetermineTitle(player)
 
 	local currentStoredTitle = data.Title
@@ -981,7 +991,15 @@ end
 
 function TitleServer:GiveAdminWing(player)
 	if not player or not player.Parent then return end
-	if not table.find(TitleConfig.AdminIds, player.UserId) then return end
+
+	-- Owner otomatis berhak, Primary dan Secondary Admin berhak
+	-- Thirdparty Admin TIDAK mendapat Admin Wing
+	local isOwner = TitleConfig.IsOwner(player.UserId)
+	local isFullAdmin = TitleConfig.IsFullAdmin(player.UserId) -- Primary + Secondary only
+
+	if not isOwner and not isFullAdmin then
+		return
+	end
 
 	if not DataHandler:ArrayContains(player, "OwnedTools", "AdminWing") then
 		DataHandler:AddToArray(player, "OwnedTools", "AdminWing")
@@ -993,6 +1011,55 @@ function TitleServer:GiveAdminWing(player)
 	end
 
 	DataHandler:SavePlayer(player)
+end
+
+-- Hapus AdminWing dari player yang tidak berhak (cleanup data lama dari sebelum sistem permission)
+function TitleServer:RevokeAdminWing(player)
+	if not player or not player.Parent then return end
+
+	local hasWing = DataHandler:ArrayContains(player, "OwnedTools", "AdminWing")
+	local equippedWing = DataHandler:Get(player, "EquippedTool") == "AdminWing"
+
+	if not hasWing and not equippedWing then return end -- Tidak punya, tidak perlu apa-apa
+
+	warn(string.format(
+		"[TITLE SERVER] ⚠️ Revoking AdminWing dari %s (Thirdparty) — data lama dihapus",
+		player.Name
+	))
+
+	-- Hapus dari OwnedTools
+	local data = DataHandler:GetData(player)
+	if data and data.OwnedTools then
+		local index = table.find(data.OwnedTools, "AdminWing")
+		if index then
+			table.remove(data.OwnedTools, index)
+			DataHandler:Set(player, "OwnedTools", data.OwnedTools)
+		end
+	end
+
+	-- Hapus dari EquippedTool
+	if equippedWing then
+		DataHandler:Set(player, "EquippedTool", nil)
+	end
+
+	DataHandler:SavePlayer(player)
+
+	-- Hapus tool dari backpack/character jika sedang online
+	if player.Character then
+		for _, obj in ipairs(player.Character:GetChildren()) do
+			if obj:IsA("Tool") and obj.Name == "AdminWing" then
+				obj:Destroy()
+			end
+		end
+	end
+	local backpack = player:FindFirstChild("Backpack")
+	if backpack then
+		for _, obj in ipairs(backpack:GetChildren()) do
+			if obj:IsA("Tool") and obj.Name == "AdminWing" then
+				obj:Destroy()
+			end
+		end
+	end
 end
 
 function TitleServer:AdminSetSummits(player, newSummitCount)

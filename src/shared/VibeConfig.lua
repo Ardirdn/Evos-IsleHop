@@ -16,7 +16,7 @@ VibeConfig.Themes = {
 		GeographicLatitude = 0,
 		Ambient = Color3.fromHex("#97aabd"),
 		Brightness = 3,
-		ExposureCompensation = 1,
+		ExposureCompensation = 0.5,
 		OutdoorAmbient = Color3.fromHex("#e2ab87"),
 		ColorShift_Top = Color3.fromHex("#e6720d"),
 
@@ -38,8 +38,8 @@ VibeConfig.Themes = {
 		TimeOfDay = "13:00:00",
 		GeographicLatitude = 0,
 		Ambient = Color3.fromHex("#876441"),
-		Brightness = 1.5,
-		ExposureCompensation = 1.58,
+		Brightness = 2,
+		ExposureCompensation = 0.9,
 		OutdoorAmbient = Color3.fromHex("#e2ab87"),
 		ColorShift_Top = Color3.fromHex("#e6720d"),
 

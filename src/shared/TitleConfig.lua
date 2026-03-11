@@ -286,23 +286,30 @@ TitleConfig.ThirdpartyPermissions = {
 	CanTeleport = true,
 	CanFreeze = true,
 	CanGiveShopItems = true,
-	CanGiveMoney = false,  -- Third party admin tidak bisa give money
-	CanCreateMoneyCode = false,  -- Third party admin tidak bisa buat redeem code money
+	CanGiveMoney = false,       -- Third party admin tidak bisa give money
+	CanCreateMoneyCode = false, -- Third party admin tidak bisa buat redeem code money
 	CanKick = true,
 	CanDeleteLeaderboard = true,
 	CanBan = false,
 	CanSetTitle = false,
 	CanGiveTitle = false,
 	CanSetSummit = false,
-	CanSendNotifications = true,
+	CanSendNotifications = false, -- Third party admin TIDAK bisa kirim notifikasi
 	CanKill = false,
 	CanSetSpeed = false,
 	CanSetGravity = false,
 	CanViewLogs = false,
 	CanRemoveInventory = true,  -- Third party admin bisa remove inventory items
+	CanFly = false,             -- Third party admin tidak dapat Admin Wing
 }
 
 function TitleConfig.IsPrimaryAdmin(userId)
+	-- Owner otomatis dianggap Primary Admin
+	for _, id in ipairs(TitleConfig.OwnerIds) do
+		if userId == id then
+			return true
+		end
+	end
 	for _, id in ipairs(TitleConfig.PrimaryAdminIds) do
 		if userId == id then
 			return true

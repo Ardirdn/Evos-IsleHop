@@ -1,7 +1,7 @@
+-- LocalScript di dalam Tool AdminWing
+-- Kirim notifikasi ke SERVER via RemoteEvent agar server bisa set toolEquipped[player]
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
-
-local FlyAbility = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("FlyAbility"))
 
 local CONFIG = {
 	AccessoryName = "AdminWing",
@@ -12,18 +12,18 @@ local CONFIG = {
 }
 
 local tool = script.Parent
-local player = nil
+local player = Players.LocalPlayer
 local equipped = false
+
+-- Tunggu remote tersedia
+local equipNotifyRemote = ReplicatedStorage:WaitForChild("FlightEquipNotify", 10)
 
 local function onEquipped()
 	if equipped then return end
 	equipped = true
 
-	local character = tool.Parent
-	player = Players:GetPlayerFromCharacter(character)
-
-	if player then
-		FlyAbility:OnEquip(player, CONFIG)
+	if equipNotifyRemote then
+		equipNotifyRemote:FireServer(true, CONFIG)
 	end
 end
 
@@ -31,11 +31,11 @@ local function onUnequipped()
 	if not equipped then return end
 	equipped = false
 
-	if player then
-		FlyAbility:OnUnequip(player)
+	if equipNotifyRemote then
+		equipNotifyRemote:FireServer(false, nil)
 	end
-	player = nil
 end
 
 tool.Equipped:Connect(onEquipped)
 tool.Unequipped:Connect(onUnequipped)
+

@@ -1303,6 +1303,16 @@ teleportToBasecamp.OnServerEvent:Connect(function(player)
 	print(string.format("[RESET DEBUG] BEFORE: playerCurrentCheckpoint = %s", tostring(playerCurrentCheckpoint[userId])))
 	print(string.format("[RESET DEBUG] BEFORE: DataHandler cache = %s", tostring(DataHandler:Get(player, "LastCheckpoint"))))
 
+	-- Force detach carry SEBELUM teleport
+	-- Ini fix bug: ketika reset to basecamp sambil carry, weld putus fisik tapi status carry tidak ter-clear
+	local CarryServer = game.ServerScriptService:FindFirstChild("CarryServer")
+	if CarryServer then
+		local forceDetach = CarryServer:FindFirstChild("ForceDetachCarry")
+		if forceDetach then
+			forceDetach:Fire(player, "basecamp_reset")
+		end
+	end
+
 	if data then
 		data.LastCheckpoint = 0
 		playerCurrentCheckpoint[userId] = 0
@@ -1346,6 +1356,7 @@ teleportToBasecamp.OnServerEvent:Connect(function(player)
 		Duration = 3
 	})
 end)
+
 
 Players.PlayerRemoving:Connect(function(player)
 

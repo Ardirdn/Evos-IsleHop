@@ -842,20 +842,25 @@ sendGlobalNotificationEvent.OnServerEvent:Connect(function(admin, notifType, mes
 		return
 	end
 
-	if notifType == "event" then
-		if not isPrimaryAdmin(admin.UserId) then
-			NotificationService:Send(admin, {
-				Message = "Only Primary Admin can send event notifications!",
-				Type = "error",
-				Duration = 3
-			})
-			return
-		end
+	-- Thirdparty Admin tidak bisa kirim notifikasi sama sekali
+	if isThirdpartyAdmin(admin.UserId) then
+		NotificationService:Send(admin, {
+			Message = "Thirdparty admins tidak bisa mengirim notifikasi!",
+			Type = "error",
+			Duration = 3
+		})
+		return
 	end
 
-	if isThirdpartyAdmin(admin.UserId) and not hasThirdpartyPermission("CanSendNotifications") then
+	-- Validasi notifType
+	if notifType ~= "server" and notifType ~= "global" then
+		return
+	end
+
+	-- Secondary Admin hanya bisa kirim ke server (tidak bisa global)
+	if notifType == "global" and not isPrimaryAdmin(admin.UserId) then
 		NotificationService:Send(admin, {
-			Message = "You don't have permission to send notifications!",
+			Message = "Hanya Primary Admin atau Owner yang bisa kirim notifikasi Global!",
 			Type = "error",
 			Duration = 3
 		})

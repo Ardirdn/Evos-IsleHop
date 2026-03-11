@@ -42,6 +42,14 @@ if RunService:IsServer() then
         equipStateRemote.Parent = ReplicatedStorage
     end
 
+    -- Remote baru: client kasih tahu server saat tool di-equip/unequip
+    local equipNotifyRemote = ReplicatedStorage:FindFirstChild("FlightEquipNotify")
+    if not equipNotifyRemote then
+        equipNotifyRemote = Instance.new("RemoteEvent")
+        equipNotifyRemote.Name = "FlightEquipNotify"
+        equipNotifyRemote.Parent = ReplicatedStorage
+    end
+
 end
 
 local DEFAULT_CONFIG = {
@@ -78,16 +86,8 @@ end
 
 local function cleanupFlightPhysics(character)
     if not character then return end
-
-    local hrp = character:FindFirstChild("HumanoidRootPart")
-    if hrp then
-        local gyro = hrp:FindFirstChild("FlightGyro")
-        if gyro then gyro:Destroy() end
-
-        local velocity = hrp:FindFirstChild("FlightVelocity")
-        if velocity then velocity:Destroy() end
-    end
-
+    -- FlightGyro dan FlightVelocity sekarang dikelola oleh client
+    -- Server hanya perlu clear attribute IsFlying
     character:SetAttribute("IsFlying", nil)
 end
 
@@ -115,6 +115,10 @@ function FlyAbility:StartFlight(player, config)
        character:GetAttribute("IsDancing") or
        character:GetAttribute("IsDizzy") or
        character:GetAttribute("IsTrapped") then
+        -- Kirim sinyal gagal ke client agar toggle direset ke OFF
+        if flightRemote then
+            flightRemote:FireClient(player, false, {BlockedReason = true})
+        end
         return false
     end
 
@@ -133,19 +137,8 @@ function FlyAbility:StartFlight(player, config)
 
     character:SetAttribute("IsFlying", true)
 
-    local flightGyro = Instance.new("BodyGyro")
-    flightGyro.Name = "FlightGyro"
-    flightGyro.P = config.GyroP or DEFAULT_CONFIG.GyroP
-    flightGyro.MaxTorque = Vector3.new(flightGyro.P, flightGyro.P, flightGyro.P)
-    flightGyro.CFrame = hrp.CFrame
-    flightGyro.Parent = hrp
-
-    local flightVelocity = Instance.new("BodyVelocity")
-    flightVelocity.Name = "FlightVelocity"
-    flightVelocity.P = 1250
-    flightVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-    flightVelocity.Velocity = Vector3.new(0, 0, 0)
-    flightVelocity.Parent = hrp
+    -- BodyGyro dan BodyVelocity TIDAK dibuat di server
+    -- Client yang membuat sendiri agar tidak ada masalah replication race condition
 
     local boost = config.BoostSpeed or DEFAULT_CONFIG.BoostSpeed
     humanoid.WalkSpeed = state.originalSpeed + boost
@@ -188,7 +181,9 @@ function FlyAbility:StartFlight(player, config)
     activeFlights[player] = state
 
     local flightSpeed = config.FlightSpeed or DEFAULT_CONFIG.FlightSpeed
-    flightRemote:FireClient(player, true, {FlightSpeed = flightSpeed})
+    local gyroP = config.GyroP or DEFAULT_CONFIG.GyroP
+    -- Kirim config ke client agar client bisa buat BodyGyro/BodyVelocity sendiri
+    flightRemote:FireClient(player, true, {FlightSpeed = flightSpeed, GyroP = gyroP})
 
     return true
 end
@@ -238,8 +233,9 @@ function FlyAbility:OnEquip(player, config)
     playerConfigs[player] = config or {}
 
     local flightSpeed = config and config.FlightSpeed or DEFAULT_CONFIG.FlightSpeed
-    equipStateRemote:FireClient(player, true, {FlightSpeed = flightSpeed})
-
+    if equipStateRemote then
+        equipStateRemote:FireClient(player, true, {FlightSpeed = flightSpeed})
+    end
 end
 
 function FlyAbility:OnUnequip(player)
@@ -294,18 +290,90 @@ function FlyAbility:IsFlying(player)
     return false
 end
 
+-- Fungsi untuk cek apakah player benar-benar punya wing tool (fallback jika LocalScript belum notify)
+local function playerHasAdminWingTool(player)
+    local character = player.Character
+    if character and character:FindFirstChild("AdminWing") then
+        return true
+    end
+    local backpack = player:FindFirstChild("Backpack")
+    if backpack and backpack:FindFirstChild("AdminWing") then
+        return true
+    end
+    return false
+end
+
+-- Public API: InventoryServer bisa langsung set state dari server tanpa butuh LocalScript notify
+function FlyAbility:SetToolEquipped(player, isEquipped, config)
+    if not RunService:IsServer() then return end
+    if not player then return end
+
+    if isEquipped then
+        toolEquipped[player] = true
+        playerConfigs[player] = config or {}
+        local flightSpeed = config and config.FlightSpeed or DEFAULT_CONFIG.FlightSpeed
+        if equipStateRemote then
+            equipStateRemote:FireClient(player, true, {FlightSpeed = flightSpeed})
+        end
+    else
+        toolEquipped[player] = false
+        if activeFlights[player] then
+            self:StopFlight(player)
+        end
+        if equipStateRemote then
+            equipStateRemote:FireClient(player, false, {})
+        end
+        playerConfigs[player] = nil
+    end
+end
+
 if RunService:IsServer() then
     task.defer(function()
         local toggleRemote = ReplicatedStorage:WaitForChild("FlightToggle", 5)
         if toggleRemote then
             toggleRemote.OnServerEvent:Connect(function(player, enabled)
-                if not toolEquipped[player] then return end
+                -- Fallback: jika toolEquipped belum di-set (LocalScript lambat),
+                -- cek langsung apakah player benar-benar punya tool di character/backpack
+                if not toolEquipped[player] then
+                    if playerHasAdminWingTool(player) then
+                        -- Auto-set state agar toggle bisa berjalan
+                        toolEquipped[player] = true
+                        playerConfigs[player] = playerConfigs[player] or {}
+                        warn("[FLY ABILITY] toolEquipped auto-set via fallback for", player.Name)
+                    else
+                        return -- Benar-benar tidak punya tool, tolak
+                    end
+                end
 
                 if enabled then
                     local config = playerConfigs[player] or {}
                     FlyAbility:StartFlight(player, config)
                 else
                     FlyAbility:StopFlight(player)
+                end
+            end)
+        end
+
+        -- Handler dari LocalScript tool saat equip/unequip
+        local equipNotifyRemote = ReplicatedStorage:WaitForChild("FlightEquipNotify", 5)
+        if equipNotifyRemote then
+            equipNotifyRemote.OnServerEvent:Connect(function(player, isEquipped, config)
+                if isEquipped then
+                    toolEquipped[player] = true
+                    playerConfigs[player] = config or {}
+                    local flightSpeed = config and config.FlightSpeed or DEFAULT_CONFIG.FlightSpeed
+                    if equipStateRemote then
+                        equipStateRemote:FireClient(player, true, {FlightSpeed = flightSpeed})
+                    end
+                else
+                    toolEquipped[player] = false
+                    if activeFlights[player] then
+                        FlyAbility:StopFlight(player)
+                    end
+                    if equipStateRemote then
+                        equipStateRemote:FireClient(player, false, {})
+                    end
+                    playerConfigs[player] = nil
                 end
             end)
         end
@@ -615,6 +683,7 @@ if RunService:IsClient() then
 
         isFlying = true
         currentFlightSpeed = params.FlightSpeed or 80
+        local gyroP = params.GyroP or 20000
 
         local character = LocalPlayer.Character
         if not character then return end
@@ -626,6 +695,28 @@ if RunService:IsClient() then
 
         disableCollision(character)
         humanoid.PlatformStand = true
+
+        -- CLIENT buat BodyGyro dan BodyVelocity sendiri (bukan tunggu replikasi dari server)
+        -- Ini fix race condition: tidak perlu FindFirstChild yang bisa return nil
+        local flightGyro = hrp:FindFirstChild("FlightGyro")
+        if not flightGyro then
+            flightGyro = Instance.new("BodyGyro")
+            flightGyro.Name = "FlightGyro"
+            flightGyro.P = gyroP
+            flightGyro.MaxTorque = Vector3.new(gyroP, gyroP, gyroP)
+            flightGyro.CFrame = hrp.CFrame
+            flightGyro.Parent = hrp
+        end
+
+        local flightVelocity = hrp:FindFirstChild("FlightVelocity")
+        if not flightVelocity then
+            flightVelocity = Instance.new("BodyVelocity")
+            flightVelocity.Name = "FlightVelocity"
+            flightVelocity.P = 1250
+            flightVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+            flightVelocity.Velocity = Vector3.new(0, 0, 0)
+            flightVelocity.Parent = hrp
+        end
 
         local cachedParts = {}
         for _, part in ipairs(character:GetDescendants()) do
@@ -645,17 +736,16 @@ if RunService:IsClient() then
                 end
             end
 
-            local gyro = hrp:FindFirstChild("FlightGyro")
-            local velocity = hrp:FindFirstChild("FlightVelocity")
-
-            if not gyro or not velocity then return end
+            -- Pakai variabel yang sudah dibuat di atas, bukan FindFirstChild setiap frame
+            if not flightGyro or not flightGyro.Parent then return end
+            if not flightVelocity or not flightVelocity.Parent then return end
 
             local camera = workspace.CurrentCamera
             local moveDirection = humanoid.MoveDirection
 
             if moveDirection.Magnitude > 0.01 then
                 local horizontalDir = Vector3.new(moveDirection.X, 0, moveDirection.Z).Unit
-                gyro.CFrame = CFrame.new(hrp.Position, hrp.Position + horizontalDir)
+                flightGyro.CFrame = CFrame.new(hrp.Position, hrp.Position + horizontalDir)
             end
 
             if moveDirection.Magnitude > 0.01 then
@@ -663,10 +753,10 @@ if RunService:IsClient() then
                 local dirInCamSpace = camLook:VectorToObjectSpace(moveDirection)
                 local moveVector = (camera.CFrame.RightVector * dirInCamSpace.X) + (camera.CFrame.LookVector * -dirInCamSpace.Z)
 
-                velocity.Velocity = moveVector * currentFlightSpeed
+                flightVelocity.Velocity = moveVector * currentFlightSpeed
             else
                 local bobY = math.sin(tick() * 2) * 0.5
-                velocity.Velocity = velocity.Velocity:Lerp(Vector3.new(0, bobY, 0), 0.1)
+                flightVelocity.Velocity = flightVelocity.Velocity:Lerp(Vector3.new(0, bobY, 0), 0.1)
             end
         end)
 
@@ -685,6 +775,15 @@ if RunService:IsClient() then
         if character then
             restoreCollision(character)
 
+            -- Destroy objek fisika yang dibuat oleh client
+            local hrp2 = character:FindFirstChild("HumanoidRootPart")
+            if hrp2 then
+                local g = hrp2:FindFirstChild("FlightGyro")
+                if g then g:Destroy() end
+                local v = hrp2:FindFirstChild("FlightVelocity")
+                if v then v:Destroy() end
+            end
+
             local humanoid = character:FindFirstChildOfClass("Humanoid")
             if humanoid then
                 humanoid.PlatformStand = false
@@ -692,7 +791,6 @@ if RunService:IsClient() then
         end
 
         resetToggle()
-
     end
 
     local function setupClientListeners()
@@ -702,7 +800,12 @@ if RunService:IsClient() then
                 if isStarting then
                     startFlightControl(params)
                 else
-                    stopFlightControl()
+                    if params and params.BlockedReason then
+                        -- Flight diblokir oleh kondisi player, reset toggle ke OFF saja
+                        resetToggle()
+                    else
+                        stopFlightControl()
+                    end
                 end
             end)
         end

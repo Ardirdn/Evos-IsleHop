@@ -666,3 +666,12 @@ Players.PlayerRemoving:Connect(function(p: Player)
 	end
 	detachIfAny(p, "left")
 end)
+
+-- BindableEvent untuk force detach dari sistem lain (contoh: teleport to basecamp)
+local forceDetachEvent = Instance.new("BindableEvent")
+forceDetachEvent.Name = "ForceDetachCarry"
+forceDetachEvent.Parent = script
+
+forceDetachEvent.Event:Connect(function(player: Player, reason: string)
+	detachIfAny(player, reason or "force")
+end)

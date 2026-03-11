@@ -3,6 +3,33 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local DataHandler = require(script.Parent.DataHandler)
 local NotificationService = require(script.Parent.NotificationServer)
+local TitleConfig = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("TitleConfig"))
+
+-- Lazy-load FlyAbility agar tidak crash jika belum tersedia
+local FlyAbility = nil
+task.defer(function()
+	local ok, mod = pcall(function()
+		return require(ReplicatedStorage:WaitForChild("Modules", 10):WaitForChild("FlyAbility", 10))
+	end)
+	if ok then FlyAbility = mod end
+end)
+
+local ADMIN_WING_CONFIG = {
+	AccessoryName = "AdminWing",
+	BoostSpeed = 16,
+	FlightSpeed = 80,
+	GyroP = 20000,
+	AnimationId = "rbxassetid://111312412597365",
+}
+
+-- Tool-tool yang hanya boleh dimiliki oleh admin tertentu
+-- Key: toolId, Value: fungsi pengecek izin (return true jika boleh)
+local RESTRICTED_TOOLS = {
+	AdminWing = function(userId)
+		-- Hanya Owner, Primary Admin, dan Secondary Admin yang boleh punya AdminWing
+		return TitleConfig.IsOwner(userId) or TitleConfig.IsFullAdmin(userId)
+	end,
+}
 
 local remoteFolder = ReplicatedStorage:FindFirstChild("InventoryRemotes")
 if not remoteFolder then
@@ -233,6 +260,11 @@ equipToolEvent.OnServerEvent:Connect(function(player, toolId)
 	DataHandler:Set(player, "EquippedTool", toolId)
 	DataHandler:SavePlayer(player)
 
+	-- Jika AdminWing, langsung notify FlyAbility dari server-side
+	if toolId == "AdminWing" and FlyAbility then
+		FlyAbility:SetToolEquipped(player, true, ADMIN_WING_CONFIG)
+	end
+
 	NotificationService:Send(player, {
 		Message = string.format("Equipped %s!", toolId),
 		Type = "success",
@@ -244,6 +276,9 @@ end)
 
 unequipToolEvent.OnServerEvent:Connect(function(player)
 	if not player or not player.Parent then return end
+
+	-- Cek dulu tool yang sedang equipped sebelum di-unequip
+	local currentTool = DataHandler:Get(player, "EquippedTool")
 
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
@@ -261,6 +296,11 @@ unequipToolEvent.OnServerEvent:Connect(function(player)
 				end
 			end
 		end
+	end
+
+	-- Jika unequip AdminWing, hentikan flight
+	if currentTool == "AdminWing" and FlyAbility then
+		FlyAbility:SetToolEquipped(player, false)
 	end
 
 	DataHandler:Set(player, "EquippedTool", nil)
@@ -296,17 +336,44 @@ Players.PlayerAdded:Connect(function(player)
 					weld.Parent = auraClone
 
 					auraClone.Parent = humanoidRootPart
-
 				end
 			end
 		end
 
 		if data.EquippedTool then
-			local toolTemplate = findToolTemplate(data.EquippedTool)
+			local toolId = data.EquippedTool
+
+			-- Cek apakah tool ini hanya untuk admin tertentu
+			local restrictionCheck = RESTRICTED_TOOLS[toolId]
+			if restrictionCheck and not restrictionCheck(player.UserId) then
+				-- Player tidak punya izin → hapus dari DataStore (cleanup data lama)
+				warn(string.format(
+					"[INVENTORY] ⚠️ %s tidak berhak punya '%s' — menghapus dari DataStore",
+					player.Name, toolId
+				))
+				local index = table.find(data.OwnedTools or {}, toolId)
+				if index then
+					table.remove(data.OwnedTools, index)
+					DataHandler:Set(player, "OwnedTools", data.OwnedTools)
+				end
+				DataHandler:Set(player, "EquippedTool", nil)
+				DataHandler:SavePlayer(player)
+				return -- Jangan spawn tool
+			end
+
+			local toolTemplate = findToolTemplate(toolId)
 			if toolTemplate then
 				local toolClone = toolTemplate:Clone()
 				toolClone.Parent = character
 
+				-- Jika AdminWing, notify FlyAbility dari server-side
+				if toolId == "AdminWing" then
+					task.delay(0.5, function() -- Kecil delay agar tool settle dulu
+						if FlyAbility and player.Parent then
+							FlyAbility:SetToolEquipped(player, true, ADMIN_WING_CONFIG)
+						end
+					end)
+				end
 			end
 		end
 	end)
