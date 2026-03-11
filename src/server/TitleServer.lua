@@ -879,6 +879,7 @@ function TitleServer:BroadcastTitle(player, titleName)
 end
 
 function TitleServer:InitializePlayer(player)
+	print(string.format("[TITLE DEBUG] InitializePlayer dipanggil untuk %s (ID:%d)", player.Name, player.UserId))
 	task.wait(1)
 
 	local data = DataHandler:GetData(player)
@@ -907,6 +908,18 @@ function TitleServer:InitializePlayer(player)
 		end
 
 		self:GiveAdminWing(player)
+
+		-- Admin bukan Owner: pastikan title "Owner" dihapus dari UnlockedTitles jika ada
+		local adminData = DataHandler:GetData(player)
+		if adminData and adminData.UnlockedTitles then
+			local idx = table.find(adminData.UnlockedTitles, "Owner")
+			if idx then
+				table.remove(adminData.UnlockedTitles, idx)
+				DataHandler:Set(player, "UnlockedTitles", adminData.UnlockedTitles)
+				DataHandler:SavePlayer(player)
+				print(string.format("[TITLE DEBUG] Removed 'Owner' from UnlockedTitles for non-owner admin: %s", player.Name))
+			end
+		end
 	end
 
 	for titleName, titleData in pairs(TitleConfig.SpecialTitles) do
@@ -917,9 +930,51 @@ function TitleServer:InitializePlayer(player)
 		end
 	end
 
-	-- Cleanup: Thirdparty admin yang sudah punya wing dari data lama
+	-- Cleanup: Hapus AdminWing dan reset title untuk player yang sudah tidak berhak
+	-- Ini menangani: Thirdparty Admin, dan mantan Owner/Admin yang di-remove dari list
+	local isAnyAdmin = TitleConfig.IsAdmin(player.UserId)
+	local isOwner = TitleConfig.IsOwner(player.UserId)
+
+	print(string.format("[TITLE DEBUG] %s (ID:%d) — IsOwner=%s, IsAnyAdmin=%s, IsThirdparty=%s",
+		player.Name, player.UserId,
+		tostring(isOwner), tostring(isAnyAdmin),
+		tostring(TitleConfig.IsThirdpartyAdmin(player.UserId))
+	))
+
 	if TitleConfig.IsThirdpartyAdmin(player.UserId) then
+		-- Thirdparty: revoke wing tapi biarkan title "Admin"
 		self:RevokeAdminWing(player)
+
+	elseif not isOwner and not isAnyAdmin then
+		-- Bukan siapa-siapa lagi (ex-Owner atau ex-Admin yang di-remove dari list)
+		print(string.format("[TITLE DEBUG] %s bukan admin/owner — menjalankan cleanup ex-admin", player.Name))
+		self:RevokeAdminWing(player)
+
+		-- Reset EquippedTitle jika masih "Owner" atau "Admin"
+		local equippedTitle = DataHandler:Get(player, "EquippedTitle")
+		print(string.format("[TITLE DEBUG] EquippedTitle saat cleanup: %s", tostring(equippedTitle)))
+		if equippedTitle == "Owner" or equippedTitle == "Admin" then
+			DataHandler:Set(player, "EquippedTitle", nil)
+		end
+
+		-- Hapus "Owner" dan "Admin" dari UnlockedTitles jika ada
+		local freshData = DataHandler:GetData(player)
+		if freshData and freshData.UnlockedTitles then
+			local changed = false
+			for _, titleToRemove in ipairs({"Owner", "Admin"}) do
+				local idx = table.find(freshData.UnlockedTitles, titleToRemove)
+				if idx then
+					table.remove(freshData.UnlockedTitles, idx)
+					changed = true
+				end
+			end
+			if changed then
+				DataHandler:Set(player, "UnlockedTitles", freshData.UnlockedTitles)
+			end
+		end
+
+		DataHandler:SavePlayer(player)
+		warn(string.format("[TITLE SERVER] ⚠️ Cleanup ex-admin: %s — AdminWing revoked, title reset", player.Name))
 	end
 
 	local title = self:DetermineTitle(player)
@@ -1023,7 +1078,7 @@ function TitleServer:RevokeAdminWing(player)
 	if not hasWing and not equippedWing then return end -- Tidak punya, tidak perlu apa-apa
 
 	warn(string.format(
-		"[TITLE SERVER] ⚠️ Revoking AdminWing dari %s (Thirdparty) — data lama dihapus",
+		"[TITLE SERVER] ⚠️ Revoking AdminWing dari %s — tidak berhak lagi",
 		player.Name
 	))
 
@@ -1111,7 +1166,9 @@ getTitleFunc.OnServerInvoke = function(caller, targetPlayer)
 end
 
 Players.PlayerAdded:Connect(function(player)
-	TitleServer:InitializePlayer(player)
+	task.spawn(function()
+		TitleServer:InitializePlayer(player)
+	end)
 
 	player.CharacterAdded:Connect(function(character)
 		task.wait(1)
@@ -1127,6 +1184,14 @@ Players.PlayerAdded:Connect(function(player)
 		TitleServer:BroadcastTitle(player, title)
 	end)
 end)
+
+-- Handle player yang sudah join sebelum script ini run (fix Studio race condition)
+for _, player in ipairs(Players:GetPlayers()) do
+	task.spawn(function()
+		print(string.format("[TITLE DEBUG] Handling already-existing player: %s", player.Name))
+		TitleServer:InitializePlayer(player)
+	end)
+end
 
 collidersFolder = workspace:WaitForChild("Colliders", 10)
 

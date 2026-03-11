@@ -314,43 +314,57 @@ unequipToolEvent.OnServerEvent:Connect(function(player)
 
 end)
 
-Players.PlayerAdded:Connect(function(player)
-	player.CharacterAdded:Connect(function(character)
+local function handleCharacter(player, character)
+	-- Tunggu sampai data tersedia (maks 10 detik, cek setiap 0.5s)
+	local data = nil
+	local waitCount = 0
+	repeat
 		task.wait(0.5)
+		waitCount = waitCount + 1
+		data = DataHandler:GetData(player)
+	until data ~= nil or waitCount >= 20
 
-		local data = DataHandler:GetData(player)
-		if not data then return end
+	if not data then
+		warn(string.format("[INVENTORY] ⚠️ Data %s tidak tersedia setelah 10s — skip restore", player.Name))
+		return
+	end
 
-		if data.EquippedAura then
-			local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-			if humanoidRootPart then
-				local auraTemplate = findAuraTemplate(data.EquippedAura)
-				if auraTemplate then
-					local auraClone = auraTemplate:Clone()
-					auraClone.Name = "EquippedAura"
-					auraClone.CFrame = humanoidRootPart.CFrame
+	print(string.format("[INVENTORY DEBUG] %s (ID:%d) handleCharacter — EquippedTool: %s",
+		player.Name, player.UserId, tostring(data.EquippedTool)))
 
-					local weld = Instance.new("WeldConstraint")
-					weld.Part0 = humanoidRootPart
-					weld.Part1 = auraClone
-					weld.Parent = auraClone
+	if data.EquippedAura then
+		local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+		if humanoidRootPart then
+			local auraTemplate = findAuraTemplate(data.EquippedAura)
+			if auraTemplate then
+				local auraClone = auraTemplate:Clone()
+				auraClone.Name = "EquippedAura"
+				auraClone.CFrame = humanoidRootPart.CFrame
 
-					auraClone.Parent = humanoidRootPart
-				end
+				local weld = Instance.new("WeldConstraint")
+				weld.Part0 = humanoidRootPart
+				weld.Part1 = auraClone
+				weld.Parent = auraClone
+
+				auraClone.Parent = humanoidRootPart
 			end
 		end
+	end
 
-		if data.EquippedTool then
-			local toolId = data.EquippedTool
+	if data.EquippedTool then
+		local toolId = data.EquippedTool
 
-			-- Cek apakah tool ini hanya untuk admin tertentu
-			local restrictionCheck = RESTRICTED_TOOLS[toolId]
-			if restrictionCheck and not restrictionCheck(player.UserId) then
-				-- Player tidak punya izin → hapus dari DataStore (cleanup data lama)
-				warn(string.format(
-					"[INVENTORY] ⚠️ %s tidak berhak punya '%s' — menghapus dari DataStore",
-					player.Name, toolId
-				))
+		local restrictionCheck = RESTRICTED_TOOLS[toolId]
+		if restrictionCheck then
+			local hasPermission = restrictionCheck(player.UserId)
+			print(string.format("[INVENTORY DEBUG] RESTRICTED check '%s': IsOwner=%s, IsFullAdmin=%s → %s",
+				toolId,
+				tostring(TitleConfig.IsOwner(player.UserId)),
+				tostring(TitleConfig.IsFullAdmin(player.UserId)),
+				tostring(hasPermission)
+			))
+			if not hasPermission then
+				warn(string.format("[INVENTORY] ⚠️ %s tidak berhak punya '%s' — menghapus dari DataStore", player.Name, toolId))
 				local index = table.find(data.OwnedTools or {}, toolId)
 				if index then
 					table.remove(data.OwnedTools, index)
@@ -358,23 +372,44 @@ Players.PlayerAdded:Connect(function(player)
 				end
 				DataHandler:Set(player, "EquippedTool", nil)
 				DataHandler:SavePlayer(player)
-				return -- Jangan spawn tool
-			end
-
-			local toolTemplate = findToolTemplate(toolId)
-			if toolTemplate then
-				local toolClone = toolTemplate:Clone()
-				toolClone.Parent = character
-
-				-- Jika AdminWing, notify FlyAbility dari server-side
-				if toolId == "AdminWing" then
-					task.delay(0.5, function() -- Kecil delay agar tool settle dulu
-						if FlyAbility and player.Parent then
-							FlyAbility:SetToolEquipped(player, true, ADMIN_WING_CONFIG)
-						end
-					end)
-				end
+				return
 			end
 		end
+
+		local toolTemplate = findToolTemplate(toolId)
+		if toolTemplate then
+			local toolClone = toolTemplate:Clone()
+			toolClone.Parent = character
+
+			if toolId == "AdminWing" then
+				task.delay(0.5, function()
+					if FlyAbility and player.Parent then
+						FlyAbility:SetToolEquipped(player, true, ADMIN_WING_CONFIG)
+					end
+				end)
+			end
+		end
+	end
+end
+
+Players.PlayerAdded:Connect(function(player)
+	-- Handle karakter yang sudah ada saat PlayerAdded fire (Studio)
+	if player.Character then
+		task.spawn(handleCharacter, player, player.Character)
+	end
+
+	player.CharacterAdded:Connect(function(character)
+		task.spawn(handleCharacter, player, character)
 	end)
 end)
+
+-- Handle player yang sudah join sebelum script ini run (Studio race condition)
+for _, player in ipairs(Players:GetPlayers()) do
+	task.spawn(function()
+		print(string.format("[INVENTORY DEBUG] Handling already-existing player: %s", player.Name))
+		local character = player.Character or player.CharacterAdded:Wait()
+		handleCharacter(player, character)
+	end)
+end
+
+

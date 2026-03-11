@@ -1,7 +1,6 @@
 local AdminConfig = {}
 
 AdminConfig.Admins = {
-	8714136305,
 	987654321,
 	9113221586,
 }

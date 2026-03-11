@@ -208,11 +208,17 @@ TitleConfig.SpecialTitles = {
 		Icon = "🧪",
 		Priority = 50,
 		Givable = true
-	}
+	},
+	AXIS = {
+		DisplayName = "AXIS",
+		Color = Color3.fromRGB(138, 43, 226),
+		Icon = "",
+		Priority = 400,
+		Givable = true,
+	},
 }
 
 TitleConfig.OwnerIds = {
-	8714136305,
 	8970505309,
 }
 
@@ -241,6 +247,8 @@ TitleConfig.ZoneColors = {
 TitleConfig.PrimaryAdminIds = {
 	8714136305,
 	8970505309,
+	7366897231,
+	9113221586,
 
 }
 

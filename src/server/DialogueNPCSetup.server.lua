@@ -14,15 +14,15 @@ if not npcFolder then
 end
 print("[DIALOGUE NPC] ✅ Folder DialogueNPC ditemukan")
 
-local npcModel = npcFolder:WaitForChild("Kakak NPC", 10)
+local npcModel = npcFolder:WaitForChild("Kaka AXIS", 10)
 if not npcModel then
-	warn("[DIALOGUE NPC] ❌ Model 'Kakak NPC' tidak ditemukan di dalam DialogueNPC!")
+	warn("[DIALOGUE NPC] ❌ Model 'Kaka AXIS' tidak ditemukan di dalam DialogueNPC!")
 	return
 end
-print("[DIALOGUE NPC] ✅ Model 'Kakak NPC' ditemukan")
+print("[DIALOGUE NPC] ✅ Model 'Kaka AXIS' ditemukan")
 
 -- Debug: print semua children NPC
-print("[DIALOGUE NPC] Children dari 'Kakak NPC':")
+print("[DIALOGUE NPC] Children dari 'Kaka AXIS':")
 for _, child in ipairs(npcModel:GetChildren()) do
 	print("  -", child.Name, "(" .. child.ClassName .. ")")
 end
